@@ -2,10 +2,10 @@
 import { initState, getState, setState, subscribe, onSaveStatus, findRobot, defaultCamera, exportState, importState, resetState } from './state.js';
 import {
   forwardKinematics, clampJoints, homeJoints, LINK_NAMES, DEG, linkSegments,
-  rotationOf, poseMatrix, mul3, expRotation, origin,
+  rotationOf, poseMatrix, mul3, expRotation, origin, multiply, rotationToRPY, transpose3,
 } from './kinematics.js';
 import { Viewer } from './viewer.js';
-import { createSafetyContext, evaluatePose, violationTypes } from './safety.js';
+import { createSafetyContext, evaluatePose, violationTypes, setAttached, blockedViolations } from './safety.js';
 import { compileObstacles, capsuleObstacleDistance } from './collision.js';
 import { MotionController } from './motion.js';
 import { singularityLabel } from './singularity.js';
@@ -19,6 +19,8 @@ import { ICONS, mountThemeToggle, mountSections, mountDrawers, mountShortcuts } 
 import { robotThumbnail } from './thumbnail.js';
 import { PhysicsWorld, rpyFromMatrix } from './physics.js';
 import { loadRapier } from './physics-loader.js';
+import { gripperSpec, toolMatrix, findGraspCandidate, GRIPPER_DEFAULTS } from './gripper.js';
+import { mountGripperPanel } from './gripper-panel.js';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -66,6 +68,11 @@ let lastPoses = null;
 let physicsStepMs = 0; // 최근 1초 최대: 물리 스텝 + 로봇 바디 갱신 + 안전 검사 갱신 (NFR-9)
 let planObjectSnapshot = null; // 계획 시점의 물체 위치 (물리 모드, 계획 후 20 mm 이상 움직이면 stale)
 const PLAN_STALE_MOVE_MM = 20;
+// ---- 그리퍼 (PRD_v.1.1.0 FR-21, 22) ----
+let gripperPanel;
+// 실행 상태 (저장하지 않음): { spec, opening, target(mm), pendingGrasp(id), attached{ id, type, size, rel, ignore }, releasedId, lastObjPos, vel(mm/s) }
+let grip = null;
+let appliedGripperSettings = null;
 let planSingularity = false; // 계획 결과를 만들 때의 특이점 감지 상태 (바뀌면 stale)
 const IDLE = { status: 'idle', activeId: null, t: 0, duration: 0 };
 let playback = IDLE; // Waypoint 시퀀스 재생 상태
@@ -150,6 +157,12 @@ async function main() {
   );
 
   cartesianPanel = mountCartesianPanel($('#cartesian-panel'), { onJog: cartesianJog });
+  gripperPanel = mountGripperPanel($('#gripper-panel'), {
+    onToggle: (enabled) => setGripperSettings({ enabled }),
+    onCommand: gripperCommand,
+    onSpecChange: setGripperOverride,
+    onSpecReset: resetGripperOverride,
+  });
   waypointPanel = mountWaypointPanel($('#waypoint-panel'), {
     getRobot: () => currentRobot,
     getJoints: () => controller.current.q,
@@ -163,7 +176,7 @@ async function main() {
   planPanel = mountPlanPanel($('#plan-panel'), {
     getRobot: () => currentRobot,
     getTcp: () => {
-      const { tcp } = forwardKinematics(currentRobot, controller.current.q);
+      const tcp = tcpPose(controller.current.q); // 그리퍼가 있으면 손가락 끝
       return [...tcp.pos, ...tcp.rpy];
     },
     onPlan: requestPlan,
@@ -189,7 +202,12 @@ async function main() {
   drawers = mountDrawers();
   $('[data-drawer=left]').innerHTML = ICONS.models;
   $('[data-drawer=right]').innerHTML = ICONS.controls;
-  mountShortcuts({ onPlayPause: togglePlayPause, onStop: stopAll, onReset: () => isAlarmActive() && resetAlarm() });
+  mountShortcuts({
+    onPlayPause: togglePlayPause,
+    onStop: stopAll,
+    onReset: () => isAlarmActive() && resetAlarm(),
+    onGripper: () => grip && gripperCommand('toggle'),
+  });
 
   subscribe(onStateChange);
   viewer.setObstacles(getState().obstacles);
@@ -236,6 +254,7 @@ function onStateChange(state, keys) {
     }
   }
   if (has('settings') && state.settings.simMode !== activeSimMode && !simLoading) applySimMode(state.settings.simMode);
+  if (has('settings') && !has('selectedRobotId') && state.settings.gripper !== appliedGripperSettings) applyGripper();
   if (has('alarmLog')) renderAlarmLog();
   if (has('waypoints') && !has('selectedRobotId')) {
     waypointPanel.renderList();
@@ -245,6 +264,7 @@ function onStateChange(state, keys) {
   if (has('features')) onPlanFeatureChange(state.features.autoPathPlanning);
   if (has('settings')) {
     cartesianPanel.render();
+    renderGripperUI();
     waypointPanel.renderPlayback(playback);
     renderSections();
     planPanel.renderInputs();
@@ -276,6 +296,7 @@ function previewObstacleDrag(id, patch) {
     thresholds: s.thresholds,
     obstacles: s.obstacles.map((o) => (o.id === id ? { ...o, ...patch } : o)),
     floor: s.settings.floorEnabled,
+    tool: grip && { spec: grip.spec, opening: grip.opening },
   });
   const hits = evaluatePose(ctx, controller.current.q).obstacle.hits.filter((h) => h.obstacleId === id);
   viewer.setHighlights({ links: hits.map((h) => h.link), obstacles: hits.length ? [id] : [] });
@@ -296,7 +317,11 @@ function rebuildSafety() {
     thresholds: s.thresholds,
     obstacles: s.obstacles,
     floor: s.settings.floorEnabled,
+    tool: grip && { spec: grip.spec, opening: grip.opening },
+    attached: grip?.attached ?? null,
+    physicsMode: !!physics,
   });
+  ctx.releasedId = grip?.releasedId ?? null;
   if (physics && lastPoses) applyPosesToSafety(ctx, lastPoses); // 물리 모드: 배치가 아니라 현재 물체 위치로 검사
   const evaluation = controller.setContext(ctx, clampJoints(currentRobot, s.joints));
   renderSafetyReadout(evaluation);
@@ -466,10 +491,8 @@ function applyRobot(state) {
   label.innerHTML =
     `<i></i><strong>${maker?.name ?? currentRobot.maker} ${currentRobot.name}</strong>` +
     `<small>${currentRobot.payloadKg} kg · ${currentRobot.reachMm.toLocaleString()} mm</small><span class="badge">근사 모델</span>`;
-  rebuildSafety();
-  physics?.setRobot(controller.current.segments);
+  applyGripper({ robotChanged: true }); // 그리퍼 치수는 로봇 크기별 → 다시 만들고 안전 검사·물리 바디도 갱신
   waypointPanel?.renderList();
-  renderWaypointMarkers();
   // 계획: 다른 로봇의 결과는 버리고, 같은 로봇의 저장된 결과(lastPlan)는 복원
   cancelPlan(true);
   if (state.lastPlan?.robotId === currentRobot.id) setPlan(state.lastPlan.path, state.lastPlan.blends, state.lastPlan.stats, { persist: false });
@@ -594,7 +617,7 @@ function cartesianJog(axis, sign) {
   const { cartFrame, cartStepMm, cartStepDeg } = getState().settings;
   const pending = controller.kind === 'cartesian' ? controller.source.trajectory : null;
   const baseQ = pending ? pending.points[pending.points.length - 1] : controller.current.q;
-  const T = forwardKinematics(currentRobot, baseQ).frames[6];
+  const T = tcpMatrix(forwardKinematics(currentRobot, baseQ).frames); // 그리퍼가 있으면 손가락 끝 기준으로 이동·회전
   const R = rotationOf(T);
   const p = origin(T);
   const unit = [0, 0, 0];
@@ -608,7 +631,7 @@ function cartesianJog(axis, sign) {
     const rot = expRotation(unit.map((v) => v * cartStepDeg * DEG));
     target = poseMatrix(cartFrame === 'tool' ? mul3(R, rot) : mul3(rot, R), p);
   }
-  const res = linearMove(currentRobot, controller.current.q, target);
+  const res = linearMove(currentRobot, controller.current.q, target, { toolLengthMm: grip?.spec.lengthMm ?? 0 });
   if (!res.ok) return showNotice(`직교 조그 불가: ${res.message}`);
   controller.play(res.trajectory, { kind: 'cartesian' });
 }
@@ -629,7 +652,8 @@ function playSequence() {
   let q = controller.current.q;
   for (const wp of wps) {
     if (linear) {
-      const res = linearMove(currentRobot, q, forwardKinematics(currentRobot, wp.joints).frames[6], { qEnd: wp.joints });
+      const toolLengthMm = grip?.spec.lengthMm ?? 0; // TCP(손가락 끝)가 직선으로 움직이도록
+      const res = linearMove(currentRobot, q, tcpMatrix(forwardKinematics(currentRobot, wp.joints).frames), { qEnd: wp.joints, toolLengthMm });
       if (!res.ok) return showNotice(`직선 보간 불가 — "${wp.name}" 구간: ${res.message}. 관절 보간을 사용해 보세요.`);
       segments.push(res.trajectory);
     } else {
@@ -711,6 +735,10 @@ function runPlanner({ start, goal }, onProgress) {
       thresholds: s.thresholds,
       floor: s.settings.floorEnabled,
       avoidSingularity: s.settings.planAvoidSingularity,
+      // 그리퍼·파지 물체도 충돌 모델에 포함, TCP 지정 목표는 손가락 끝 기준 (FR-21, 22)
+      tool: grip && { spec: grip.spec, opening: grip.opening },
+      attached: grip?.attached ?? null,
+      physicsMode: !!physics,
       reference: controller.current.q.slice(), // TCP 지정 시 현재 자세에 가까운 IK 해 우선
       start,
       goal,
@@ -769,11 +797,19 @@ function setPlan(path, blends, stats, { persist }) {
   const trajectory = pathTrajectory(currentRobot, path, blends);
   planSingularity = getState().features.singularity;
   plan = { path, trajectory };
-  const tcpOf = (q) => forwardKinematics(currentRobot, q).tcp.pos;
-  const vertices = path.map((q, i) => ({ label: i === 0 ? 'A' : i === path.length - 1 ? 'B' : String(i), tcp: tcpOf(q) }));
-  viewer.setPlanPreview(trajectory.points.map(tcpOf), vertices);
+  const vertices = renderPlanPreview();
   setPlanUI({ status: 'ready', stats, vertices, duration: trajectory.duration, error: null, stale: false });
   if (persist) setState({ lastPlan: { robotId: currentRobot.id, path, blends, stats, createdAt: new Date().toISOString() } });
+}
+
+/** 계획 경로 3D 미리보기 (TCP 궤적·경유점 라벨). 그리퍼가 바뀌면 TCP가 달라지므로 다시 그린다. */
+function renderPlanPreview() {
+  const tcpOf = (q) => tcpPose(q).pos;
+  const { path, trajectory } = plan;
+  const vertices = path.map((q, i) => ({ label: i === 0 ? 'A' : i === path.length - 1 ? 'B' : String(i), tcp: tcpOf(q) }));
+  viewer.setPlanPreview(trajectory.points.map(tcpOf), vertices);
+  if (planUI.vertices) setPlanUI({ vertices });
+  return vertices;
 }
 
 function clearPlan() {
@@ -889,6 +925,267 @@ function savePlanAsWaypoints() {
   showNotice(`경유점 ${added.length}개(A, 중간 ${added.length - 2}개, B)를 Waypoint 목록에 추가했습니다.`);
 }
 
+// ---------- 그리퍼 (PRD_v.1.1.0 FR-21, FR-22) ----------
+
+/** 물리엔진에 보낼 로봇 캡슐: 파지한 물체(9)는 물리 바디가 따로 있으므로 뺀다 */
+const physicsSegments = () => controller.current.segments.filter((s) => s.link !== 9);
+
+/** TCP 자세 (4x4): 그리퍼가 있으면 손가락 끝(플랜지 + 길이), 없으면 플랜지 */
+const tcpMatrix = (frames) => (grip ? multiply(frames[6], toolMatrix(grip.spec.lengthMm)) : frames[6]);
+
+function tcpPose(q) {
+  const T = tcpMatrix(forwardKinematics(currentRobot, q).frames);
+  return { pos: origin(T), rpy: rotationToRPY(T) };
+}
+
+/** 강체 변환의 역행렬 (4x4 row-major) */
+function invertRigid(T) {
+  const Rt = transpose3(rotationOf(T));
+  const p = origin(T);
+  return poseMatrix(Rt, [0, 1, 2].map((r) => -(Rt[r * 3] * p[0] + Rt[r * 3 + 1] * p[1] + Rt[r * 3 + 2] * p[2])));
+}
+
+/**
+ * 그리퍼 설정(사용 여부·치수)을 적용: 로봇 변경·사용 스위치·치수 변경 시.
+ * 파지 중이면 먼저 놓고, 손가락은 열린 상태로 시작한다. 안전 검사·물리 바디·TCP 표시를 다시 만든다.
+ * @param robotChanged 로봇 변경에서 호출 (계획 결과는 applyRobot이 따로 정리)
+ */
+function applyGripper({ robotChanged = false } = {}) {
+  const g = getState().settings.gripper;
+  appliedGripperSettings = g;
+  if (grip?.attached) releaseObject({ silent: true });
+  const spec = g.enabled ? gripperSpec(currentRobot, g.overrides) : null;
+  grip = spec
+    ? { spec, opening: spec.maxOpenMm, target: spec.maxOpenMm, pendingGrasp: null, attached: null, releasedId: null, lastObjPos: null, vel: [0, 0, 0] }
+    : null;
+  viewer.setGripper(spec, spec?.maxOpenMm);
+  rebuildSafety();
+  physics?.setRobot(physicsSegments());
+  updatePose(controller.current.q);
+  renderWaypointMarkers();
+  if (!robotChanged && plan) {
+    renderPlanPreview();
+    setPlanUI({ stale: true }); // 충돌 모델(그리퍼)이 바뀌었으므로 다시 생성 권장
+  }
+  renderGripperUI();
+}
+
+function renderGripperUI() {
+  if (!gripperPanel || !currentRobot) return;
+  const g = getState().settings.gripper;
+  const spec = grip?.spec ?? gripperSpec(currentRobot, g.overrides);
+  let state = 'open';
+  if (grip) {
+    if (grip.attached) state = 'holding';
+    else if (grip.opening < grip.target - 1e-6) state = 'opening';
+    else if (grip.opening > grip.target + 1e-6) state = 'closing';
+    else if (grip.opening < spec.maxOpenMm - 1e-6) state = 'closed';
+  }
+  const holding = grip?.attached && getState().obstacles.find((o) => o.id === grip.attached.id);
+  gripperPanel.render({
+    robot: currentRobot,
+    enabled: g.enabled,
+    spec,
+    overridden: Object.keys(g.overrides[currentRobot.id] ?? {}),
+    state,
+    opening: grip?.opening ?? spec.maxOpenMm,
+    holdingName: holding?.name ?? '',
+  });
+}
+
+/** 그리퍼 설정 변경은 로봇이 멈춰 있고 알람이 없을 때만 (충돌 모델이 바뀌므로) */
+function gripperSettingsBlocked() {
+  if (controller.active) {
+    showNotice('로봇이 움직이는 중에는 그리퍼 설정을 바꿀 수 없습니다. 정지한 뒤 바꾸세요.');
+  } else if (isAlarmActive()) {
+    showNotice('알람 상태에서는 그리퍼 설정을 바꿀 수 없습니다. Reset 후 바꾸세요.');
+  } else return false;
+  renderGripperUI();
+  return true;
+}
+
+function setGripperSettings(patch) {
+  if (gripperSettingsBlocked()) return;
+  setState((s) => ({ settings: { ...s.settings, gripper: { ...s.settings.gripper, ...patch } } })); // → onStateChange → applyGripper
+}
+
+function setGripperOverride(key, value) {
+  const g = getState().settings.gripper;
+  const id = currentRobot.id;
+  const mine = { ...(g.overrides[id] ?? {}) };
+  if (value === GRIPPER_DEFAULTS[currentRobot.sizeClass]?.[key]) delete mine[key];
+  else mine[key] = value;
+  const overrides = { ...g.overrides };
+  if (Object.keys(mine).length) overrides[id] = mine;
+  else delete overrides[id];
+  setGripperSettings({ overrides });
+}
+
+function resetGripperOverride() {
+  const overrides = { ...getState().settings.gripper.overrides };
+  delete overrides[currentRobot.id];
+  setGripperSettings({ overrides });
+}
+
+/** 파지 후보 계산용 물체 목록: 물리 모드의 현재 자세 + 배치의 형상 */
+function graspObjects() {
+  const out = [];
+  for (const o of getState().obstacles) {
+    const p = lastPoses?.get(o.id);
+    if (!p || p.out) continue;
+    out.push({ id: o.id, type: o.type, size: o.size, pos: p.pos, R: p.R });
+  }
+  return out;
+}
+
+/**
+ * 열기/닫기 명령 (버튼, 단축키 G). 'toggle'이면 지금 닫혀 있거나 파지 중이면 열고, 아니면 닫는다.
+ * 닫기: 물리 모드에서 손가락 사이에 물체가 있으면 그 폭까지 닫은 뒤 파지(질량 한계 확인).
+ */
+function gripperCommand(cmd) {
+  if (!grip) return showNotice('그리퍼가 꺼져 있습니다. 그리퍼 패널에서 켜세요.');
+  if (isAlarmActive()) return rejectWhileAlarm();
+  if (cmd === 'toggle') cmd = grip.attached || grip.target < grip.spec.maxOpenMm - 1e-6 ? 'open' : 'close';
+  grip.pendingGrasp = null;
+  if (cmd === 'open') {
+    if (grip.attached) releaseObject();
+    grip.target = grip.spec.maxOpenMm;
+  } else if (!grip.attached) {
+    grip.target = 0;
+    if (!physics) {
+      showNotice('고정 모드에서는 손가락만 움직입니다. 물리 모드에서 파지할 수 있습니다.');
+    } else {
+      const cand = findGraspCandidate(grip.spec, controller.current.frames[6], grip.opening, graspObjects());
+      if (cand) {
+        const mass = physics.mass(cand.id);
+        if (mass > grip.spec.maxPayloadKg) {
+          grip.target = grip.opening;
+          showNotice(`파지 실패: 질량 초과 (${mass.toFixed(1)} kg > ${grip.spec.maxPayloadKg} kg)`);
+        } else {
+          grip.target = Math.min(grip.opening, cand.widthMm);
+          grip.pendingGrasp = cand.id;
+        }
+      }
+    }
+  }
+  renderGripperUI();
+}
+
+/**
+ * 손가락 개폐 1스텝 (60 Hz). 개폐 속도 = 최대 벌림 폭 / 개폐 시간.
+ * 바뀐 폭으로 현재 자세를 다시 평가해서 새 위반이 생기거나 기존 위반이 깊어지면(이동 검사와 같은 규칙)
+ * 그 폭에서 멈추고 알람 ("그리퍼 동작 중 충돌"). 위반에서 벗어나는 방향(열기)은 허용된다.
+ */
+function tickGripper(dt) {
+  if (!grip || isAlarmActive() || !controller.ctx || grip.opening === grip.target) return;
+  const { spec } = grip;
+  const step = (spec.maxOpenMm / spec.actuationS) * dt;
+  const d = grip.target - grip.opening;
+  const next = Math.abs(d) <= step ? grip.target : grip.opening + Math.sign(d) * step;
+  const ctx = controller.ctx;
+  ctx.tool.opening = next;
+  const e = evaluatePose(ctx, controller.current.q);
+  const fresh = blockedViolations(e, controller.current);
+  if (fresh.length) {
+    ctx.tool.opening = grip.opening;
+    grip.target = grip.opening;
+    grip.pendingGrasp = null;
+    controller.stop();
+    const alarm = describeAlarm(e, fresh);
+    alarm.messages.unshift('그리퍼 동작 중 충돌');
+    raiseAlarm(alarm);
+    renderGripperUI();
+    return;
+  }
+  controller.current = e;
+  grip.opening = next;
+  viewer.setGripperOpening(next);
+  if (next === grip.target) {
+    if (grip.pendingGrasp) graspObject(grip.pendingGrasp);
+    else if (physics && next === 0) showNotice('빈 손 닫힘 (손가락 사이에 집을 물체가 없습니다)');
+  }
+  renderGripperUI();
+}
+
+/** 파지: 물체를 플랜지 기준 상대 자세(rel)로 붙인다. 안전 검사에서는 로봇의 일부(링크 9)가 된다. */
+function graspObject(id) {
+  grip.pendingGrasp = null;
+  const ob = getState().obstacles.find((o) => o.id === id);
+  const p = lastPoses?.get(id);
+  const T6 = controller.current.frames[6];
+  // 닫는 동안 물체가 손가락 사이에서 빠져나갔으면 끝까지 닫는다
+  if (!physics || !ob || !p || p.out || !findGraspCandidate(grip.spec, T6, grip.opening + 2, [{ id, type: ob.type, size: ob.size, pos: p.pos, R: p.R }])) {
+    grip.target = 0;
+    return showNotice('파지 실패: 물체가 손가락 사이에서 벗어났습니다');
+  }
+  const rel = multiply(invertRigid(T6), poseMatrix(p.R, p.pos));
+  const attached = { id, type: ob.type, size: ob.size.slice(), rel, ignore: [] };
+  physics.attach(id, rel);
+  const ctx = controller.ctx;
+  setAttached(ctx, attached);
+  ctx.releasedId = null;
+  // 집는 순간 이미 맞닿아 있던 받침(물체·바닥)은 들어 올려 떨어질 때까지 파지 물체의 검사에서 제외
+  const e = evaluatePose(ctx, controller.current.q);
+  attached.ignore = [...new Set((e.obstacle?.hits ?? []).filter((h) => h.link === 9).map((h) => h.obstacleId))];
+  controller.current = evaluatePose(ctx, controller.current.q);
+  Object.assign(grip, { attached, releasedId: null, lastObjPos: null, vel: [0, 0, 0] });
+  showNotice(`파지: ${ob.name} (${physics.mass(id).toFixed(2)} kg)`);
+}
+
+/** 놓기: 동적 바디로 되돌리고 그리퍼(물체) 속도를 넘겨준다 */
+function releaseObject({ silent = false } = {}) {
+  if (!grip?.attached) return;
+  const { id } = grip.attached;
+  physics?.detach(grip.vel);
+  grip.attached = null;
+  grip.releasedId = physics ? id : null;
+  if (controller.ctx) {
+    setAttached(controller.ctx, null);
+    controller.ctx.releasedId = grip.releasedId;
+    controller.current = evaluatePose(controller.ctx, controller.current.q);
+  }
+  if (!silent) showNotice(`놓기: ${getState().obstacles.find((o) => o.id === id)?.name ?? id}`);
+  renderGripperUI();
+}
+
+/** 물리 모드 종료·리셋으로 물체가 사라졌을 때: 파지 상태만 지운다 (물리 바디 조작 없음) */
+function dropGripState() {
+  if (!grip) return;
+  Object.assign(grip, { attached: null, pendingGrasp: null, releasedId: null, lastObjPos: null, vel: [0, 0, 0] });
+  if (grip.target < grip.opening) grip.target = grip.opening;
+}
+
+/**
+ * 물리 스텝마다: 파지한 물체를 플랜지에 붙여 움직이고(속도 기록), 집을 때·놓을 때의 검사 제외 대상이
+ * 여유거리 밖으로 떨어졌으면 다시 검사에 넣는다.
+ */
+function tickGripperPhysics() {
+  if (!grip || !controller.ctx) return;
+  const ctx = controller.ctx;
+  const margin = getState().thresholds.obstacleMarginMm;
+  const segs = controller.current.segments;
+  if (grip.attached) {
+    const T6 = controller.current.frames[6];
+    physics.moveAttached(T6);
+    const pos = origin(multiply(T6, grip.attached.rel));
+    if (grip.lastObjPos) grip.vel = pos.map((v, i) => (v - grip.lastObjPos[i]) / SIM_DT);
+    grip.lastObjPos = pos;
+    if (grip.attached.ignore.length) {
+      const seg = segs.find((s) => s.link === 9);
+      grip.attached.ignore = grip.attached.ignore.filter((id) => {
+        if (id === 'floor') return Math.min(seg.a[2], seg.b[2]) - seg.r < margin;
+        const ob = ctx.compiled.find((o) => o.id === id);
+        return !!ob && capsuleObstacleDistance(seg, ob) < margin;
+      });
+    }
+  }
+  if (grip.releasedId) {
+    const ob = ctx.compiled.find((o) => o.id === grip.releasedId);
+    const body = segs.find((s) => s.link === 7);
+    if (!ob || !body || capsuleObstacleDistance(body, ob) >= margin) grip.releasedId = ctx.releasedId = null;
+  }
+}
+
 // ---------- 물리 시뮬레이션 (PRD_v.1.1.0 2장, FR-17~20) ----------
 
 /**
@@ -924,7 +1221,8 @@ async function applySimMode(mode) {
     physics = new PhysicsWorld(RAPIER, { gravity: getState().settings.gravity });
     activeSimMode = 'physics';
     physics.load(getState().obstacles);
-    physics.setRobot(controller.current.segments);
+    dropGripState();
+    physics.setRobot(physicsSegments());
     lastPoses = physics.poses();
     physicsRunning = true;
     layoutChanged = false;
@@ -942,6 +1240,7 @@ async function applySimMode(mode) {
     physics = null;
     lastPoses = null;
     physicsRunning = false;
+    dropGripState(); // 파지 중이던 물체는 배치 위치로 돌아간다
     layoutChanged = false;
     activeSimMode = 'static';
     viewer.setPhysicsMode(false);
@@ -956,6 +1255,7 @@ function resetPhysics() {
   if (!physics) return;
   if (controller.active) return showNotice('로봇이 움직이는 중에는 리셋할 수 없습니다.');
   physics.load(getState().obstacles);
+  dropGripState();
   lastPoses = physics.poses();
   layoutChanged = false;
   viewer.setObstacles(getState().obstacles);
@@ -1155,7 +1455,7 @@ function renderWaypointMarkers() {
   if (!currentRobot || !viewer) return;
   const markers = getState()
     .waypoints.filter((w) => w.robotId === currentRobot.id)
-    .map((w) => ({ id: w.id, pos: forwardKinematics(currentRobot, w.joints).tcp.pos, active: w.id === playback.activeId }));
+    .map((w) => ({ id: w.id, pos: tcpPose(w.joints).pos, active: w.id === playback.activeId }));
   viewer.setWaypointMarkers(markers);
 }
 
@@ -1170,8 +1470,9 @@ function updatePose(joints) {
   const fk = forwardKinematics(currentRobot, joints);
   viewer.update(fk.frames);
   syncJointInputs(joints, false);
-  const [x, y, z] = fk.tcp.pos;
-  const [rx, ry, rz] = fk.tcp.rpy;
+  const T = tcpMatrix(fk.frames); // 그리퍼가 있으면 손가락 끝
+  const [x, y, z] = origin(T);
+  const [rx, ry, rz] = rotationToRPY(T);
   $('#tcp-readout').innerHTML = [
     ['X', x, 'mm'], ['Y', y, 'mm'], ['Z', z, 'mm'],
     ['Rx', rx, '°'], ['Ry', ry, '°'], ['Rz', rz, '°'],
@@ -1227,9 +1528,11 @@ function startLoop() {
         checkLast = ms;
         checkMax = Math.max(checkMax, ms);
       }
+      tickGripper(SIM_DT);
       if (physics && physicsRunning) {
         const t0 = performance.now();
-        physics.moveRobot(controller.current.segments); // 안전 검사를 통과해 적용된 자세 (FR-19)
+        physics.moveRobot(physicsSegments()); // 안전 검사를 통과해 적용된 자세 (FR-19)
+        tickGripperPhysics(); // 파지한 물체가 플랜지를 따라감 (FR-22)
         physics.step();
         lastPoses = physics.poses();
         if (controller.ctx) {

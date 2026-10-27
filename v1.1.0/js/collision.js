@@ -125,24 +125,37 @@ export function capsuleObstacleDistance(seg, ob) {
 }
 
 /**
- * Self collision 검사 쌍 생성 (로봇별 1회).
+ * Self collision 검사 쌍 생성 (로봇별 1회). 링크 7 = 그리퍼 몸체, 8 = 그리퍼 손가락, 9 = 파지한 물체.
  * - 인접 링크(|i-j| < 2)는 항상 맞닿아 있으므로 제외
  * - (4,6) 전완-플랜지: 짧은 손목 링크로 연결되어 관절 한계 내에서 구조적으로 닿지 않음 → 제외
  * - (2,4) 상완-전완: 짧은 엘보 링크로 연결되어 시작부가 항상 겹침 → 전완 시작부를 잘라서 검사 (접힘 감지는 유지)
+ * - 손목 이후끼리(5~8)는 서로 붙어 있으므로 제외, 파지한 물체(9)는 자기 충돌 대상에서 제외
+ * - (4,7),(4,8) 전완-그리퍼: 전완 캡슐 끝(손목 중심)의 반구가 플랜지 쪽으로 튀어나와 홈 자세에서도 맞닿는 근사 오차 →
+ *   전완 끝을 손목 중심-플랜지 거리(d6)만큼 잘라서 검사 (손목을 크게 접어 그리퍼가 전완에 닿는 경우는 계속 감지)
  */
 export function buildSelfPairs(robot, segments) {
   const r = robot.linkRadiiMm;
+  const d6 = Math.abs(robot.dh[5].d);
   const pairs = [];
   for (let i = 0; i < segments.length; i++) {
     for (let j = i + 1; j < segments.length; j++) {
       const la = segments[i].link, lb = segments[j].link;
       const [lo, hi] = la < lb ? [la, lb] : [lb, la];
-      if (hi - lo < 2 || (lo === 4 && hi === 6)) continue;
+      if (hi - lo < 2 || (lo === 4 && hi === 6) || lo >= 5 || hi === 9) continue;
       const trim = lo === 2 && hi === 4 ? 1.5 * (r[1] + r[3]) : 0;
-      pairs.push({ i, j, trimJ: trim });
+      // 전완(link 4)은 그리퍼보다 앞 순서 → i 쪽 끝을 자른다
+      const trimEndI = lo === 4 && hi >= 7 && la === 4 ? d6 : 0;
+      pairs.push({ i, j, trimJ: trim, trimEndI });
     }
   }
   return pairs;
+}
+
+function trimEnd(seg, len) {
+  const d = sub(seg.b, seg.a);
+  const L = Math.sqrt(dot(d, d));
+  if (L < 1e-6 || len <= 0) return seg.b;
+  return lerp3(seg.a, seg.b, Math.max(0.2, 1 - len / L));
 }
 
 function trimStart(seg, len) {
@@ -163,7 +176,8 @@ export function checkSelfCollision(segments, pairs, marginMm) {
   for (const p of pairs) {
     const A = segments[p.i], B = segments[p.j];
     const bStart = p.trimJ ? trimStart(B, p.trimJ) : B.a;
-    const d = segmentSegmentDistance(A.a, A.b, bStart, B.b) - A.r - B.r;
+    const aEnd = p.trimEndI ? trimEnd(A, p.trimEndI) : A.b;
+    const d = segmentSegmentDistance(A.a, aEnd, bStart, B.b) - A.r - B.r;
     if (d < minDistance) minDistance = d;
     if (d < marginMm) {
       hits.push([A.link, B.link]);
@@ -177,7 +191,8 @@ export function checkSelfCollision(segments, pairs, marginMm) {
  * 장애물 + 바닥 충돌 검사
  * @param segments 링크 캡슐 (베이스 link 0은 고정 설치물이므로 제외)
  * @param compiled compileObstacles() 결과
- * @param {{ floor: boolean }} opts 바닥(z=0) 검사 여부. 바닥은 링크2 이후만 검사한다.
+ * @param {{ floor: boolean, skip?: (seg, ob) => boolean, skipFloor?: (seg) => boolean }} opts 바닥(z=0) 검사 여부(바닥은 링크2 이후만 검사),
+ *   skip: 이 쌍은 장애물 검사에서 제외 (예: 물리 모드의 그리퍼 손가락, 파지한 물체 자신), skipFloor: 이 캡슐은 바닥 검사 제외
  * @returns {{ hit: boolean, hits: Array<{link:number, obstacleId:string, d:number}>, minDistance: number }}
  */
 export function checkObstacleCollision(segments, compiled, marginMm, opts = { floor: true }) {
@@ -185,12 +200,13 @@ export function checkObstacleCollision(segments, compiled, marginMm, opts = { fl
   const hits = [];
   for (const seg of segments) {
     if (seg.link === 0) continue;
-    if (opts.floor && seg.link >= 2) {
+    if (opts.floor && seg.link >= 2 && !opts.skipFloor?.(seg)) {
       const d = Math.min(seg.a[2], seg.b[2]) - seg.r;
       if (d < minDistance) minDistance = d;
       if (d < marginMm) hits.push({ link: seg.link, obstacleId: 'floor', d });
     }
     for (const ob of compiled) {
+      if (opts.skip?.(seg, ob)) continue;
       // 경계구로 빠른 제외 (하한 거리)
       const lower = pointSegmentDistance(ob.pos, seg.a, seg.b) - ob.bound - seg.r;
       if (lower > marginMm) {

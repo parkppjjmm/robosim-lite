@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
-const quick = ['reach.mjs', 'safety.mjs', 'ik-trajectory.mjs', 'planner.mjs', 'physics.mjs'];
+const quick = ['reach.mjs', 'safety.mjs', 'ik-trajectory.mjs', 'planner.mjs', 'physics.mjs', 'gripper.mjs'];
 const full = [...quick, 'planner-stress.mjs', 'numeric-review.mjs'];
 const list = process.argv.includes('--full') ? full : quick;
 

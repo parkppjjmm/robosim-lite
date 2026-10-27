@@ -1,6 +1,7 @@
 // 앱 상태 관리 + localStorage 영구 저장 (PRD 6.4, v1.1.0 저장 스키마 v2: PRD_v.1.1.0 6.4)
 import { clampJoints, homeJoints } from './kinematics.js';
 import { DEFAULT_PHYSICS, PHYSICS_LIMITS } from './physics.js';
+import { sanitizeGripperOverride } from './gripper.js';
 
 export const STORAGE_KEY = 'robosim-lite:v1';
 const BACKUP_KEY = 'robosim-lite:backup';
@@ -50,6 +51,8 @@ export const DEFAULT_SETTINGS = {
   planAvoidSingularity: true, // 경로 계획 시 특이점 회피 (감지 토글과 별개)
   simMode: 'static', // 시뮬레이션 모드: 'static'(고정, v1.0.0 동작) | 'physics'(물리) — 전체 단위로만 선택
   gravity: [0, 0, -9.81], // 물리 모드 중력 (m/s², 로봇 좌표계 Z-up)
+  // 그리퍼 (PRD_v.1.1.0 FR-21): overrides = { [robotId]: { lengthMm, ... } } — 크기별 기본값 위에 로봇별로 덮어쓴다
+  gripper: { enabled: false, overrides: {} },
 };
 
 
@@ -68,6 +71,21 @@ const SETTINGS_RULES = {
   simMode: (v) => v === 'static' || v === 'physics',
   gravity: (v) => Array.isArray(v) && v.length === 3 && v.every((x) => Number.isFinite(x) && Math.abs(x) <= 50),
 };
+
+/** 그리퍼 설정 검증: 알 수 없는 로봇 id·범위 밖 값은 버린다 */
+function sanitizeGripper(raw) {
+  const out = { enabled: false, overrides: {} };
+  if (!raw || typeof raw !== 'object') return out;
+  out.enabled = raw.enabled === true;
+  if (raw.overrides && typeof raw.overrides === 'object') {
+    for (const [id, o] of Object.entries(raw.overrides)) {
+      if (!findRobot(id)) continue;
+      const clean = sanitizeGripperOverride(o);
+      if (Object.keys(clean).length) out.overrides[id] = clean;
+    }
+  }
+  return out;
+}
 
 /** 물성 검증: 범위를 벗어나거나 형식이 다르면 기본값 */
 export function sanitizePhysics(raw) {
@@ -99,7 +117,7 @@ function createDefaultState() {
     joints: homeJoints(robot),
     features: { ...DEFAULT_FEATURES },
     thresholds: { ...DEFAULT_THRESHOLDS },
-    settings: { ...DEFAULT_SETTINGS },
+    settings: { ...DEFAULT_SETTINGS, gripper: { enabled: false, overrides: {} } }, // gripper는 중첩 객체 → 기본값과 공유하지 않도록 새로 만든다
     obstacles: [],
     waypoints: [],
     lastPlan: null,
@@ -145,6 +163,7 @@ function sanitize(raw) {
     for (const [k, valid] of Object.entries(SETTINGS_RULES)) {
       if (valid(raw.settings[k])) s.settings[k] = raw.settings[k];
     }
+    s.settings.gripper = sanitizeGripper(raw.settings.gripper);
   }
   if (Array.isArray(raw.obstacles)) {
     s.obstacles = raw.obstacles.filter(

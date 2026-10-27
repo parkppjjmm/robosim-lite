@@ -111,7 +111,59 @@ export class PhysicsWorld {
     this.outOfRange = new Set();
     this.robotBodies = []; // 로봇 링크 캡슐 (운동학 바디, FR-19)
     this.poseCache = new Map(); // poses() 결과 재사용 (매 스텝 할당을 줄여 GC 지연 방지, NFR-9)
+    this.attached = null; // 파지한 물체 { id, rel(플랜지 기준 4x4, mm) } (FR-22)
     this.time = 0;
+  }
+
+  /** 물체 질량 (kg). 없으면 null */
+  mass(id) {
+    const o = this.objects.get(id);
+    return o ? o.body.mass() : null;
+  }
+
+  /**
+   * 파지 (FR-22): 물체를 운동학 바디로 바꿔 그리퍼를 따라가게 한다. 손가락과의 접촉력으로 들지 않는다(마찰 파지 근사).
+   * @param rel 플랜지 좌표계에서 본 물체 자세 (4x4 row-major, mm)
+   */
+  attach(id, rel) {
+    const o = this.objects.get(id);
+    if (!o || this.outOfRange.has(id)) return false;
+    if (this.attached) this.detach();
+    o.body.setBodyType(this.RAPIER.RigidBodyType.KinematicPositionBased, true);
+    this.attached = { id, rel };
+    return true;
+  }
+
+  /** 파지한 물체의 다음 스텝 자세 = 플랜지 자세 T6 × rel */
+  moveAttached(T6) {
+    if (!this.attached) return;
+    const o = this.objects.get(this.attached.id);
+    if (!o) return;
+    const r = this.attached.rel;
+    const T = new Array(16);
+    for (let i = 0; i < 4; i++) {
+      for (let j = 0; j < 4; j++) {
+        T[i * 4 + j] = T6[i * 4] * r[j] + T6[i * 4 + 1] * r[4 + j] + T6[i * 4 + 2] * r[8 + j] + T6[i * 4 + 3] * r[12 + j];
+      }
+    }
+    o.body.setNextKinematicTranslation({ x: T[3] * MM, y: T[7] * MM, z: T[11] * MM });
+    o.body.setNextKinematicRotation(quatFromMatrix([T[0], T[1], T[2], T[4], T[5], T[6], T[8], T[9], T[10]]));
+  }
+
+  /**
+   * 놓기: 다시 동적 바디로 돌리고 그리퍼 속도를 넘겨준다 (던지듯 놓으면 날아감)
+   * @param linvel mm/s
+   */
+  detach(linvel = [0, 0, 0]) {
+    if (!this.attached) return null;
+    const { id } = this.attached;
+    this.attached = null;
+    const o = this.objects.get(id);
+    if (!o) return null;
+    o.body.setBodyType(this.RAPIER.RigidBodyType.Dynamic, true);
+    o.body.setLinvel({ x: linvel[0] * MM, y: linvel[1] * MM, z: linvel[2] * MM }, true);
+    o.body.setAngvel({ x: 0, y: 0, z: 0 }, true);
+    return id;
   }
 
   /**
@@ -162,6 +214,7 @@ export class PhysicsWorld {
     this.objects.clear();
     this.poseCache.clear();
     this.outOfRange.clear();
+    this.attached = null;
     this.time = 0;
     for (const ob of obstacles) {
       if (ob.visible === false) continue;

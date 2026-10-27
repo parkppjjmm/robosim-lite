@@ -679,6 +679,28 @@ select { cursor: pointer; }
 .ob-editor fieldset.ob-physics { grid-template-columns: repeat(2, 1fr); }
 .ob-editor fieldset.ob-physics .hint { grid-column: 1 / -1; margin: 2px 0 0; font-size: 10.5px; }
 
+/* ================= 그리퍼 (v1.1.0) ================= */
+.gr-body { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+.gr-body[hidden] { display: none; }
+.gr-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.gr-state { margin-left: auto; color: var(--muted); font: 11.5px var(--mono); }
+.gr-state.holding { color: var(--path); font-weight: 700; }
+.gr-spec {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin: 0;
+  padding: 4px 8px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.gr-spec legend { padding: 0 4px; color: var(--muted); font-size: 11px; }
+.gr-spec .field { flex-direction: column; align-items: stretch; gap: 2px; font-size: 11px; color: var(--muted); }
+.gr-spec .field input { width: 100%; color: var(--text); }
+.gr-spec .field.gr-changed input { border-color: var(--accent); }
+.gr-reset { grid-column: 1 / -1; justify-self: start; }
+.gr-body .hint { margin: 0; }
+
 /* ================= Waypoint ================= */
 .wp-list { list-style: none; margin: 8px 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
 .wp-item {

@@ -94,7 +94,8 @@ export function jacobian(robot, jointsDeg, frames = forwardKinematics(robot, joi
 /** 손목 중심 (J4/J5/J6 축 교점) */
 export const wristCenter = (frames) => origin(frames[4]);
 
-export const LINK_NAMES = ['베이스', '링크1(선회)', '링크2(상완)', '링크3(엘보)', '링크4(전완)', '링크5(손목)', '링크6(플랜지)'];
+// 7~9: 그리퍼 몸체·손가락, 파지한 물체 (v1.1.0 FR-21, 22 — gripper.js / safety.js)
+export const LINK_NAMES = ['베이스', '링크1(선회)', '링크2(상완)', '링크3(엘보)', '링크4(전완)', '링크5(손목)', '링크6(플랜지)', '그리퍼 몸체', '그리퍼 손가락', '파지한 물체'];
 
 /**
  * 링크를 캡슐(선분 + 반경)로 근사한 목록. 렌더링과 충돌 검사(collision.js)가 함께 사용한다.

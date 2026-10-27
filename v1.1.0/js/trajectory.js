@@ -1,6 +1,7 @@
 // 궤적 생성 (관절 보간 / 직선 보간) 및 시간 샘플링. DOM 비의존 — 2-C 플래너 결과 실행에도 사용.
 // 궤적 형식: { points: number[][] (관절값), times: number[] (s, 오름차순), duration: number, marks: [{ time, id }] }
-import { forwardKinematics, solveIK, interpolatePose, poseError, RAD } from './kinematics.js';
+import { forwardKinematics, solveIK, interpolatePose, poseError, multiply, RAD } from './kinematics.js';
+import { toolMatrix, inverseToolMatrix } from './gripper.js';
 
 // 재생 속도 100% 기준값. 200%에서 관절 최대속도에 도달하도록 100% = 최대속도의 50%로 둔다.
 export const BASE_JOINT_RATIO = 0.5;
@@ -34,12 +35,17 @@ export function jointMove(robot, q0, q1) {
 /**
  * 직선 보간: TCP를 직선(위치) + slerp(자세)로 이동. 샘플마다 이전 해를 시드로 IK를 풀어 연속성을 유지한다.
  * 각 구간 시간은 TCP 기준 속도와 관절 기준 속도 중 느린 쪽에 맞춘다.
+ * @param targetT 목표 TCP 자세 (그리퍼가 있으면 손가락 끝, 없으면 플랜지)
  * @param qEnd 지정 시 마지막 해가 이 관절값(같은 자세 구성)과 일치해야 한다 (Waypoint 이동)
+ * @param toolLengthMm 그리퍼 길이 (FR-21): TCP가 직선으로 움직이도록 TCP 자세를 보간한 뒤 플랜지 목표로 바꿔 IK를 푼다
  * @returns {{ ok: true, trajectory } | { ok: false, reason: 'ik'|'jump'|'config', at: number, message: string }}
  */
-export function linearMove(robot, q0, targetT, { qEnd } = {}) {
+export function linearMove(robot, q0, targetT, { qEnd, toolLengthMm = 0 } = {}) {
   const v = baseSpeeds(robot);
-  const T0 = forwardKinematics(robot, q0).frames[6];
+  const tool = toolLengthMm ? toolMatrix(toolLengthMm) : null;
+  const toFlange = toolLengthMm ? inverseToolMatrix(toolLengthMm) : null;
+  const F0 = forwardKinematics(robot, q0).frames[6];
+  const T0 = tool ? multiply(F0, tool) : F0;
   const total = poseError(T0, targetT);
   const n = Math.max(1, Math.ceil(Math.max(total.pos / LINEAR_STEP_MM, (total.rot * RAD) / LINEAR_STEP_DEG)));
   const dp = total.pos / n, dr = (total.rot * RAD) / n;
@@ -47,7 +53,8 @@ export function linearMove(robot, q0, targetT, { qEnd } = {}) {
   const points = [q0.slice()], times = [0];
   let q = q0, t = 0;
   for (let k = 1; k <= n; k++) {
-    const res = solveIK(robot, interpolatePose(T0, targetT, k / n), q, { maxIter: 60 });
+    const Tk = interpolatePose(T0, targetT, k / n);
+    const res = solveIK(robot, toFlange ? multiply(Tk, toFlange) : Tk, q, { maxIter: 60 });
     if (!res.ok) {
       return { ok: false, reason: 'ik', at: k / n, message: '도달할 수 없는 구간이 있습니다 (작업 영역/관절 한계 밖)' };
     }

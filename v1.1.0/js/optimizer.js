@@ -5,7 +5,8 @@
 //        + w · Σ c_s(s_k)                (특이점 근접 비용, 특이점 회피가 켜졌을 때만)
 // c(d)는 CHOMP의 거리 비용: d ≥ ε면 0, 0 ≤ d < ε면 (ε − d)²/(2ε), d < 0이면 ε/2 − d.
 // 최적화 결과는 원래 경로처럼 촘촘한 구간 검사(edgeOk)를 통과할 때만 채택한다.
-import { forwardKinematics, linkSegments } from './kinematics.js';
+import { forwardKinematics } from './kinematics.js';
+import { robotSegments } from './safety.js';
 import { checkObstacleCollision, checkSelfCollision } from './collision.js';
 import { checkSingularity } from './singularity.js';
 
@@ -41,9 +42,9 @@ export function optimizePath(path, ctx, { edgeOk, avoidSingularity, budgetMs, ma
   // 비용 범위(ε)까지는 정확한 거리가 나오도록 판정 거리를 여유거리 + ε로 넓혀서 잰다.
   const measure = (q) => {
     const { frames } = forwardKinematics(robot, q);
-    const segs = linkSegments(robot, frames);
+    const segs = robotSegments(ctx, frames); // 그리퍼·파지 물체 포함 (안전 검사와 같은 모델)
     return {
-      obs: checkObstacleCollision(segs, ctx.compiled, t.obstacleMarginMm + eps, { floor: ctx.floor }).minDistance - t.obstacleMarginMm,
+      obs: checkObstacleCollision(segs, ctx.compiled, t.obstacleMarginMm + eps, { floor: ctx.floor, skip: ctx.obstacleSkip, skipFloor: ctx.floorSkip }).minDistance - t.obstacleMarginMm,
       self: checkSelfCollision(segs, ctx.selfPairs, t.selfMarginMm + epsSelf).minDistance - t.selfMarginMm,
       sing: avoidSingularity ? singMargin(checkSingularity(robot, q, frames, t)) : Infinity,
     };

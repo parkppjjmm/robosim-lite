@@ -2,8 +2,9 @@
 // 구성: (목표가 TCP면) 다중 시드 IK → 직선 경로 시도 → 관절공간 RRT-Connect → Shortcut smoothing
 //       → CHOMP 스타일 최적화(optimizer.js) → 모서리 블렌딩
 // 시간 파라미터화는 trajectory.pathTrajectory()가 담당한다 (메인 스레드와 같은 함수 사용).
-import { homeJoints, solveIKMulti, poseMatrix } from './kinematics.js';
-import { createSafetyContext, evaluatePose, motionValid, leverBounds, SWEEP_STEP_MM } from './safety.js';
+import { homeJoints, solveIKMulti, poseMatrix, multiply } from './kinematics.js';
+import { inverseToolMatrix } from './gripper.js';
+import { createSafetyContext, evaluatePose, motionValid, SWEEP_STEP_MM } from './safety.js';
 import { rotationFromRPY } from './collision.js';
 import { cornerCurve, maxBlend } from './trajectory.js';
 import { optimizePath } from './optimizer.js';
@@ -19,6 +20,8 @@ const BLEND_FRACTIONS = [1, 0.5, 0.25]; // maxBlend 대비 시도할 블렌드 �
  *   start / goal: { type: 'joints', joints } | { type: 'pose', pos: number[], rpy: number[] } (start는 관절값 배열도 허용)
  *   reference: TCP 지정 시 여러 IK 해 중 가까운 해를 고르는 기준 관절값 (보통 현재 자세)
  *   avoidSingularity: 특이점 회피 여부 (없으면 features.singularity를 따른다)
+ *   tool / attached / physicsMode: 그리퍼({ spec, opening })·파지한 물체·물리 모드 (FR-21, 22) — 안전 검사와 같은 모델로 계획
+ *   pose 목표의 pos/rpy는 TCP 기준 (그리퍼가 있으면 손가락 끝) → 내부에서 플랜지 목표로 바꿔 IK를 푼다
  * @param {{ onProgress?: (p) => void, isCancelled?: () => boolean }} hooks
  * @returns {Promise<{ ok: true, path: number[][], blends: number[], stats } | { ok: false, reason: string, message: string, stats }>}
  *   blends[i]: 경유점 i의 모서리 블렌드 크기 (관절공간 deg, 0 = 정지점)
@@ -33,11 +36,14 @@ export async function planPath(req, { onProgress = () => {}, isCancelled = () =>
   // 세분 검사 사이에서 거리가 최대 SWEEP_STEP_MM/2 줄어들 수 있으므로 여유거리를 그만큼 키워서 계획한다
   // → 실행 시 사용자 여유거리 아래로 내려가지 않는다.
   const pad = SWEEP_STEP_MM / 2;
+  const toolCtx = { tool: req.tool ?? null, attached: req.attached ?? null, physicsMode: !!req.physicsMode };
+  const toolLengthMm = req.tool ? req.tool.spec.lengthMm : 0;
   const ctx = createSafetyContext(robot, {
     features: { selfCollision: true, obstacleCollision: true, singularity: avoidSingularity },
     thresholds: { ...req.thresholds, selfMarginMm: req.thresholds.selfMarginMm + pad, obstacleMarginMm: req.thresholds.obstacleMarginMm + pad },
     obstacles: req.obstacles,
     floor: req.floor,
+    ...toolCtx,
   });
   const stats = { timeMs: 0, nodes: 0, direct: false, rawVertices: 0, vertices: 0, blended: 0, checks: 0, optimized: null };
   const done = (result) => ({ ...result, stats: { ...stats, timeMs: Math.round(now() - t0) } });
@@ -51,7 +57,7 @@ export async function planPath(req, { onProgress = () => {}, isCancelled = () =>
   const edgeOk = (a, b) => motionValid(ctx, a, b, validPose);
 
   // 실행 시 기준(사용자 여유거리) 컨텍스트: 계획 여유(+pad) 때문에 거부된 것인지 구분해서 안내한다
-  const rawCtx = createSafetyContext(robot, { features: ctx.features, thresholds: req.thresholds, obstacles: req.obstacles, floor: req.floor });
+  const rawCtx = createSafetyContext(robot, { features: ctx.features, thresholds: req.thresholds, obstacles: req.obstacles, floor: req.floor, ...toolCtx });
   const poseMessage = (q, label) =>
     evaluatePose(rawCtx, q).violations.length
       ? `${label} 자세가 이미 충돌/특이점 상태입니다.`
@@ -70,9 +76,10 @@ export async function planPath(req, { onProgress = () => {}, isCancelled = () =>
       return validPose(evaluatePose(ctx, q)) ? { sols: [q] } : { fail: { reason: `${label === '시작' ? 'start' : 'goal'}-collision`, message: poseMessage(q, label) } };
     }
     if (await cancelled()) return { fail: { reason: 'cancelled', message: '경로 계획을 취소했습니다.' } };
-    const T = poseMatrix(rotationFromRPY(spec.rpy), spec.pos);
+    const Ttcp = poseMatrix(rotationFromRPY(spec.rpy), spec.pos);
+    const T = toolLengthMm ? multiply(Ttcp, inverseToolMatrix(toolLengthMm)) : Ttcp; // TCP → 플랜지
     const sols = solveIKMulti(robot, T, { seeds: [seed, reference, homeJoints(robot)], reference: seed });
-    if (!sols.length) return { fail: { reason: 'ik-failed', message: reachMessage(robot, spec, label) } };
+    if (!sols.length) return { fail: { reason: 'ik-failed', message: reachMessage(robot, spec, label, toolLengthMm) } };
     const ok = sols.filter((q) => validPose(evaluatePose(ctx, q)));
     if (!ok.length) {
       return { fail: { reason: `${label === '시작' ? 'start' : 'goal'}-collision`, message: `${label} TCP의 관절해 ${sols.length}개가 모두 충돌/특이점 상태입니다.` } };
@@ -107,7 +114,7 @@ export async function planPath(req, { onProgress = () => {}, isCancelled = () =>
 
   // ---- 2) RRT-Connect ----
   // 거리: 관절별 레버암(홈 자세 기준)으로 가중 → 대략 링크 끝 이동량(mm)에 비례
-  const w = leverBounds(robot).map((l) => l * (Math.PI / 180));
+  const w = ctx.levers.map((l) => l * (Math.PI / 180)); // = leverBounds (그리퍼·파지 물체 포함)
   const dist = (a, b) => Math.sqrt(a.reduce((s, v, i) => s + (w[i] * (v - b[i])) ** 2, 0));
   const stepMm = Math.max(120, robot.reachMm * 0.12);
   // 회전 범위가 360°를 넘는 관절(J4, J6 등)은 시작/목표 주변 ±180°만 샘플링 (불필요한 한 바퀴 회전 방지)
@@ -290,9 +297,9 @@ function shortcut(path, edgeOk, budgetMs, rand) {
 /**
  * IK 해가 없을 때 원인 안내: 손목 중심이 팔(상완+전완) 길이 밖이면 작업 영역 밖, 안이면 자세(방향)/관절 한계 문제
  */
-function reachMessage(robot, { pos, rpy }, label) {
+function reachMessage(robot, { pos, rpy }, label, toolLengthMm = 0) {
   const R = rotationFromRPY(rpy);
-  const d6 = robot.dh[5].d;
+  const d6 = robot.dh[5].d + toolLengthMm; // 손목 중심 = TCP에서 접근축 반대로 (d6 + 그리퍼 길이)
   const wc = [pos[0] - R[2] * d6, pos[1] - R[5] * d6, pos[2] - R[8] * d6];
   const [p1, p2, p3, p4] = robot.dh;
   const radial = Math.hypot(wc[0], wc[1]) - Math.abs(p1.a);

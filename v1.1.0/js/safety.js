@@ -1,5 +1,6 @@
 // 자세 안전 평가 (충돌 + 특이점) 및 이동 구간 세분 검사. DOM 비의존 — 플래너 Worker에서도 재사용.
-import { forwardKinematics, linkSegments, homeJoints, DEG } from './kinematics.js';
+import { forwardKinematics, linkSegments, homeJoints, multiply, DEG } from './kinematics.js';
+import { toolSegments } from './gripper.js';
 import { buildSelfPairs, checkSelfCollision, checkObstacleCollision, compileObstacles } from './collision.js';
 import { checkSingularity } from './singularity.js';
 
@@ -10,17 +11,62 @@ const SEVERITY_EPS = 1e-3;
  * 로봇·환경별 검사 컨텍스트 (환경이 바뀔 때만 다시 만든다)
  * 숨김 처리된 장애물은 충돌 검사에서 제외한다.
  */
-export function createSafetyContext(robot, { features, thresholds, obstacles, floor }) {
+export function createSafetyContext(robot, { features, thresholds, obstacles, floor, tool = null, attached = null, physicsMode = false }) {
   const { frames } = forwardKinematics(robot, homeJoints(robot));
-  return {
+  const ctx = {
     robot,
     features,
     thresholds,
     floor,
-    levers: leverBounds(robot),
-    selfPairs: buildSelfPairs(robot, linkSegments(robot, frames)),
+    // 그리퍼 (PRD_v.1.1.0 FR-21): { spec, opening } — opening은 개폐 중 바뀌므로 ctx.tool.opening을 직접 갱신한다
+    tool: tool && { spec: tool.spec, opening: tool.opening },
+    // 파지한 물체 (FR-22): { id, type, size, rel(플랜지 기준 4x4) } — 로봇의 일부로 다른 물체·바닥과의 충돌을 검사
+    attached,
+    physicsMode,
+    levers: leverBounds(robot, tool?.spec, attached),
     compiled: compileObstacles(obstacles.filter((o) => o.visible !== false)),
   };
+  ctx.selfPairs = buildSelfPairs(robot, robotSegments(ctx, frames));
+  // 물리 모드: 손가락은 물체와 닿아도 됨(파지 동작), 파지한 물체는 로봇의 일부라 자기 자신과 비교하지 않음 (PRD 4.3)
+  // attached.ignore: 집을 때 이미 맞닿아 있던 대상(받침 물체, 'floor') — 들어 올려 떨어질 때까지 파지 물체(9)의 검사에서 제외
+  // releasedId: 방금 놓은 물체 — 그리퍼 몸체(7)에서 떨어질 때까지 제외 (놓자마자 알람이 나지 않도록)
+  ctx.releasedId = null;
+  ctx.obstacleSkip = (seg, ob) =>
+    (ctx.attached && ob.id === ctx.attached.id) ||
+    (ctx.physicsMode && seg.link === 8) ||
+    (seg.link === 9 && !!ctx.attached?.ignore?.includes(ob.id)) ||
+    (seg.link === 7 && ob.id === ctx.releasedId);
+  ctx.floorSkip = (seg) => seg.link === 9 && !!ctx.attached?.ignore?.includes('floor');
+  return ctx;
+}
+
+/** 로봇 링크 캡슐 + 그리퍼(7, 8) + 파지한 물체(9) */
+export function robotSegments(ctx, frames) {
+  const segs = linkSegments(ctx.robot, frames);
+  if (ctx.tool) segs.push(...toolSegments(ctx.tool.spec, frames[6], ctx.tool.opening));
+  if (ctx.attached) segs.push(attachedSegment(ctx.attached, frames[6]));
+  return segs;
+}
+
+/** 파지한 물체를 감싸는 캡슐 (가장 긴 축 방향, 나머지 단면을 덮는 반경 → 보수적) */
+function attachedSegment(att, T6) {
+  const T = multiply(T6, att.rel);
+  const col = (i) => [T[i], T[4 + i], T[8 + i]];
+  const o = [T[3], T[7], T[11]];
+  const [sx, sy, sz] = att.size.map((v) => v / 2);
+  if (att.type === 'sphere') return { link: 9, a: o, b: o, r: sx, name: '파지한 물체' };
+  if (att.type === 'cylinder') {
+    const z = col(2);
+    const h = Math.max(0, sz - sx);
+    return { link: 9, a: o.map((v, i) => v - z[i] * h), b: o.map((v, i) => v + z[i] * h), r: sx, name: '파지한 물체' };
+  }
+  const half = [sx, sy, sz];
+  const k = half.indexOf(Math.max(...half));
+  const others = half.filter((_, i) => i !== k);
+  const r = Math.hypot(...others);
+  const h = Math.max(0, half[k] - r * 0.5);
+  const ax = col(k);
+  return { link: 9, a: o.map((v, i) => v - ax[i] * h), b: o.map((v, i) => v + ax[i] * h), r, name: '파지한 물체' };
 }
 
 /**
@@ -32,7 +78,7 @@ export function createSafetyContext(robot, { features, thresholds, obstacles, fl
  */
 export function evaluatePose(ctx, q) {
   const { frames, tcp } = forwardKinematics(ctx.robot, q);
-  const segments = linkSegments(ctx.robot, frames);
+  const segments = robotSegments(ctx, frames);
   const { features: f, thresholds: t } = ctx;
   const violations = [];
 
@@ -50,7 +96,7 @@ export function evaluatePose(ctx, q) {
   }
   let obstacle = null;
   if (f.obstacleCollision) {
-    obstacle = checkObstacleCollision(segments, ctx.compiled, t.obstacleMarginMm, { floor: ctx.floor });
+    obstacle = checkObstacleCollision(segments, ctx.compiled, t.obstacleMarginMm, { floor: ctx.floor, skip: ctx.obstacleSkip, skipFloor: ctx.floorSkip });
     for (const h of obstacle.hits) add('OBSTACLE', `O:${h.link}:${h.obstacleId}`, t.obstacleMarginMm - h.d);
   }
   const singularity = checkSingularity(ctx.robot, q, frames, t);
@@ -72,7 +118,7 @@ export const violationTypes = (violations) => [...new Set(violations.map((v) => 
  * 비교는 대상(key)별로 한다: 이전에 없던 대상과의 새 위반은 항상 차단하고,
  * 이미 위반 중이던 대상은 침범이 깊어질 때만 차단한다.
  */
-function blockedViolations(next, prev) {
+export function blockedViolations(next, prev) {
   return next.violations.filter((v) => {
     const p = prev.violations.find((x) => x.key === v.key);
     return !p || v.severity > p.severity + SEVERITY_EPS;
@@ -84,9 +130,19 @@ function blockedViolations(next, prev) {
  * 관절 i 이후 DH 링크 길이(|a| + |d|)의 합 + 최대 캡슐 반경 (삼각부등식).
  * 자세별 실제 반경을 쓰면 접힌 자세에서 펴진 자세로 갈 때 과소평가되어 세분이 부족해진다.
  */
-export function leverBounds(robot) {
+export function leverBounds(robot, toolSpec = null, attached = null) {
   const rMax = Math.max(...robot.linkRadiiMm) * 1.25;
-  return robot.dh.map((_, i) => robot.dh.slice(i).reduce((s, p) => s + Math.abs(p.a) + Math.abs(p.d), 0) + rMax);
+  // 그리퍼·파지한 물체가 있으면 플랜지 너머로 그만큼 더 멀리 나간다
+  const extra =
+    (toolSpec ? toolSpec.lengthMm + Math.max(toolSpec.bodyDiaMm / 2, toolSpec.maxOpenMm / 2 + toolSpec.fingerThickMm) : 0) +
+    (attached ? Math.hypot(...attached.size) / 2 : 0);
+  return robot.dh.map((_, i) => robot.dh.slice(i).reduce((s, p) => s + Math.abs(p.a) + Math.abs(p.d), 0) + rMax + extra);
+}
+
+/** 파지 상태 변경 (FR-22): 파지한 물체 설정/해제 후 세분 검사용 레버암 상한도 갱신 */
+export function setAttached(ctx, attached) {
+  ctx.attached = attached;
+  ctx.levers = leverBounds(ctx.robot, ctx.tool?.spec, attached);
 }
 
 /**

@@ -116,7 +116,7 @@ const spaceActivates = (el) =>
  * Space = 재생/일시정지, Esc = 정지, R = 알람 Reset.
  * 글자 입력 중이면 Esc 외에는 무시하고, 버튼/체크박스에 포커스가 있으면 Space는 그 요소의 기본 동작에 맡긴다.
  */
-export function mountShortcuts({ onPlayPause, onStop, onReset }) {
+export function mountShortcuts({ onPlayPause, onStop, onReset, onGripper }) {
   addEventListener('keydown', (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
     const el = document.activeElement;
@@ -133,6 +133,8 @@ export function mountShortcuts({ onPlayPause, onStop, onReset }) {
       onPlayPause();
     } else if (e.key === 'r' || e.key === 'R' || e.key === 'ㄱ') {
       onReset();
+    } else if (onGripper && (e.key === 'g' || e.key === 'G' || e.key === 'ㅎ')) {
+      onGripper(); // 그리퍼 열기/닫기 (v1.1.0)
     }
   });
 }

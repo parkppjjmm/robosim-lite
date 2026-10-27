@@ -2,7 +2,8 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
-import { linkSegments, origin, axisZ, DEG } from './kinematics.js';
+import { linkSegments, origin, axisZ, multiply, DEG } from './kinematics.js';
+import { toolMatrix } from './gripper.js';
 
 const Y_UP = new THREE.Vector3(0, 1, 0);
 const ALARM_COLOR = new THREE.Color('#ff2a2a');
@@ -198,6 +199,7 @@ export class Viewer {
     this.robotGroup = new THREE.Group();
     this.root.add(this.robotGroup);
     this.parts = [];
+    this.gripper = null; // 로봇을 바꾸면 그리퍼도 새로 만든다 (setGripper)
     this.buildEnvironment(robot);
 
     const bodyMat = () => new THREE.MeshStandardMaterial({ color: robot.color, roughness: 0.45, metalness: 0.15 });
@@ -438,11 +440,61 @@ export class Viewer {
     if (this.floorAlarm) this.floorAlarm.visible = obstacles.has('floor');
   }
 
+  /**
+   * 그리퍼 형상 (PRD_v.1.1.0 FR-21). spec = null이면 제거. 플랜지 좌표계 그룹 안에
+   * 몸체(원기둥, z = 0 ~ bodyH)와 손가락 2개(박스, z = bodyH ~ length)를 만든다. 하이라이트는 링크 7(몸체)·8(손가락).
+   */
+  setGripper(spec, opening = spec?.maxOpenMm ?? 0) {
+    if (this.gripper) {
+      this.robotGroup.remove(this.gripper.group);
+      disposeTree(this.gripper.group);
+      this.parts = this.parts.filter((p) => p.kind !== 'gripper');
+      this.gripper = null;
+    }
+    if (!spec || !this.robotGroup) {
+      if (this.lastFrames) this.update(this.lastFrames);
+      return;
+    }
+    const group = new THREE.Group();
+    group.matrixAutoUpdate = false;
+    const mat = () => new THREE.MeshStandardMaterial({ color: '#59616c', roughness: 0.5, metalness: 0.4 });
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(spec.bodyDiaMm / 2, spec.bodyDiaMm / 2, spec.bodyHeightMm, 28).rotateX(Math.PI / 2), mat());
+    body.position.z = spec.bodyHeightMm / 2;
+    const fingerLen = Math.max(1, spec.lengthMm - spec.bodyHeightMm);
+    const fingerGeom = new THREE.BoxGeometry(spec.fingerThickMm, spec.fingerWidthMm, fingerLen);
+    const fingers = [1, -1].map((side) => {
+      const f = new THREE.Mesh(fingerGeom.clone(), mat());
+      f.position.set(0, 0, spec.bodyHeightMm + fingerLen / 2);
+      f.userData.side = side;
+      return f;
+    });
+    fingerGeom.dispose();
+    for (const m of [body, ...fingers]) {
+      m.castShadow = true;
+      group.add(m);
+    }
+    this.robotGroup.add(group);
+    this.parts.push({ kind: 'gripper', link: 7, mesh: body }, ...fingers.map((mesh) => ({ kind: 'gripper', link: 8, mesh })));
+    this.gripper = { spec, group, fingers };
+    this.setGripperOpening(opening);
+    if (this.lastFrames) this.update(this.lastFrames);
+    this.applyHighlights();
+  }
+
+  /** 손가락 벌림 폭 (손가락 안쪽 면 사이, mm) */
+  setGripperOpening(opening) {
+    if (!this.gripper) return;
+    const x = opening / 2 + this.gripper.spec.fingerThickMm / 2;
+    for (const f of this.gripper.fingers) f.position.x = f.userData.side * x;
+  }
+
   /** 관절값 변경 시 FK 결과(frames)로 각 메쉬 자세 갱신 */
   update(frames) {
+    this.lastFrames = frames;
     const segs = linkSegments(this.robot, frames);
     let s = 0;
     for (const part of this.parts) {
+      if (part.kind === 'gripper') continue; // 그리퍼는 플랜지 그룹 행렬로 함께 움직인다
       if (part.kind === 'segment') {
         const seg = segs[s++];
         const a = new THREE.Vector3(...seg.a);
@@ -456,7 +508,13 @@ export class Viewer {
         part.mesh.quaternion.setFromUnitVectors(Y_UP, new THREE.Vector3(...axisZ(T)));
       }
     }
-    this.tcpAxes.matrix.set(...frames[6]); // Matrix4.set은 row-major 인자
+    if (this.gripper) {
+      this.gripper.group.matrix.set(...frames[6]);
+      this.gripper.group.matrixWorldNeedsUpdate = true;
+    }
+    // TCP 좌표축: 그리퍼가 있으면 손가락 끝(플랜지 + 길이)
+    const tcp = this.gripper ? multiply(frames[6], toolMatrix(this.gripper.spec.lengthMm)) : frames[6];
+    this.tcpAxes.matrix.set(...tcp); // Matrix4.set은 row-major 인자
     this.tcpAxes.matrixWorldNeedsUpdate = true;
   }
 
