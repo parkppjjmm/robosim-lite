@@ -1,0 +1,16 @@
+# 브라우저 자동 테스트 산출물
+.playwright-mcp/
+
+# Python
+__pycache__/
+*.pyc
+
+# OS / 편집기
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
+
+# 로그
+*.log

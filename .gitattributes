@@ -1,0 +1,8 @@
+# start.bat은 Windows cmd가 읽으므로 항상 CRLF로 체크아웃 (LF면 실행 즉시 창이 닫힘, REVIEW.md E-2)
+*.bat text eol=crlf
+*.js text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.py text eol=lf
