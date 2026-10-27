@@ -1,5 +1,5 @@
 // v1.1.0 2-A: 그리퍼 — 형상·파지 후보, 크기별 기본값·사용자 수정, TCP 오프셋(직선 보간·플래너 IK),
-//             12개 모델 홈 자세 오탐 없음, 파지 물체 검사, 물리 파지 → 들기 → 이동 → 놓기, 질량
+//             12개 모델 홈 자세 오탐 없음, 파지 물체 검사, 경로 계획의 그리퍼·파지 물체 회피, 물리 파지 → 들기 → 이동 → 놓기, 질량
 // 실행: node tests/gripper.mjs  (Node 18+, 물리 항목은 tests/.cache/의 Rapier 사용)
 import { readFileSync } from 'node:fs';
 import { pathToFileURL, fileURLToPath } from 'node:url';
@@ -168,6 +168,54 @@ const T6up = K.poseMatrix(I3, [0, 0, 0]);
   check('파지 중 레버암 상한 증가 (세분 검사 간격 보수화)', lev1[0] > lev0[0], `${lev0[0].toFixed(0)} → ${lev1[0].toFixed(0)} mm`);
 }
 
+// 8-b) 자동 경로 계획이 그리퍼·파지 물체 형상까지 피하는지: 같은 A·B(관절값)를 그리퍼 없이 / 반영해서 계획하고
+//      실행 궤적(블렌딩 포함)을 1/240 s 간격으로 그리퍼·물체 포함 모델로 검사한다
+{
+  const TR = T;
+  const C = await imp('collision.js');
+  const robot = robots.find((r) => r.id === 'abb-irb1200-5-09');
+  const spec = G.gripperSpec(robot);
+  const L = spec.lengthMm, R = robot.reachMm;
+  const DOWN = [1, 0, 0, 0, -1, 0, 0, 0, -1];
+  const ik = (p, seed) => K.solveIK(robot, K.multiply(K.poseMatrix(DOWN, p), G.inverseToolMatrix(L)), seed, { maxIter: 200 }).joints;
+  const FEAT = { selfCollision: true, obstacleCollision: true, singularity: false };
+  const tool = { spec, opening: spec.maxOpenMm };
+  const audit = (res, obstacles, attached) => {
+    const ctx = S.createSafetyContext(robot, { features: FEAT, thresholds: TH, obstacles, floor: true, tool, attached });
+    const tr = TR.pathTrajectory(robot, res.path, res.blends);
+    let bad = 0, minTool = Infinity;
+    for (let t = 0; t <= tr.duration + 1e-9; t += 1 / 240) {
+      const q = TR.sampleTrajectory(tr, t);
+      if (S.evaluatePose(ctx, q).violations.length) bad++;
+      for (const seg of S.robotSegments(ctx, K.forwardKinematics(robot, q).frames).filter((x) => x.link >= 7)) {
+        minTool = Math.min(minTool, C.checkObstacleCollision([seg], ctx.compiled, 1e9, { floor: true, skip: ctx.obstacleSkip, skipFloor: ctx.floorSkip }).minDistance);
+      }
+    }
+    return { bad, minTool };
+  };
+  const plan = (qA, qB, obstacles, extra) =>
+    PL.planPath({ robot, obstacles, thresholds: TH, floor: true, features: FEAT, avoidSingularity: false, start: qA, goal: { type: 'joints', joints: qB }, timeoutMs: 8000, ...extra });
+  // (1) 그리퍼: 낮은 벽 너머로 이동 (TCP z = 0.15R)
+  const x = R * 0.55, y = R * 0.35, z = R * 0.15;
+  const qA = ik([x, -y, z], K.homeJoints(robot)), qB = ik([x, y, z], qA);
+  const wall = [{ id: 'wall', name: '벽', type: 'box', pos: [x, 0, R * 0.1], size: [R * 0.8, 60, R * 0.2], rot: [0, 0, 0], visible: true }];
+  const a = audit(await plan(qA, qB, wall, {}), wall, null);
+  const r1 = await plan(qA, qB, wall, { tool });
+  const b = r1.ok ? audit(r1, wall, null) : { bad: -1, minTool: NaN };
+  check('그리퍼를 모르는 계획은 그리퍼 기준으로 충돌 (점검 시나리오 유효)', a.bad > 0, `위반 샘플 ${a.bad}개, 그리퍼 최소 거리 ${a.minTool.toFixed(1)} mm`);
+  check('그리퍼 반영 계획: 실행 궤적 전 구간에서 그리퍼 충돌 없음 (여유거리 이상)', b.bad === 0 && b.minTool >= TH.obstacleMarginMm, `위반 ${b.bad}, 그리퍼 최소 거리 ${b.minTool.toFixed(1)} mm`);
+  // (2) 파지 물체: 그리퍼 아래로 150 mm 매달린 물체
+  const objLen = L * 1.5, zHi = z + objLen;
+  const qA2 = ik([x, -y, zHi], qA), qB2 = ik([R * 0.55, y, zHi], qA);
+  const wall2 = [{ id: 'wall', name: '벽', type: 'box', pos: [R * 0.7, 0, R * 0.15], size: [R * 0.5, 60, R * 0.3], rot: [0, 0, 0], visible: true }];
+  const attached = { id: 'held', type: 'box', size: [36, 36, objLen], rel: K.poseMatrix([1, 0, 0, 0, 1, 0, 0, 0, 1], [0, 0, L + objLen / 2 - 40]), ignore: [] };
+  const c = audit(await plan(qA2, qB2, wall2, { tool }), wall2, attached);
+  const r2 = await plan(qA2, qB2, wall2, { tool, attached });
+  const d = r2.ok ? audit(r2, wall2, attached) : { bad: -1, minTool: NaN };
+  check('파지 물체를 모르는 계획은 물체가 벽에 충돌 (점검 시나리오 유효)', c.bad > 0, `위반 샘플 ${c.bad}개, 최소 거리 ${c.minTool.toFixed(1)} mm`);
+  check('파지 물체 반영 계획: 운반 물체까지 충돌 없음', d.bad === 0 && d.minTool >= TH.obstacleMarginMm, `위반 ${d.bad}, 그리퍼·물체 최소 거리 ${d.minTool.toFixed(1)} mm`);
+}
+
 // 9) 물리: 파지 → 들기 → 이동 → 놓기 → 착지, 질량
 {
   const RAPIER = await loadRapier();
@@ -215,4 +263,5 @@ const T6up = K.poseMatrix(I3, [0, 0, 0]);
 }
 
 console.log(fail ? `\n실패 ${fail}건` : '\n모두 통과');
-process.exit(fail ? 1 : 0);
+// process.exit() 대신 exitCode: Windows Node 24에서 닫히는 중인 비동기 핸들과 겹치면 libuv assert로 비정상 종료될 수 있음
+process.exitCode = fail ? 1 : 0;

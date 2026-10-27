@@ -208,4 +208,5 @@ const box = (id, pos, size = [100, 100, 100], extra = {}) => ({ id, name: id, ty
 }
 
 console.log(fail ? `\n실패 ${fail}건` : '\n모두 통과');
-process.exit(fail ? 1 : 0);
+// process.exit() 대신 exitCode: Windows Node 24에서 닫히는 중인 비동기 핸들과 겹치면 libuv assert로 비정상 종료될 수 있음
+process.exitCode = fail ? 1 : 0;

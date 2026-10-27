@@ -49,7 +49,7 @@ export function robotSegments(ctx, frames) {
 }
 
 /** 파지한 물체를 감싸는 캡슐 (가장 긴 축 방향, 나머지 단면을 덮는 반경 → 보수적) */
-function attachedSegment(att, T6) {
+export function attachedSegment(att, T6) {
   const T = multiply(T6, att.rel);
   const col = (i) => [T[i], T[4 + i], T[8 + i]];
   const o = [T[3], T[7], T[11]];

@@ -72,6 +72,18 @@ const SETTINGS_RULES = {
   gravity: (v) => Array.isArray(v) && v.length === 3 && v.every((x) => Number.isFinite(x) && Math.abs(x) <= 50),
 };
 
+/** Waypoint 도착 동작 (PRD_v.1.1.0 FR-23): none | open | close | wait(sec). 없거나 형식이 다르면 none (v1 데이터 포함) */
+export const WAIT_LIMITS_S = [0.1, 60];
+export function sanitizeAction(a) {
+  if (!a || typeof a !== 'object') return { type: 'none' };
+  if (a.type === 'open' || a.type === 'close') return { type: a.type };
+  if (a.type === 'wait') {
+    const sec = isNum(a.sec) ? Math.min(WAIT_LIMITS_S[1], Math.max(WAIT_LIMITS_S[0], a.sec)) : 1;
+    return { type: 'wait', sec };
+  }
+  return { type: 'none' };
+}
+
 /** 그리퍼 설정 검증: 알 수 없는 로봇 id·범위 밖 값은 버린다 */
 function sanitizeGripper(raw) {
   const out = { enabled: false, overrides: {} };
@@ -178,7 +190,7 @@ function sanitize(raw) {
       // Waypoint는 관절값이라 로봇별로 의미가 다르다 → robotId로 소속 로봇을 기록
       .map((w) => {
         const owner = findRobot(w.robotId) ?? current;
-        return { id: w.id, name: typeof w.name === 'string' ? w.name : w.id, robotId: owner.id, joints: clampJoints(owner, w.joints) };
+        return { id: w.id, name: typeof w.name === 'string' ? w.name : w.id, robotId: owner.id, joints: clampJoints(owner, w.joints), action: sanitizeAction(w.action) };
       });
   }
   // 계획 결과: 경유점(관절값)만 저장하고 궤적은 복원 시 다시 계산한다

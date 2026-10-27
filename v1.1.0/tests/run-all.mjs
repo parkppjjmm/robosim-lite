@@ -1,12 +1,12 @@
 // 검증 스크립트 일괄 실행. 새 환경(다른 노트북)에서 코드가 정상 동작하는지 빠르게 확인할 때 사용한다.
-// 실행: node tests/run-all.mjs          (기본 4종, 약 1분)
+// 실행: node tests/run-all.mjs          (기본 7종, 약 1분)
 //       node tests/run-all.mjs --full   (스트레스·수치 검증 포함, 수 분)
 // 브라우저 화면 확인은 start.bat(또는 python serve.py)으로 앱을 열어 README의 시연 예제를 따라 한다.
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
-const quick = ['reach.mjs', 'safety.mjs', 'ik-trajectory.mjs', 'planner.mjs', 'physics.mjs', 'gripper.mjs'];
+const quick = ['reach.mjs', 'safety.mjs', 'ik-trajectory.mjs', 'planner.mjs', 'physics.mjs', 'gripper.mjs', 'pick-place.mjs'];
 const full = [...quick, 'planner-stress.mjs', 'numeric-review.mjs'];
 const list = process.argv.includes('--full') ? full : quick;
 

@@ -2,18 +2,19 @@
 import { initState, getState, setState, subscribe, onSaveStatus, findRobot, defaultCamera, exportState, importState, resetState } from './state.js';
 import {
   forwardKinematics, clampJoints, homeJoints, LINK_NAMES, DEG, linkSegments,
-  rotationOf, poseMatrix, mul3, expRotation, origin, multiply, rotationToRPY, transpose3,
+  rotationOf, poseMatrix, mul3, expRotation, origin, multiply, rotationToRPY,
 } from './kinematics.js';
 import { Viewer } from './viewer.js';
 import { createSafetyContext, evaluatePose, violationTypes, setAttached, blockedViolations } from './safety.js';
-import { compileObstacles, capsuleObstacleDistance } from './collision.js';
+import { compileObstacles, capsuleObstacleDistance, rotationFromRPY } from './collision.js';
 import { MotionController } from './motion.js';
 import { singularityLabel } from './singularity.js';
 import { raiseAlarm, resetAlarm, isAlarmActive, getActiveAlarm, onAlarmChange, mountAlarmBanner, mountAlarmLog } from './alarm.js';
 import { mountObstaclePanel } from './obstacles-panel.js';
 import { mountCartesianPanel } from './cartesian-panel.js';
 import { mountWaypointPanel } from './waypoints-panel.js';
-import { jointMove, linearMove, concatTrajectories, pathTrajectory, reverseTrajectory } from './trajectory.js';
+import { jointMove, linearMove, pathTrajectory, reverseTrajectory } from './trajectory.js';
+import { planPickPlace, invertRigid, OBJECT_MOVED_TOLERANCE_MM } from './task.js';
 import { mountPlanPanel, PLAN_REASON_LABEL } from './plan-panel.js';
 import { ICONS, mountThemeToggle, mountSections, mountDrawers, mountShortcuts } from './ui.js';
 import { robotThumbnail } from './thumbnail.js';
@@ -166,11 +167,13 @@ async function main() {
   waypointPanel = mountWaypointPanel($('#waypoint-panel'), {
     getRobot: () => currentRobot,
     getJoints: () => controller.current.q,
+    // "현재 자세 저장" 시 도착 동작 제안: 그리퍼가 닫혀 있거나 파지 중이면 '닫기' (FR-23)
+    getDefaultAction: () => (grip && (grip.attached || grip.target < grip.spec.maxOpenMm - 1e-6) ? { type: 'close' } : { type: 'none' }),
     onMoveTo: moveToWaypoint,
     onPlay: playSequence,
     onPause: pauseSequence,
     onResume: resumeSequence,
-    onStop: () => controller.stop(),
+    onStop: stopSteps,
   });
 
   planPanel = mountPlanPanel($('#plan-panel'), {
@@ -179,6 +182,7 @@ async function main() {
       const tcp = tcpPose(controller.current.q); // 그리퍼가 있으면 손가락 끝
       return [...tcp.pos, ...tcp.rpy];
     },
+    getObjects: () => getState().obstacles.filter((o) => o.visible !== false).map((o) => ({ id: o.id, name: o.name })),
     onPlan: requestPlan,
     onCancel: () => cancelPlan(), // 클릭 이벤트가 silent 인자로 넘어가지 않도록
     onRun: runPlan,
@@ -245,6 +249,7 @@ function onStateChange(state, keys) {
   if (has('thresholds')) renderThresholdFields();
   if (has('obstacles') || has('settings')) obstaclePanel.render();
   if (has('obstacles')) {
+    planPanel.renderInputs(); // Pick & Place 물체 목록
     viewer.setObstacles(state.obstacles);
     if (lastPoses) viewer.setObjectPoses(lastPoses); // 물리 모드: 메쉬를 다시 만들어도 현재 물리 자세 유지
     if (!has('selectedRobotId')) warnBaseOverlap(state.obstacles);
@@ -319,7 +324,8 @@ function rebuildSafety() {
     floor: s.settings.floorEnabled,
     tool: grip && { spec: grip.spec, opening: grip.opening },
     attached: grip?.attached ?? null,
-    physicsMode: !!physics,
+    // 저장된 모드가 물리면 물리엔진을 불러오는 중에도 물리 규칙(손가락 접촉 허용)으로 검사 — 복원 직후 오알람 방지
+    physicsMode: !!physics || s.settings.simMode === 'physics',
   });
   ctx.releasedId = grip?.releasedId ?? null;
   if (physics && lastPoses) applyPosesToSafety(ctx, lastPoses); // 물리 모드: 배치가 아니라 현재 물체 위치로 검사
@@ -642,45 +648,134 @@ function moveToWaypoint(wp) {
   if (!controller.play(tr, { kind: 'waypoint', rate: speedRate })) rejectWhileAlarm();
 }
 
-/** 현재 로봇의 Waypoint를 순서대로 재생 (현재 자세 → P1 → P2 → …) */
+/**
+ * 현재 로봇의 Waypoint를 순서대로 재생 (현재 자세 → P1 → P2 → …).
+ * 각 Waypoint에 도착하면 도착 동작(열기·닫기·대기)을 실행하고, 끝난 뒤 다음으로 간다 (FR-23).
+ */
 function playSequence() {
   const wps = getState().waypoints.filter((w) => w.robotId === currentRobot.id);
   if (!wps.length) return showNotice('저장된 Waypoint가 없습니다.');
   if (isAlarmActive()) return rejectWhileAlarm();
   const linear = getState().settings.playMode === 'linear';
-  const segments = [];
+  const steps = [];
   let q = controller.current.q;
   for (const wp of wps) {
     if (linear) {
       const toolLengthMm = grip?.spec.lengthMm ?? 0; // TCP(손가락 끝)가 직선으로 움직이도록
       const res = linearMove(currentRobot, q, tcpMatrix(forwardKinematics(currentRobot, wp.joints).frames), { qEnd: wp.joints, toolLengthMm });
       if (!res.ok) return showNotice(`직선 보간 불가 — "${wp.name}" 구간: ${res.message}. 관절 보간을 사용해 보세요.`);
-      segments.push(res.trajectory);
+      steps.push({ kind: 'move', trajectory: res.trajectory, wpId: wp.id });
     } else {
-      segments.push(jointMove(currentRobot, q, wp.joints));
+      steps.push({ kind: 'move', trajectory: jointMove(currentRobot, q, wp.joints), wpId: wp.id });
     }
+    const a = wp.action ?? { type: 'none' };
+    if (a.type !== 'none') steps.push({ kind: 'action', type: a.type, sec: a.sec, wpId: wp.id });
     q = wp.joints;
   }
-  const tr = concatTrajectories(segments, wps.map((w) => w.id));
-  const activeAt = (t) => (tr.marks.find((m) => m.time >= t - 1e-9) ?? tr.marks[tr.marks.length - 1]).id;
-  const started = controller.play(tr, {
+  // 진행 표시용 예상 시간 (동작 = 대기 시간 또는 개폐 시간, 속도 100% 기준)
+  const estimate = (st) => (st.kind === 'move' ? st.trajectory.duration : st.type === 'wait' ? st.sec : grip?.spec.actuationS ?? 0);
+  const starts = [];
+  const duration = steps.reduce((t, st) => (starts.push(t), t + estimate(st)), 0);
+  setPlayback({ status: 'playing', activeId: steps[0].wpId, t: 0, duration, phase: 'move' });
+  runSteps(steps, {
     kind: 'sequence',
-    rate: speedRate,
-    onProgress: (t, duration) => {
-      const activeId = activeAt(t);
-      if (activeId !== playback.activeId || Math.abs(t - playback.t) > 0.1) {
-        setPlayback({ ...playback, activeId, t, duration });
-      }
+    onStep: (i, st) => setPlayback({ ...playback, activeId: st.wpId, t: starts[i], phase: st.kind === 'move' ? 'move' : 'action', actionType: st.type }),
+    onProgress: (i, t) => {
+      if (Math.abs(starts[i] + t - playback.t) > 0.1) setPlayback({ ...playback, t: starts[i] + t });
     },
-    onEnd: (reason) => {
-      setPlayback(IDLE);
-      if (reason === 'done') showNotice('Waypoint 재생 완료');
-      if (reason === 'blocked') showNotice('재생 중 위반이 감지되어 정지했습니다.');
-    },
+  }).then((result) => {
+    setPlayback(IDLE);
+    if (result === 'done') showNotice('Waypoint 재생 완료');
+    if (result === 'blocked') showNotice(isAlarmActive() ? '재생 중 위반이 감지되어 정지했습니다.' : '알람 상태입니다. Reset 후 재생하세요.');
   });
-  if (started) setPlayback({ status: 'playing', activeId: tr.marks[0]?.id ?? null, t: 0, duration: tr.duration });
-  else rejectWhileAlarm();
 }
+
+// ---------- 단계 실행 (PRD_v.1.1.0 FR-23·24): 이동 → 도착 동작(열기·닫기·대기) → … ----------
+
+let stepRun = null; // 실행 중인 단계 시퀀스 { cancelled, paused } (Waypoint 재생, Pick & Place)
+
+/**
+ * 이동·동작 단계를 순서대로 실행한다. 이동은 MotionController(적용 전 안전 검사)로, 동작은 끝날 때까지 기다린다.
+ * 정지(Esc·정지 버튼)·알람이면 남은 단계를 실행하지 않는다.
+ * @param steps [{ kind: 'move', trajectory } | { kind: 'action', type: 'open'|'close'|'wait', sec } | { kind: 'grip', cmd, objectId, objectPos }]
+ * @returns {Promise<'done'|'stopped'|'blocked'|'failed'>}
+ */
+async function runSteps(steps, { kind, onStep, onProgress } = {}) {
+  const run = { cancelled: false, paused: false };
+  stepRun = run;
+  let result = 'done';
+  for (let i = 0; i < steps.length && result === 'done'; i++) {
+    if (run.cancelled) result = 'stopped';
+    else if (isAlarmActive()) result = 'blocked';
+    else {
+      const st = steps[i];
+      onStep?.(i, st);
+      result = st.kind === 'move' ? await playStep(st.trajectory, kind, (t) => onProgress?.(i, t)) : await runAction(st, run);
+    }
+  }
+  if (stepRun === run) stepRun = null;
+  return result;
+}
+
+function playStep(tr, kind, onProgress) {
+  return new Promise((resolve) => {
+    const started = controller.play(tr, { kind, rate: speedRate, onProgress, onEnd: (reason) => resolve(reason) });
+    if (!started) resolve('blocked');
+  });
+}
+
+/** 조건이 참이 될 때까지(그리고 seconds가 지날 때까지) 기다린다. 일시정지 중에는 시간이 흐르지 않는다. */
+function waitUntil(run, done, seconds = 0) {
+  return new Promise((resolve) => {
+    let remain = seconds;
+    let last = performance.now();
+    const step = (now) => {
+      if (run.cancelled) return resolve('stopped');
+      if (isAlarmActive()) return resolve('blocked');
+      if (!run.paused) remain -= (now - last) / 1000;
+      last = now;
+      if (!run.paused && remain <= 0 && done()) return resolve('done');
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
+}
+
+/** 도착 동작 / Pick & Place 그리퍼 단계 */
+async function runAction(st, run) {
+  const type = st.cmd ?? st.type;
+  if (type === 'wait') return waitUntil(run, () => true, st.sec ?? 1);
+  if (!grip) {
+    showNotice('그리퍼가 꺼져 있어 열기/닫기 동작을 건너뜁니다.');
+    return 'done';
+  }
+  if (type === 'close' && st.objectId) {
+    // FR-24: 파지 직전 물체 위치 재확인 — 계획 때와 허용 오차 이상 다르면 정지
+    const p = lastPoses?.get(st.objectId);
+    const moved = !p || p.out ? Infinity : Math.hypot(...p.pos.map((v, i) => v - st.objectPos[i]));
+    if (moved > OBJECT_MOVED_TOLERANCE_MM) {
+      showNotice(`물체 위치 변경 — 다시 계획 필요 (계획 때보다 ${Number.isFinite(moved) ? `${moved.toFixed(0)} mm` : '범위 밖으로'} 이동)`, 10000);
+      setPlanUI({ stale: true });
+      return 'failed';
+    }
+  }
+  const r = gripperCommand(type);
+  if (r?.ok === false) return 'failed';
+  const res = await waitUntil(run, () => !!grip && grip.opening === grip.target && !grip.pendingGrasp);
+  if (res !== 'done') return res;
+  if (type === 'close' && st.objectId && grip?.attached?.id !== st.objectId) {
+    showNotice('파지 실패: 물체를 집지 못했습니다 — 다시 계획 필요', 10000);
+    return 'failed';
+  }
+  return 'done';
+}
+
+/** 진행 중인 단계 시퀀스·모션 정지 */
+function stopSteps() {
+  if (stepRun) stepRun.cancelled = true;
+  controller.stop();
+}
+
 
 // ---------- 자동 경로 계획 (2-C): A·B만 지정 → 중간 경유점 자동 생성 ----------
 
@@ -720,7 +815,7 @@ function onPlanMessage(e) {
  * Worker에 경로 계획 요청 (한 번에 하나, 새 요청은 이전 요청을 취소). 결과 메시지로 resolve된다.
  * 충돌·자기충돌은 항상, 특이점은 계획 옵션(planAvoidSingularity)에 따라 회피한다.
  */
-function runPlanner({ start, goal }, onProgress) {
+function runPlanner({ start, goal }, onProgress, overrides = {}) {
   cancelPlanJob();
   planRequestId += 1;
   const s = getState();
@@ -743,6 +838,7 @@ function runPlanner({ start, goal }, onProgress) {
       start,
       goal,
       timeoutMs: PLAN_TIMEOUT_MS,
+      ...overrides, // Pick & Place: 구간별 장애물(집을 물체 제외)·파지 물체
     });
   });
 }
@@ -766,8 +862,10 @@ function toPlanSpec(spec, label) {
   return { spec };
 }
 
-async function requestPlan({ start, goal }) {
+async function requestPlan(req) {
   if (!getState().features.autoPathPlanning) return;
+  if (req.task === 'pick') return requestPickPlace(req);
+  const { start, goal } = req;
   const a = toPlanSpec(start, 'A(시작)'), b = toPlanSpec(goal, 'B(목표)');
   if (a.error || b.error) return setPlanUI({ error: a.error ?? b.error });
   if (controller.kind?.startsWith('plan')) controller.stop();
@@ -806,7 +904,9 @@ function setPlan(path, blends, stats, { persist }) {
 function renderPlanPreview() {
   const tcpOf = (q) => tcpPose(q).pos;
   const { path, trajectory } = plan;
-  const vertices = path.map((q, i) => ({ label: i === 0 ? 'A' : i === path.length - 1 ? 'B' : String(i), tcp: tcpOf(q) }));
+  const vertices = plan.vertexMeta
+    ? plan.vertexMeta.map((v) => ({ label: v.label, kind: v.kind, tcp: tcpOf(v.q) })) // Pick & Place: 집기·놓기 표시
+    : path.map((q, i) => ({ label: i === 0 ? 'A' : i === path.length - 1 ? 'B' : String(i), tcp: tcpOf(q) }));
   viewer.setPlanPreview(trajectory.points.map(tcpOf), vertices);
   if (planUI.vertices) setPlanUI({ vertices });
   return vertices;
@@ -862,8 +962,8 @@ async function moveToPlanStart() {
     if (d < bestDist) { bestDist = d; best = i; }
   });
   let tr;
-  if (bestDist < 2) {
-    tr = reverseTrajectory(currentRobot, plan.trajectory, best, q); // 경로 위 → 되밟기
+  if (bestDist < 2 && !plan.task) {
+    tr = reverseTrajectory(currentRobot, plan.trajectory, best, q); // 경로 위 → 되밟기 (Pick & Place는 물체가 옮겨졌으므로 새로 계획)
   } else {
     setPlanUI({ status: 'approach', progress: 0, error: null });
     const res = await runPlanner({ start: { type: 'joints', joints: q.slice() }, goal: { type: 'joints', joints: plan.path[0] } }, (p) =>
@@ -890,14 +990,16 @@ async function moveToPlanStart() {
 async function runPlan() {
   if (!plan) return;
   if (isAlarmActive()) return rejectWhileAlarm();
-  if (planUI.status === 'paused' && controller.kind?.startsWith('plan')) {
+  if (planUI.status === 'paused' && (stepRun || controller.kind?.startsWith('plan'))) {
     controller.resume();
+    if (stepRun) stepRun.paused = false;
     return setPlanUI({ status: 'running' });
   }
   if (!atPlanStart()) {
     showNotice('A(시작)로 먼저 이동한 뒤 경로를 실행합니다.');
     if (!(await moveToPlanStart())) return;
   }
+  if (plan.task) return runTask();
   setPlanUI({ status: 'running' });
   const done = await playAndWait(plan.trajectory, 'plan');
   setPlanUI({ status: plan ? 'ready' : 'idle' });
@@ -915,14 +1017,92 @@ function savePlanAsWaypoints() {
   const n = new Set(getState().waypoints.filter((w) => w.name.startsWith('경로')).map((w) => w.name.split('-')[0])).size + 1;
   const stamp = Date.now().toString(36);
   const last = plan.path.length - 1;
-  const added = plan.path.map((q, i) => ({
-    id: `wp-${stamp}-${i}`,
-    name: `경로${n}-${i === 0 ? 'A' : i === last ? 'B' : i}`,
-    robotId: currentRobot.id,
-    joints: q.map((v) => Math.round(v * 1000) / 1000),
-  }));
+  // Pick & Place: 파지점 = 닫기, 놓기점 = 열기 동작을 함께 저장 (FR-24)
+  const ACTION_OF = { pick: { type: 'close' }, place: { type: 'open' } };
+  const SUFFIX = { pick: '(집기)', place: '(놓기)' };
+  const added = plan.path.map((q, i) => {
+    const kind = plan.vertexMeta?.[i]?.kind;
+    return {
+      id: `wp-${stamp}-${i}`,
+      name: `경로${n}-${i === 0 ? 'A' : i === last ? 'B' : i}${SUFFIX[kind] ?? ''}`,
+      robotId: currentRobot.id,
+      joints: q.map((v) => Math.round(v * 1000) / 1000),
+      action: ACTION_OF[kind] ?? { type: 'none' },
+    };
+  });
   setState((s) => ({ waypoints: [...s.waypoints, ...added] }));
-  showNotice(`경유점 ${added.length}개(A, 중간 ${added.length - 2}개, B)를 Waypoint 목록에 추가했습니다.`);
+  showNotice(`경유점 ${added.length}개(A, 중간 ${added.length - 2}개, B)를 Waypoint 목록에 추가했습니다.` + (plan.task ? ' 집기·놓기 지점에는 닫기·열기 동작이 들어 있습니다.' : ''));
+}
+
+/**
+ * Pick & Place 계획 (FR-24): 집을 물체와 놓을 위치 → task.js가 구간별로 플래너(Worker)를 불러 접근·파지·운반·놓기·후퇴를 만든다.
+ * 그리퍼가 켜져 있고 물리 모드일 때만. 계획 시점의 물체 위치를 정적 장애물로 쓴다(스냅샷).
+ */
+async function requestPickPlace({ objectId, place, graspDir, approachMm }) {
+  const err = (m) => setPlanUI({ status: plan ? 'ready' : 'idle', error: `Pick & Place: ${m}` });
+  if (!grip) return err('그리퍼를 켜세요 (그리퍼 패널).');
+  if (!physics) return err('물리 모드에서 사용할 수 있습니다 (물체 · 시뮬레이션 패널에서 물리 모드로 바꾸세요).');
+  if (grip.attached) return err('이미 물체를 잡고 있습니다. 먼저 그리퍼를 열어 놓으세요.');
+  const s = getState();
+  const layout = s.obstacles.find((o) => o.id === objectId);
+  const p = lastPoses?.get(objectId);
+  if (!layout || layout.visible === false || !p || p.out) return err('집을 물체를 찾을 수 없습니다.');
+  let placeT;
+  if (place.type === 'waypoint') {
+    const wp = s.waypoints.find((w) => w.id === place.id && w.robotId === currentRobot.id);
+    if (!wp) return err('놓을 위치 Waypoint를 찾을 수 없습니다.');
+    placeT = tcpMatrix(forwardKinematics(currentRobot, wp.joints).frames);
+  } else {
+    placeT = poseMatrix(rotationFromRPY(place.rpy), place.pos);
+  }
+  if (controller.kind?.startsWith('plan')) controller.stop();
+  clearPlan();
+  setPlanUI({ status: 'planning', progress: 0, nodes: 0, error: null, stale: false });
+  const snapshot = new Map([...lastPoses].map(([id, q]) => [id, q.pos.slice()]));
+  const t0 = performance.now();
+  let superseded = false;
+  const res = await planPickPlace(
+    {
+      robot: currentRobot,
+      q0: controller.current.q.slice(),
+      spec: grip.spec,
+      object: { id: objectId, name: layout.name, type: layout.type, size: layout.size.slice(), pos: p.pos.slice(), R: p.R.slice() },
+      placeT,
+      graspDir,
+      approachMm,
+      obstacles: obstaclesSnapshot(),
+      thresholds: s.thresholds,
+      floor: s.settings.floorEnabled,
+      avoidSingularity: s.settings.planAvoidSingularity,
+    },
+    {
+      plan: async (req) => {
+        const r = await runPlanner({ start: req.start, goal: req.goal }, (pg) => setPlanUI({ progress: pg.ratio, nodes: pg.nodes }), {
+          obstacles: req.obstacles, tool: req.tool, attached: req.attached, physicsMode: req.physicsMode,
+        });
+        if (r.superseded) superseded = true;
+        return r;
+      },
+    },
+  );
+  if (superseded) return;
+  if (!res.ok) return setPlanUI({ status: 'idle', error: `Pick & Place 실패 — ${res.message}` });
+  planObjectSnapshot = snapshot;
+  planSingularity = s.features.singularity;
+  plan = { task: true, objectId, path: res.vertices.map((v) => v.q), vertexMeta: res.vertices, steps: res.steps, trajectory: res.trajectory };
+  const vertices = renderPlanPreview();
+  const stats = { task: true, objectName: layout.name, timeMs: Math.round(performance.now() - t0), placeRaisedMm: res.placeRaisedMm };
+  setPlanUI({ status: 'ready', stats, vertices, duration: res.trajectory.duration, error: null, stale: false });
+  showNotice(`Pick & Place 경로 생성 완료: ${layout.name} (${stats.timeMs} ms)`);
+}
+
+/** Pick & Place 실행: 이동 구간은 안전 게이트, 파지 직전 물체 위치 재확인, 파지 성공 확인 */
+async function runTask() {
+  setPlanUI({ status: 'running', error: null });
+  const result = await runSteps(plan.steps, { kind: 'plan', onStep: (i, st) => showNotice(`Pick & Place ${i + 1}/${plan.steps.length}: ${st.label}`, 4000) });
+  setPlanUI({ status: plan ? 'ready' : 'idle' });
+  if (result === 'done') showNotice('Pick & Place 완료');
+  else if (result === 'blocked') showNotice('Pick & Place 실행 중 위반이 감지되어 정지했습니다.');
 }
 
 // ---------- 그리퍼 (PRD_v.1.1.0 FR-21, FR-22) ----------
@@ -936,13 +1116,6 @@ const tcpMatrix = (frames) => (grip ? multiply(frames[6], toolMatrix(grip.spec.l
 function tcpPose(q) {
   const T = tcpMatrix(forwardKinematics(currentRobot, q).frames);
   return { pos: origin(T), rpy: rotationToRPY(T) };
-}
-
-/** 강체 변환의 역행렬 (4x4 row-major) */
-function invertRigid(T) {
-  const Rt = transpose3(rotationOf(T));
-  const p = origin(T);
-  return poseMatrix(Rt, [0, 1, 2].map((r) => -(Rt[r * 3] * p[0] + Rt[r * 3 + 1] * p[1] + Rt[r * 3 + 2] * p[2])));
 }
 
 /**
@@ -1041,6 +1214,7 @@ function graspObjects() {
 /**
  * 열기/닫기 명령 (버튼, 단축키 G). 'toggle'이면 지금 닫혀 있거나 파지 중이면 열고, 아니면 닫는다.
  * 닫기: 물리 모드에서 손가락 사이에 물체가 있으면 그 폭까지 닫은 뒤 파지(질량 한계 확인).
+ * @returns {{ ok: boolean } | undefined} 질량 초과면 ok: false (단계 실행이 멈춘다)
  */
 function gripperCommand(cmd) {
   if (!grip) return showNotice('그리퍼가 꺼져 있습니다. 그리퍼 패널에서 켜세요.');
@@ -1060,7 +1234,9 @@ function gripperCommand(cmd) {
         const mass = physics.mass(cand.id);
         if (mass > grip.spec.maxPayloadKg) {
           grip.target = grip.opening;
-          showNotice(`파지 실패: 질량 초과 (${mass.toFixed(1)} kg > ${grip.spec.maxPayloadKg} kg)`);
+          showNotice(`파지 실패: 질량 초과 (${mass.toFixed(1)} kg > ${grip.spec.maxPayloadKg} kg)`, 10000);
+          renderGripperUI();
+          return { ok: false };
         } else {
           grip.target = Math.min(grip.opening, cand.widthMm);
           grip.pendingGrasp = cand.id;
@@ -1069,6 +1245,7 @@ function gripperCommand(cmd) {
     }
   }
   renderGripperUI();
+  return { ok: true };
 }
 
 /**
@@ -1213,6 +1390,7 @@ async function applySimMode(mode) {
       simError = `물리엔진을 불러오지 못해 고정 모드로 동작합니다 (${err.message ?? err}). 인터넷 연결을 확인하세요.`;
       activeSimMode = 'static';
       setState((s) => ({ settings: { ...s.settings, simMode: 'static' } }));
+      rebuildSafety(); // 고정 모드 규칙으로 다시 검사
       renderSimUI();
       return;
     }
@@ -1305,7 +1483,8 @@ function checkExternalContact() {
 
 /** 계획 이후 물체가 PLAN_STALE_MOVE_MM 이상 움직이면 "다시 생성 권장" (PRD_v.1.1.0 4.4) */
 function checkPlanStaleByObjects() {
-  if (!plan || !planObjectSnapshot || !lastPoses || planUI.stale) return;
+  // 실행 중에는 검사하지 않는다 (Pick & Place는 실행하면서 물체를 옮긴다 — 끝난 뒤 다시 생성 권장으로 표시됨)
+  if (!plan || !planObjectSnapshot || !lastPoses || planUI.stale || planUI.status === 'running') return;
   for (const [id, pos] of planObjectSnapshot) {
     const p = lastPoses.get(id);
     if (!p || Math.hypot(p.pos[0] - pos[0], p.pos[1] - pos[1], p.pos[2] - pos[2]) > PLAN_STALE_MOVE_MM) {
@@ -1406,17 +1585,20 @@ function mountDataActions() {
 
 function pauseSequence() {
   controller.pause();
+  if (stepRun) stepRun.paused = true;
   setPlayback({ ...playback, status: 'paused' });
 }
 
 function resumeSequence() {
   if (isAlarmActive()) return rejectWhileAlarm();
   controller.resume();
+  if (stepRun) stepRun.paused = false;
   setPlayback({ ...playback, status: 'playing' });
 }
 
 function pausePlan() {
   controller.pause();
+  if (stepRun) stepRun.paused = true;
   setPlanUI({ status: 'paused' });
 }
 
@@ -1438,7 +1620,7 @@ function togglePlayPause() {
 
 /** Esc: 모든 모션 정지, 진행 중인 경로 계획 취소, 열린 드로어/알람 로그 닫기 */
 function stopAll() {
-  controller.stop();
+  stopSteps();
   cancelPlan();
   drawers.close();
   if (!$('#alarm-log').hidden) $('#btn-alarm-log').click();

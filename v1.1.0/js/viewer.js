@@ -406,9 +406,11 @@ export class Viewer {
       this.planGroup.add(tube);
     }
     const marks = vertices ?? [{ label: 'A', tcp: points[0] }, { label: 'B', tcp: points.at(-1) }];
+    // 파지·놓기 지점은 색으로 구분 (FR-24): 집기 = 주황, 놓기 = 청록
+    const KIND_COLOR = { pick: '#ff9f1c', place: '#2ec4b6' };
     for (const v of marks) {
-      const end = v.label === 'A' || v.label === 'B';
-      const color = v.label === 'A' ? '#34c77b' : this.palette.path;
+      const end = v.label === 'A' || v.label === 'B' || !!KIND_COLOR[v.kind];
+      const color = KIND_COLOR[v.kind] ?? (v.label === 'A' ? '#34c77b' : this.palette.path);
       const dot = new THREE.Mesh(new THREE.SphereGeometry(r * (end ? 3 : 1.8), 16, 10), new THREE.MeshBasicMaterial({ color }));
       dot.userData.pathPart = color === this.palette.path;
       dot.position.set(...v.tcp);

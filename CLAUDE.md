@@ -22,7 +22,7 @@ robosim-lite/
 - 실행: `start.bat`(Windows) 또는 `python serve.py [port] [--no-browser]` (기본 8011). file:// 직접 실행은 지원하지 않는다(ES 모듈·Worker).
 - 두 버전은 포트가 달라 localStorage(`robosim-lite:v1`)가 분리된다. 같은 포트로 두 버전을 번갈아 열지 않는다(저장 형식 v1/v2 충돌).
 - 디버그 핸들: URL에 `?debug` → `window.__robosim` (viewer, controller, getState, setState).
-- Node 검증: `node tests/run-all.mjs` (빠른 4종), `--full` (스트레스·수치 포함). 기능을 바꾸면 반드시 다시 실행한다. 다른 폴더 검증은 스크립트에 경로 인자(예: `node tests/planner.mjs ../v1.0.0`).
+- Node 검증: `node tests/run-all.mjs` (빠른 7종: 도달거리·안전·IK·계획·물리·그리퍼·Pick & Place), `--full` (스트레스·수치 포함). 기능을 바꾸면 반드시 다시 실행한다. 다른 폴더 검증은 스크립트에 경로 인자(예: `node tests/planner.mjs ../v1.0.0`).
 - 브라우저 확인: v1.0.0 수용 기준 AC-1~AC-10(`v1.0.0/PRD.md` 7장)과 v1.1.0 AC-11~(`PRD_v.1.1.0.md` 7장). 자동화할 때는 캐시를 피하려고 요청에 no-cache 헤더를 붙인다.
 
 ## 구조 핵심 (`v1.1.0/js/`)

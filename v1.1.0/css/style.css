@@ -701,6 +701,36 @@ select { cursor: pointer; }
 .gr-reset { grid-column: 1 / -1; justify-self: start; }
 .gr-body .hint { margin: 0; }
 
+/* ================= Pick & Place (v1.1.0) ================= */
+.plan-task { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; font-size: 12.5px; font-weight: 600; }
+.plan-task .segmented button { padding: 3px 9px; font-size: 11.5px; }
+.plan-pick { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; padding: 8px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel-2); }
+.plan-pick[hidden], .plan-end[hidden], .plan-intro[hidden] { display: none; }
+.plan-pick .field .segmented button { padding: 2px 8px; font-size: 11px; }
+.plan-tag-pick { background: #ff9f1c; color: #1b1300; }
+.plan-tag-place { background: #2ec4b6; color: #00201d; }
+.plan-kind { margin-left: auto; padding: 0 6px; border-radius: 3px; font-size: 10.5px; font-weight: 700; }
+.plan-kind-pick { background: rgba(255, 159, 28, 0.18); color: #ff9f1c; }
+.plan-kind-place { background: rgba(46, 196, 182, 0.18); color: #2ec4b6; }
+
+/* ================= Waypoint 도착 동작 (v1.1.0) ================= */
+.wp-item { flex-wrap: wrap; }
+.wp-action { display: flex; align-items: center; gap: 4px; flex-basis: 100%; padding: 0 0 2px 38px; font-size: 11px; color: var(--muted); }
+.wp-action select, .wp-action input {
+  height: 22px;
+  padding: 0 4px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--panel);
+  color: var(--text);
+  font: 11px var(--mono);
+}
+.wp-action input { width: 52px; }
+.wp-action [hidden] { display: none; }
+.wp-action-icon:empty { display: none; }
+.wp-action-icon { padding: 0 5px; border-radius: 3px; background: var(--path-soft); color: var(--path); font-weight: 700; }
+.wp-action-icon[data-type='wait'] { background: var(--panel-3); color: var(--muted); }
+
 /* ================= Waypoint ================= */
 .wp-list { list-style: none; margin: 8px 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
 .wp-item {
