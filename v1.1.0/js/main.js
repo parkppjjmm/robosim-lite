@@ -145,6 +145,14 @@ async function main() {
     onSaveLayout: savePhysicsAsLayout,
   });
   viewer.onObstaclePick((id) => obstaclePanel.select(id));
+  $('#sim-badge').addEventListener('click', () => {
+    if (physics) {
+      physicsRunning = !physicsRunning;
+      return renderSimUI();
+    }
+    // 고정 모드: 모드 스위치가 있는 물체 · 시뮬레이션 섹션을 보여 준다
+    $('[data-sec=obstacles]').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
   viewer.onObstacleTransform((id, patch) => {
     setState((s) => ({ obstacles: s.obstacles.map((o) => (o.id === id ? { ...o, ...patch } : o)) }));
     viewer.setHighlights(getActiveAlarm() ?? {}); // 드래그 미리보기 하이라이트 정리 (알람이 났으면 알람 하이라이트)
@@ -1530,12 +1538,20 @@ function renderSimUI() {
     outOfRange: physics?.outOfRange ?? new Set(),
     pushMode: !getState().features.obstacleCollision,
   });
+  // 상단 바 모드 배지 + 3D 뷰 테두리: 물리 모드를 한눈에 구분 (v1.1.0 3단계). 물리 모드에서 배지를 누르면 실행/일시정지
   const badge = $('#sim-badge');
+  const phys = activeSimMode === 'physics';
+  const paused = phys && !physicsRunning;
   if (badge) {
-    badge.textContent = simLoading ? 'PHYS …' : activeSimMode === 'physics' ? 'PHYS' : 'STATIC';
-    badge.className = 'sim-badge' + (activeSimMode === 'physics' || simLoading ? ' physics' : '');
-    badge.title = activeSimMode === 'physics' ? '시뮬레이션 모드: 물리 (Physics)' : '시뮬레이션 모드: 고정 (Static)';
+    badge.textContent = simLoading ? 'PHYS …' : phys ? (paused ? 'PHYS ⏸' : 'PHYS ▶') : 'STATIC';
+    badge.className = 'sim-badge' + (phys || simLoading ? ' physics' : '') + (paused ? ' paused' : '');
+    badge.title = phys
+      ? `시뮬레이션 모드: 물리 (Physics) — ${paused ? '일시정지 중, 누르면 실행' : '실행 중, 누르면 일시정지'}`
+      : '시뮬레이션 모드: 고정 (Static) — 누르면 모드 스위치로 이동';
+    badge.setAttribute('aria-label', badge.title);
   }
+  $('#viewport').classList.toggle('physics', phys);
+  $('#viewport').classList.toggle('paused', paused);
 }
 
 // ---------- 데이터 관리 (PRD FR-16) ----------

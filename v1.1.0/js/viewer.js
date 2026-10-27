@@ -291,15 +291,25 @@ export class Viewer {
     m.needsUpdate = true;
   }
 
-  /** 물리 결과 반영: poses = Map(id → { pos: mm, quat: {x,y,z,w}, out }) — 로봇 좌표계(Z-up) 그대로 */
+  /**
+   * 물리 결과 반영: poses = Map(id → { pos: mm, quat: {x,y,z,w}, out, sleeping }) — 로봇 좌표계(Z-up) 그대로.
+   * 움직이는(잠들지 않은) 물체는 테두리를 경로색으로 표시한다 (v1.1.0 3단계).
+   */
   setObjectPoses(poses) {
+    let changed = false;
     for (const [id, mesh] of this.obstacleMeshes) {
       const p = poses.get(id);
       if (!p) continue;
       mesh.position.set(p.pos[0], p.pos[1], p.pos[2]);
       mesh.quaternion.set(p.quat.x, p.quat.y, p.quat.z, p.quat.w);
       mesh.visible = !p.out;
+      const moving = this.physicsMode && !p.sleeping && !p.out;
+      if (mesh.userData.moving !== moving) {
+        mesh.userData.moving = moving;
+        changed = true;
+      }
     }
+    if (changed) this.applyHighlights();
   }
 
   /** 기즈모 모드: 'translate' | 'rotate' | 'scale' */
@@ -408,7 +418,10 @@ export class Viewer {
     const marks = vertices ?? [{ label: 'A', tcp: points[0] }, { label: 'B', tcp: points.at(-1) }];
     // 파지·놓기 지점은 색으로 구분 (FR-24): 집기 = 주황, 놓기 = 청록
     const KIND_COLOR = { pick: '#ff9f1c', place: '#2ec4b6' };
+    const placed = []; // 같은 위치(예: 파지 접근점 = 상승 끝점, 3 mm 이내)의 라벨은 위로 쌓아 겹치지 않게
     for (const v of marks) {
+      const level = placed.filter((p) => Math.hypot(p[0] - v.tcp[0], p[1] - v.tcp[1], p[2] - v.tcp[2]) < 3).length;
+      placed.push(v.tcp);
       const end = v.label === 'A' || v.label === 'B' || !!KIND_COLOR[v.kind];
       const color = KIND_COLOR[v.kind] ?? (v.label === 'A' ? '#34c77b' : this.palette.path);
       const dot = new THREE.Mesh(new THREE.SphereGeometry(r * (end ? 3 : 1.8), 16, 10), new THREE.MeshBasicMaterial({ color }));
@@ -417,7 +430,7 @@ export class Viewer {
       this.planGroup.add(dot);
       // 라벨 (A, 1, 2, …, B): 점 바로 위, 항상 보이게
       const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: textTexture(v.label, end ? color : '#ffffff'), depthTest: false, transparent: true }));
-      label.position.set(v.tcp[0], v.tcp[1], v.tcp[2] + r * 9);
+      label.position.set(v.tcp[0], v.tcp[1], v.tcp[2] + r * (9 + level * 10));
       label.scale.setScalar(r * (end ? 12 : 9));
       label.renderOrder = 10;
       this.planGroup.add(label);
@@ -437,7 +450,9 @@ export class Viewer {
       const hit = obstacles.has(id);
       mesh.material.emissive.copy(hit ? ALARM_COLOR : id === this.selectedObstacleId ? SELECT_COLOR : BLACK);
       mesh.material.emissiveIntensity = hit ? 0.9 : 0.45;
-      mesh.children[0].material.color.set(hit ? '#ff4d4d' : id === this.selectedObstacleId ? this.palette.selectEdge : this.palette.edge);
+      mesh.children[0].material.color.set(
+        hit ? '#ff4d4d' : id === this.selectedObstacleId ? this.palette.selectEdge : mesh.userData.moving ? this.palette.path : this.palette.edge,
+      );
     }
     if (this.floorAlarm) this.floorAlarm.visible = obstacles.has('floor');
   }
