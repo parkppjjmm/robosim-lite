@@ -261,7 +261,8 @@ export function mountObstaclePanel(root, { getRobot, onSelect, onSimMode, onPhys
         ? simUI.error
         : physics
           ? (simUI.layoutChanged ? '배치가 바뀌었습니다 — 리셋하면 반영됩니다. ' : '') +
-            `물체 ${simUI.total ?? 0}개 · 움직이는 물체 ${simUI.awake ?? 0}개${simUI.outOfRange?.size ? ` · 범위 이탈 ${simUI.outOfRange.size}개` : ''}${simUI.running ? '' : ' · 일시정지'}`
+            `물체 ${simUI.total ?? 0}개 · 움직이는 물체 ${simUI.awake ?? 0}개${simUI.outOfRange?.size ? ` · 범위 이탈 ${simUI.outOfRange.size}개` : ''}${simUI.running ? '' : ' · 일시정지'}` +
+            (simUI.pushMode ? ' · 장애물 감지 OFF: 로봇이 물체를 밀어냄' : ' · 장애물 감지 ON: 닿기 전에 정지')
           : '모든 물체가 배치 위치에 고정됩니다 (v1.0.0과 동일).';
     renderList();
   }

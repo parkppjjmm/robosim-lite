@@ -82,7 +82,7 @@ Three.js(`three@0.160.0`)와 물리엔진 Rapier(`@dimforge/rapier3d-compat@0.21
 ## 검증 (Node 18+)
 
 ```bash
-node tests/run-all.mjs          # 빠른 검증 5종 (도달거리, 안전 감지, IK·궤적, 경로 계획, 물리), 약 1분
+node tests/run-all.mjs          # 빠른 검증 5종 (도달거리, 안전 감지, IK·궤적, 경로 계획, 물리 19항목), 약 1분
 node tests/run-all.mjs --full   # 경로 계획 스트레스(60회)·수치 검증 포함, 수 분
 ```
 
@@ -157,7 +157,7 @@ tests/                 Node 검증 스크립트 (run-all.mjs로 일괄 실행, p
 
 ### v1.1.0 (진행 중, `PROMPTS.md` 참고)
 - [x] 1-A: Rapier 연동, 시뮬레이션 모드(고정/물리), 동적 물체, 저장 형식 v2
-- [ ] 1-B: 로봇 운동학 바디, 물리 모드 안전 감지, 성능·결정성
+- [x] 1-B: 로봇 운동학 바디, 물리 모드 안전 감지, 성능·결정성
 - [ ] 2-A: 그리퍼, TCP 오프셋, 파지/놓기
 - [ ] 2-B: Waypoint 동작, Pick & Place 자동 생성
 - [ ] 3: UI 통합 정리

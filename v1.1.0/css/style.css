@@ -674,6 +674,7 @@ select { cursor: pointer; }
 }
 .sim-badge.physics { border-color: var(--path); background: var(--path-soft); color: var(--path); }
 #status-physics { color: var(--path); }
+#status-physics.over { color: var(--alarm); }
 .ob-lost { background: var(--alarm-soft); color: var(--alarm); }
 .ob-editor fieldset.ob-physics { grid-template-columns: repeat(2, 1fr); }
 .ob-editor fieldset.ob-physics .hint { grid-column: 1 / -1; margin: 2px 0 0; font-size: 10.5px; }

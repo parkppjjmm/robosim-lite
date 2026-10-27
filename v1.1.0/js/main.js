@@ -63,7 +63,9 @@ let layoutChanged = false; // 물리 모드 중 배치가 편집됨 → 리셋�
 let savingLayout = false; // "현재 상태를 배치로 저장" 중에는 layoutChanged를 세우지 않음
 let physicsNoticeShown = false; // 장애물 감지 안내는 세션당 1회
 let lastPoses = null;
-let physicsStepMs = 0;
+let physicsStepMs = 0; // 최근 1초 최대: 물리 스텝 + 로봇 바디 갱신 + 안전 검사 갱신 (NFR-9)
+let planObjectSnapshot = null; // 계획 시점의 물체 위치 (물리 모드, 계획 후 20 mm 이상 움직이면 stale)
+const PLAN_STALE_MOVE_MM = 20;
 let planSingularity = false; // 계획 결과를 만들 때의 특이점 감지 상태 (바뀌면 stale)
 const IDLE = { status: 'idle', activeId: null, t: 0, duration: 0 };
 let playback = IDLE; // Waypoint 시퀀스 재생 상태
@@ -218,7 +220,10 @@ function onStateChange(state, keys) {
     renderMakerSelection();
     renderModelCards();
   }
-  if (has('features')) renderFeatureToggles();
+  if (has('features')) {
+    renderFeatureToggles();
+    renderSimUI(); // 물리 상태 문구(감지 ON: 정지 / OFF: 밀어냄) 갱신
+  }
   if (has('thresholds')) renderThresholdFields();
   if (has('obstacles') || has('settings')) obstaclePanel.render();
   if (has('obstacles')) {
@@ -462,6 +467,7 @@ function applyRobot(state) {
     `<i></i><strong>${maker?.name ?? currentRobot.maker} ${currentRobot.name}</strong>` +
     `<small>${currentRobot.payloadKg} kg · ${currentRobot.reachMm.toLocaleString()} mm</small><span class="badge">근사 모델</span>`;
   rebuildSafety();
+  physics?.setRobot(controller.current.segments);
   waypointPanel?.renderList();
   renderWaypointMarkers();
   // 계획: 다른 로봇의 결과는 버리고, 같은 로봇의 저장된 결과(lastPlan)는 복원
@@ -739,7 +745,9 @@ async function requestPlan({ start, goal }) {
   if (controller.kind?.startsWith('plan')) controller.stop();
   clearPlan();
   setPlanUI({ status: 'planning', progress: 0, nodes: 0, error: null, stale: false });
+  const snapshot = physics && lastPoses ? new Map([...lastPoses].map(([id, p]) => [id, p.pos.slice()])) : null; // 복사 (poses는 재사용 배열)
   const res = await runPlanner({ start: a.spec, goal: b.spec }, (p) => setPlanUI({ progress: p.ratio, nodes: p.nodes }));
+  if (res.ok) planObjectSnapshot = snapshot;
   if (res.superseded) return;
   if (res.ok) {
     setPlan(res.path, res.blends, res.stats, { persist: true });
@@ -770,6 +778,7 @@ function setPlan(path, blends, stats, { persist }) {
 
 function clearPlan() {
   plan = null;
+  planObjectSnapshot = null;
   viewer.setPlanPreview(null);
   setPlanUI({ status: 'idle', stats: null, vertices: null, error: null, stale: false });
 }
@@ -915,6 +924,7 @@ async function applySimMode(mode) {
     physics = new PhysicsWorld(RAPIER, { gravity: getState().settings.gravity });
     activeSimMode = 'physics';
     physics.load(getState().obstacles);
+    physics.setRobot(controller.current.segments);
     lastPoses = physics.poses();
     physicsRunning = true;
     layoutChanged = false;
@@ -975,6 +985,36 @@ function savePhysicsAsLayout() {
   showNotice(`현재 물체 위치를 배치로 저장했습니다.${kept ? ` (범위 이탈 ${kept}개는 기존 배치 유지)` : ''}`);
 }
 
+/**
+ * 외부 물체 충돌 (PRD_v.1.1.0 4.3): 물리 스텝으로 물체가 움직인 뒤 현재 로봇 자세를 다시 평가한다.
+ * 장애물 충돌 감지가 켜져 있고, 이전 tick에 없던 물체가 여유거리 안으로 들어오면 정지·알람.
+ * 평가 결과는 다음 이동 검사(sweepCheck)의 기준 자세로도 쓴다 (물체 위치가 바뀐 뒤의 기준).
+ */
+function checkExternalContact() {
+  const prev = controller.current;
+  const e = evaluatePose(controller.ctx, prev.q);
+  controller.current = e;
+  if (isAlarmActive() || !getState().features.obstacleCollision) return;
+  const fresh = e.violations.filter((v) => v.type === 'OBSTACLE' && !prev.violations.some((p) => p.key === v.key));
+  if (!fresh.length) return;
+  controller.stop();
+  const alarm = describeAlarm(e, fresh);
+  alarm.messages.unshift('외부 물체 충돌 (움직이는 물체가 로봇에 접근)');
+  raiseAlarm(alarm);
+}
+
+/** 계획 이후 물체가 PLAN_STALE_MOVE_MM 이상 움직이면 "다시 생성 권장" (PRD_v.1.1.0 4.4) */
+function checkPlanStaleByObjects() {
+  if (!plan || !planObjectSnapshot || !lastPoses || planUI.stale) return;
+  for (const [id, pos] of planObjectSnapshot) {
+    const p = lastPoses.get(id);
+    if (!p || Math.hypot(p.pos[0] - pos[0], p.pos[1] - pos[1], p.pos[2] - pos[2]) > PLAN_STALE_MOVE_MM) {
+      setPlanUI({ stale: true });
+      return;
+    }
+  }
+}
+
 /** 안전 검사 컨텍스트의 물체 위치·회전을 물리 결과로 갱신 (컴파일 결과 재사용, 위치·회전만 교체) */
 function applyPosesToSafety(ctx, poses) {
   for (const ob of ctx.compiled) {
@@ -994,7 +1034,7 @@ function obstaclesSnapshot() {
     const p = lastPoses.get(o.id);
     if (!p) return o;
     if (p.out) return { ...o, visible: false };
-    return { ...o, pos: p.pos, rot: rpyFromMatrix(p.R) };
+    return { ...o, pos: p.pos.slice(), rot: rpyFromMatrix(p.R) };
   });
 }
 
@@ -1009,6 +1049,7 @@ function renderSimUI() {
     awake: physics?.awakeCount ?? 0,
     total: physics?.objects.size ?? 0,
     outOfRange: physics?.outOfRange ?? new Set(),
+    pushMode: !getState().features.obstacleCollision,
   });
   const badge = $('#sim-badge');
   if (badge) {
@@ -1188,10 +1229,15 @@ function startLoop() {
       }
       if (physics && physicsRunning) {
         const t0 = performance.now();
+        physics.moveRobot(controller.current.segments); // 안전 검사를 통과해 적용된 자세 (FR-19)
         physics.step();
         lastPoses = physics.poses();
+        if (controller.ctx) {
+          applyPosesToSafety(controller.ctx, lastPoses);
+          // 움직이는 물체가 없으면 물체 쪽 변화가 없으므로 재평가를 건너뛴다
+          if (physics.awakeCount > 0) checkExternalContact();
+        }
         physicsStepMs = Math.max(physicsStepMs, performance.now() - t0);
-        if (controller.ctx) applyPosesToSafety(controller.ctx, lastPoses);
       }
     }
     if (physics && lastPoses) viewer.setObjectPoses(lastPoses);
@@ -1206,8 +1252,10 @@ function startLoop() {
       physEl.hidden = !physics;
       if (physics) {
         physEl.textContent = `PHYS ${physicsRunning ? `${physicsStepMs.toFixed(2)} ms/step` : '일시정지'}`;
+        physEl.classList.toggle('over', physicsStepMs > 4);
         physicsStepMs = 0;
         renderSimUI();
+        checkPlanStaleByObjects();
       }
       frames = 0;
       checkMax = 0;

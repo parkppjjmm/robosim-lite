@@ -1,4 +1,4 @@
-// 물리 시뮬레이션 (PRD_v.1.1.0 FR-17, FR-18): Rapier 월드 래퍼. DOM 비의존.
+// 물리 시뮬레이션 (PRD_v.1.1.0 FR-17~19): Rapier 월드 래퍼. DOM 비의존.
 // RAPIER 모듈은 주입받는다 — 브라우저는 physics-loader.js, Node 테스트는 tests/lib/rapier.mjs.
 // 좌표계: 로봇 베이스 기준 Z-up. 앱은 mm, Rapier는 SI(m, kg, s) → 경계에서만 변환한다.
 import { rotationFromRPY } from './collision.js';
@@ -57,6 +57,25 @@ export function rpyFromMatrix(R) {
   return [Math.atan2(R[7], R[8]) * RAD, ry * RAD, Math.atan2(R[3], R[0]) * RAD];
 }
 
+/** 로컬 +Y 축을 dir(단위벡터)로 돌리는 쿼터니언 (Rapier 캡슐의 축은 로컬 Y) */
+function quatYTo([dx, dy, dz]) {
+  // q = (Y × d, 1 + Y·d) 정규화. d = −Y이면 X축으로 180°
+  const w = 1 + dy;
+  if (w < 1e-9) return { x: 1, y: 0, z: 0, w: 0 };
+  const x = dz, y = 0, z = -dx;
+  const n = Math.hypot(x, y, z, w);
+  return { x: x / n, y: y / n, z: z / n, w: w / n };
+}
+
+/** 링크 캡슐(a, b: mm, r: mm) → 바디 자세 (중심 m, 회전) */
+function segmentPose(seg) {
+  const d = [seg.b[0] - seg.a[0], seg.b[1] - seg.a[1], seg.b[2] - seg.a[2]];
+  const len = Math.hypot(...d);
+  const center = { x: ((seg.a[0] + seg.b[0]) / 2) * MM, y: ((seg.a[1] + seg.b[1]) / 2) * MM, z: ((seg.a[2] + seg.b[2]) / 2) * MM };
+  const rot = len > 1e-6 ? quatYTo(d.map((v) => v / len)) : { x: 0, y: 0, z: 0, w: 1 };
+  return { center, rot, len };
+}
+
 /** 물체 하나의 충돌체 설명 (크기 mm → m, 물성 적용) */
 function colliderDesc(RAPIER, ob) {
   const [sx, sy, sz] = ob.size.map((v) => v * MM);
@@ -90,7 +109,45 @@ export class PhysicsWorld {
     this.world.createCollider(RAPIER.ColliderDesc.cuboid(50, 50, 0.5).setTranslation(0, 0, -0.5).setFriction(FLOOR_FRICTION));
     this.objects = new Map(); // id → { body, ob }
     this.outOfRange = new Set();
+    this.robotBodies = []; // 로봇 링크 캡슐 (운동학 바디, FR-19)
+    this.poseCache = new Map(); // poses() 결과 재사용 (매 스텝 할당을 줄여 GC 지연 방지, NFR-9)
     this.time = 0;
+  }
+
+  /**
+   * 로봇 링크를 운동학 바디(kinematic position-based)로 등록한다 (FR-19).
+   * 로봇은 위치 제어라 물체에 밀리지 않고, 움직이면 물체를 밀어낸다. 캡슐은 안전 검사와 같은 모델(linkSegments).
+   * 로봇 모델을 바꾸면 다시 호출한다.
+   */
+  setRobot(segments) {
+    const { RAPIER, world } = this;
+    this.clearRobot();
+    for (const seg of segments) {
+      const { center, rot, len } = segmentPose(seg);
+      const body = world.createRigidBody(
+        RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(center.x, center.y, center.z).setRotation(rot).setCcdEnabled(true),
+      );
+      const r = seg.r * MM;
+      const desc = len > 1 ? RAPIER.ColliderDesc.capsule((len * MM) / 2, r) : RAPIER.ColliderDesc.ball(r);
+      world.createCollider(desc.setFriction(0.8), body);
+      this.robotBodies.push(body);
+    }
+  }
+
+  /** 다음 스텝의 로봇 링크 자세 (안전 검사를 통과해 적용된 자세의 캡슐들) */
+  moveRobot(segments) {
+    if (segments.length !== this.robotBodies.length) return this.setRobot(segments);
+    segments.forEach((seg, i) => {
+      const { center, rot } = segmentPose(seg);
+      const body = this.robotBodies[i];
+      body.setNextKinematicTranslation(center);
+      body.setNextKinematicRotation(rot);
+    });
+  }
+
+  clearRobot() {
+    for (const body of this.robotBodies) this.world.removeRigidBody(body);
+    this.robotBodies = [];
   }
 
   setGravity([x, y, z]) {
@@ -103,6 +160,7 @@ export class PhysicsWorld {
     const { RAPIER, world } = this;
     for (const { body } of this.objects.values()) world.removeRigidBody(body);
     this.objects.clear();
+    this.poseCache.clear();
     this.outOfRange.clear();
     this.time = 0;
     for (const ob of obstacles) {
@@ -135,28 +193,33 @@ export class PhysicsWorld {
 
   /**
    * 물체 현재 자세. pos: mm, R: 회전행렬(row-major 3x3), quat: {x,y,z,w}
+   * 반환하는 Map과 배열은 다음 호출 때 제자리에서 갱신된다(재사용). 값을 보관하려면 복사해서 쓴다.
    * @returns {Map<string, { pos: number[], R: number[], quat: object, out: boolean, sleeping: boolean }>}
    */
   poses() {
-    const out = new Map();
     for (const [id, { body }] of this.objects) {
+      let p = this.poseCache.get(id);
+      if (!p) {
+        p = { pos: [0, 0, 0], R: new Array(9), quat: { x: 0, y: 0, z: 0, w: 1 }, out: false, sleeping: false };
+        this.poseCache.set(id, p);
+      }
       const t = body.translation();
       const q = body.rotation();
-      out.set(id, {
-        pos: [t.x / MM, t.y / MM, t.z / MM],
-        quat: { x: q.x, y: q.y, z: q.z, w: q.w },
-        R: matrixFromQuat(q),
-        out: this.outOfRange.has(id),
-        sleeping: body.isSleeping(),
-      });
+      p.pos[0] = t.x / MM; p.pos[1] = t.y / MM; p.pos[2] = t.z / MM;
+      p.quat.x = q.x; p.quat.y = q.y; p.quat.z = q.z; p.quat.w = q.w;
+      const R = matrixFromQuat(q);
+      for (let k = 0; k < 9; k++) p.R[k] = R[k];
+      p.out = this.outOfRange.has(id);
+      p.sleeping = body.isSleeping();
     }
-    return out;
+    return this.poseCache;
   }
 
   /** 현재 자세를 배치 형식(pos mm, rot ZYX deg)으로 — "현재 상태를 배치로 저장"용 */
   layoutPose(id) {
     const p = this.poses().get(id);
     if (!p) return null;
+    // (poses()는 재사용 배열 → 아래에서 새 배열로 만들어 반환)
     const round = (v, step) => Math.round(v / step) * step;
     return { pos: p.pos.map((v) => round(v, 0.1)), rot: rpyFromMatrix(p.R).map((v) => round(v, 0.01)) };
   }

@@ -117,6 +117,68 @@ const box = (id, pos, size = [100, 100, 100], extra = {}) => ({ id, name: id, ty
   check('물체 50개 물리 스텝 평균 < 4 ms (Node)', ms < 4, `${ms.toFixed(3)} ms/step`);
 }
 
+// 10) 로봇 운동학 바디 (FR-19): 캡슐 방향, 로봇이 박스를 밀어냄, 로봇은 밀리지 않음, 결정성
+{
+  const K = await imp('kinematics.js');
+  const { robots } = JSON.parse(readFileSync(`${root}/js/robots.json`, 'utf8'));
+  const robot = robots[0]; // IRB 1200
+  const segsAt = (q) => K.linkSegments(robot, K.forwardKinematics(robot, q).frames);
+  // 캡슐 방향: 바디 로컬 Y축이 링크 방향과 일치하고 중심이 링크 중점
+  const w0 = new P.PhysicsWorld(RAPIER);
+  const q0 = [0, 20, -30, 40, 60, 10];
+  const segs0 = segsAt(q0);
+  w0.setRobot(segs0);
+  let maxAxisErr = 0, maxCenterErr = 0;
+  segs0.forEach((seg, i) => {
+    const b = w0.robotBodies[i];
+    const R = P.matrixFromQuat(b.rotation());
+    const d = seg.b.map((v, k) => v - seg.a[k]);
+    const n = Math.hypot(...d);
+    if (n > 1) maxAxisErr = Math.max(maxAxisErr, ...[R[1], R[4], R[7]].map((v, k) => Math.abs(v - d[k] / n)));
+    const t = b.translation();
+    maxCenterErr = Math.max(maxCenterErr, Math.abs(t.x / P.MM - (seg.a[0] + seg.b[0]) / 2), Math.abs(t.z / P.MM - (seg.a[2] + seg.b[2]) / 2));
+  });
+  w0.dispose();
+  check('로봇 링크 캡슐 자세 (축 방향·중심, Rapier float32 기준)', maxAxisErr < 1e-6 && maxCenterErr < 1e-3, `축 오차 ${maxAxisErr.toExponential(1)}, 중심 오차 ${maxCenterErr.toExponential(1)} mm`);
+
+  // J1을 −40° → +40°로 돌리며 손목 쪽 경로에 놓인 박스를 민다 (60 Hz, 2초)
+  const pushRun = () => {
+    const w = new P.PhysicsWorld(RAPIER);
+    const home = K.homeJoints(robot);
+    const tcp = K.forwardKinematics(robot, home).tcp.pos; // 홈 TCP (451, 0, 807)
+    w.load([box('target', [tcp[0], tcp[1], 200], [80, 80, 120], { physics: { densityKgM3: 300, massKg: null, friction: 0.5, restitution: 0 } })]);
+    const startQ = home.slice(); startQ[0] = -40;
+    w.setRobot(segsAt(startQ));
+    for (let i = 0; i < 60; i++) w.step(); // 박스가 바닥에 안착 (중심 Z = 60)
+    // 손끝(플랜지)이 박스 높이(Z = 80)에 오도록 IK로 자세를 정한 뒤 J1만 돌려 쓸고 지나간다
+    const T = K.poseMatrix(C.rotationFromRPY([180, 0, 0]), [tcp[0], 0, 80]);
+    const low = K.solveIK(robot, T, home).joints;
+    const steps = 120;
+    let robotPosErr = 0;
+    for (let i = 0; i <= steps; i++) {
+      const q = low.slice();
+      q[0] = -40 + (80 * i) / steps;
+      const segs = segsAt(q);
+      w.moveRobot(segs);
+      w.step();
+      // 로봇은 밀리지 않음: 바디 위치 = 명령 위치
+      const last = w.robotBodies.at(-1).translation();
+      const want = segs.at(-1);
+      robotPosErr = Math.max(robotPosErr, Math.abs(last.x / P.MM - (want.a[0] + want.b[0]) / 2));
+    }
+    for (let i = 0; i < 60; i++) w.step();
+    const p = w.poses().get('target').pos;
+    w.dispose();
+    return { p, robotPosErr };
+  };
+  const r1 = pushRun(), r2 = pushRun();
+  const moved = Math.hypot(r1.p[0] - 451, r1.p[1]);
+  check('로봇이 경로의 박스를 밀어냄', moved > 50, `박스 이동 ${moved.toFixed(0)} mm (최종 ${r1.p.map((v) => v.toFixed(0)).join(', ')})`);
+  check('로봇은 밀리지 않음 (명령 자세 유지)', r1.robotPosErr < 1e-3, `오차 ${r1.robotPosErr.toExponential(1)} mm`);
+  const pd = Math.max(...r1.p.map((v, k) => Math.abs(v - r2.p[k])));
+  check('결정성: 로봇이 박스를 미는 시나리오 2회 동일', pd === 0, `차이 ${pd} mm`);
+}
+
 // 9) 저장 스키마 v1 → v2 마이그레이션 (v1.0.0 데이터가 고정 모드 + 기본 물성으로 열림)
 {
   const store = new Map();
