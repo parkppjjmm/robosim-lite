@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="ko" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RoboSim Lite</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 14h10M8 14V9l4-5' stroke='%233d9be9' stroke-width='2.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E" />
+  <script>
+    // 저장된 테마를 첫 페인트 전에 적용 (깜빡임 방지)
+    try {
+      const t = JSON.parse(localStorage.getItem('robosim-lite:v1'))?.settings?.theme;
+      if (t === 'light') document.documentElement.dataset.theme = 'light';
+    } catch {}
+  </script>
+  <link rel="stylesheet" href="css/style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+        "@dimforge/rapier3d-compat": "https://cdn.jsdelivr.net/npm/@dimforge/rapier3d-compat@0.21.0/dist/rapier.mjs"
+      }
+    }
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <button type="button" class="icon-btn drawer-btn" data-drawer="left" aria-controls="panel-left" aria-expanded="false" aria-label="로봇 모델 패널 열기"></button>
+    <div class="brand">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21h11M8 21v-6l5-6 5 3" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="15" r="1.8" fill="currentColor"/><circle cx="13" cy="9" r="1.8" fill="currentColor"/></svg>
+      <span>RoboSim <b>Lite</b></span>
+    </div>
+    <nav class="makers" id="maker-banners" aria-label="로봇 메이커 선택 (Maker)"></nav>
+    <div class="alarm-slot" id="alarm-slot"></div>
+    <div class="top-actions">
+      <span class="sim-badge" id="sim-badge" title="시뮬레이션 모드">STATIC</span>
+      <button type="button" class="icon-btn" id="btn-theme"></button>
+      <button type="button" class="icon-btn drawer-btn" data-drawer="right" aria-controls="panel-right" aria-expanded="false" aria-label="제어 패널 열기"></button>
+    </div>
+  </header>
+
+  <aside class="panel panel-left" id="panel-left" aria-label="로봇 모델">
+    <div class="panel-title">
+      <h2>로봇 모델 <small>Model</small></h2>
+      <span class="maker-caption" id="maker-caption"></span>
+    </div>
+    <div class="model-list" id="model-list"></div>
+    <p class="hint" id="catalog-note"></p>
+  </aside>
+
+  <main class="viewport" id="viewport">
+    <div class="viewport-label" id="viewport-label"></div>
+    <div class="safety-chips" id="safety-chips" aria-live="polite"></div>
+    <div class="gizmo-tools" id="gizmo-tools" role="group" aria-label="장애물 편집 도구 (Gizmo)" hidden>
+      <button type="button" class="btn btn-small active" data-gizmo="translate">이동</button>
+      <button type="button" class="btn btn-small" data-gizmo="rotate">회전</button>
+      <button type="button" class="btn btn-small" data-gizmo="scale">크기</button>
+    </div>
+  </main>
+
+  <aside class="panel panel-right" id="panel-right" aria-label="제어 패널">
+    <section class="sec" data-sec="features">
+      <h2 class="sec-head"><button type="button" class="sec-toggle" aria-controls="sec-features">기능 설정 <small>Features</small></button></h2>
+      <div class="sec-body" id="sec-features">
+        <div class="toggles" id="feature-toggles"></div>
+        <details class="thresholds">
+          <summary>감지 설정 (Threshold)</summary>
+          <div class="threshold-fields" id="threshold-fields"></div>
+          <p class="hint">특이점은 임계값의 2배 이내에서 주황색 경고만 표시하고, 임계값 안으로 들어가면 정지합니다.</p>
+        </details>
+      </div>
+    </section>
+    <section class="sec" data-sec="joint">
+      <h2 class="sec-head"><button type="button" class="sec-toggle" aria-controls="sec-joint">관절 조그 <small>Joint Jog</small></button></h2>
+      <div class="sec-body" id="sec-joint">
+        <div class="joints" id="joint-controls"></div>
+        <dl class="tcp" id="tcp-readout" aria-label="TCP 위치/자세"></dl>
+        <div class="joint-foot">
+          <button type="button" class="btn btn-small" id="btn-home">홈 자세로 (Home)</button>
+          <span class="hint">TCP 자세: ZYX 오일러, 베이스 좌표계</span>
+        </div>
+      </div>
+    </section>
+    <section class="sec" data-sec="cartesian">
+      <h2 class="sec-head"><button type="button" class="sec-toggle" aria-controls="sec-cartesian">직교 조그 <small>Cartesian Jog</small></button></h2>
+      <div class="sec-body" id="sec-cartesian"><div id="cartesian-panel"></div></div>
+    </section>
+    <section class="sec" data-sec="obstacles">
+      <h2 class="sec-head"><button type="button" class="sec-toggle" aria-controls="sec-obstacles">물체 · 시뮬레이션 <small>Objects</small></button></h2>
+      <div class="sec-body" id="sec-obstacles"><div id="obstacle-panel"></div></div>
+    </section>
+    <section class="sec" data-sec="waypoints">
+      <h2 class="sec-head"><button type="button" class="sec-toggle" aria-controls="sec-waypoints">Waypoint <small>Teach</small></button></h2>
+      <div class="sec-body" id="sec-waypoints"><div id="waypoint-panel"></div></div>
+    </section>
+    <section class="sec" data-sec="plan">
+      <h2 class="sec-head"><button type="button" class="sec-toggle" aria-controls="sec-plan">자동 경로 계획 <small>Auto Path</small></button></h2>
+      <div class="sec-body" id="sec-plan"><div id="plan-panel"></div></div>
+    </section>
+    <section class="sec" data-sec="data">
+      <h2 class="sec-head"><button type="button" class="sec-toggle" aria-controls="sec-data">데이터 관리 <small>Data</small></button></h2>
+      <div class="sec-body" id="sec-data">
+        <div class="data-actions">
+          <button type="button" class="btn btn-small" id="btn-export">내보내기 (Export)</button>
+          <button type="button" class="btn btn-small" id="btn-import">가져오기 (Import)</button>
+          <button type="button" class="btn btn-small btn-danger" id="btn-reset-data">초기화 (Reset Data)</button>
+          <input type="file" id="import-file" accept=".json,application/json" hidden />
+        </div>
+        <p class="hint">로봇, 장애물, 기능 설정, Waypoint, 계획 경로, 알람 로그를 JSON 파일로 백업하거나 복원합니다.</p>
+      </div>
+    </section>
+  </aside>
+
+  <div class="backdrop" id="drawer-backdrop" hidden></div>
+
+  <footer class="statusbar">
+    <span class="feature-icons" id="status-features" aria-label="켜진 기능"></span>
+    <span id="status-w" title="조작성 (Manipulability)">w --</span>
+    <span id="status-fps">FPS --</span>
+    <span id="status-check" title="프레임당 안전 검사 시간 (기준 2 ms)">검사 -- ms</span>
+    <span id="status-save">저장 대기</span>
+    <span id="status-physics" title="물리 스텝 계산 시간 (최근 1초 최대)" hidden>PHYS --</span>
+    <span id="status-notice" class="notice" role="status"></span>
+    <span class="kbd-hint" aria-hidden="true"><kbd>Space</kbd> 재생/일시정지 <kbd>Esc</kbd> 정지 <kbd>R</kbd> Reset</span>
+    <button type="button" class="log-button" id="btn-alarm-log" aria-expanded="false" aria-controls="alarm-log">알람 로그 (0)</button>
+  </footer>
+  <div class="alarm-log" id="alarm-log" hidden></div>
+
+  <script>
+    // file://로 직접 열면 ES 모듈과 Worker가 차단되어 main.js가 실행되지 않는다 → 일반 스크립트로 먼저 안내
+    if (location.protocol === 'file:') {
+      const box = document.createElement('div');
+      box.className = 'fatal';
+      box.innerHTML =
+        '<strong>로컬 웹 서버로 실행해 주세요.</strong>' +
+        '<p>브라우저 보안 정책으로 <code>index.html</code>을 직접 열면 동작하지 않습니다.</p>' +
+        '<ul><li>Windows: 폴더의 <b>start.bat</b>을 더블클릭</li>' +
+        '<li>Python: <code>python -m http.server 8000</code> 실행 후 <b>http://localhost:8000</b> 접속</li>' +
+        '<li>Node.js: <code>npx serve .</code></li></ul>' +
+        '<p>GitHub Pages 같은 정적 호스팅에 올려도 그대로 실행됩니다.</p>';
+      document.body.appendChild(box);
+    }
+  </script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

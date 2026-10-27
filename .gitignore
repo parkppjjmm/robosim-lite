@@ -1,0 +1,19 @@
+# 브라우저 자동 테스트 산출물
+.playwright-mcp/
+
+# Python
+__pycache__/
+*.pyc
+
+# OS / 편집기
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
+
+# 로그
+*.log
+
+# 테스트용 Rapier 캐시 (tests/lib/rapier.mjs가 자동 다운로드)
+**/tests/.cache/

@@ -1,0 +1,375 @@
+{
+  "note": "근사 모델(Approximate). 공개 카탈로그 사양 기반 6축 구형 손목 표준 구조이며 실제 기구와 다를 수 있음.",
+  "makers": [
+    {
+      "id": "ABB",
+      "name": "ABB",
+      "color": "#E4002B"
+    },
+    {
+      "id": "KUKA",
+      "name": "KUKA",
+      "color": "#FF6A00"
+    },
+    {
+      "id": "FANUC",
+      "name": "FANUC",
+      "color": "#F2C500"
+    },
+    {
+      "id": "NACHI",
+      "name": "NACHI",
+      "color": "#0072BC"
+    }
+  ],
+  "robots": [
+    {
+      "id": "abb-irb1200-5-09",
+      "maker": "ABB",
+      "name": "IRB 1200-5/0.9",
+      "sizeClass": "small",
+      "axes": 6,
+      "payloadKg": 5,
+      "reachMm": 901,
+      "dh": [
+        { "a": 0, "alpha": -90, "d": 399, "offset": 0 },
+        { "a": 448, "alpha": 0, "d": 0, "offset": -90 },
+        { "a": 42, "alpha": -90, "d": 0, "offset": 0 },
+        { "a": 0, "alpha": 90, "d": 451, "offset": 0 },
+        { "a": 0, "alpha": -90, "d": 0, "offset": 0 },
+        { "a": 0, "alpha": 0, "d": 82, "offset": 0 }
+      ],
+      "jointLimitsDeg": [
+        [-170, 170],
+        [-100, 135],
+        [-200, 70],
+        [-270, 270],
+        [-130, 130],
+        [-400, 400]
+      ],
+      "maxJointSpeedDegS": [288, 240, 297, 400, 405, 600],
+      "linkRadiiMm": [70, 60, 50, 45, 40, 32],
+      "homeDeg": [0, 0, 0, 0, 90, 0],
+      "color": "#E6E8EB"
+    },
+    {
+      "id": "abb-irb2600-20-165",
+      "maker": "ABB",
+      "name": "IRB 2600-20/1.65",
+      "sizeClass": "medium",
+      "axes": 6,
+      "payloadKg": 20,
+      "reachMm": 1650,
+      "dh": [
+        { "a": 150, "alpha": -90, "d": 445, "offset": 0 },
+        { "a": 700, "alpha": 0, "d": 0, "offset": -90 },
+        { "a": 115, "alpha": -90, "d": 0, "offset": 0 },
+        { "a": 0, "alpha": 90, "d": 795, "offset": 0 },
+        { "a": 0, "alpha": -90, "d": 0, "offset": 0 },
+        { "a": 0, "alpha": 0, "d": 85, "offset": 0 }
+      ],
+      "jointLimitsDeg": [
+        [-180, 180],
+        [-95, 155],
+        [-180, 75],
+        [-400, 400],
+        [-120, 120],
+        [-400, 400]
+      ],
+      "maxJointSpeedDegS": [175, 175, 175, 360, 360, 500],
+      "linkRadiiMm": [130, 110, 90, 75, 60, 45],
+      "homeDeg": [0, 0, 0, 0, 90, 0],
+      "color": "#E6E8EB"
+    },
+    {
+      "id": "abb-irb6700-200-260",
+      "maker": "ABB",
+      "name": "IRB 6700-200/2.60",
+      "sizeClass": "large",
+      "axes": 6,
+      "payloadKg": 200,
+      "reachMm": 2600,
+      "dh": [
+        { "a": 320, "alpha": -90, "d": 780, "offset": 0 },
+        { "a": 1125, "alpha": 0, "d": 0, "offset": -90 },
+        { "a": 200, "alpha": -90, "d": 0, "offset": 0 },
+        { "a": 0, "alpha": 90, "d": 1138, "offset": 0 },
+        { "a": 0, "alpha": -90, "d": 0, "offset": 0 },
+        { "a": 0, "alpha": 0, "d": 200, "offset": 0 }
+      ],
+      "jointLimitsDeg": [
+        [-170, 170],
+        [-65, 85],
+        [-180, 70],
+        [-300, 300],
+        [-130, 130],
+        [-360, 360]
+      ],
+      "maxJointSpeedDegS": [110, 110, 110, 190, 150, 210],
+      "linkRadiiMm": [220, 180, 150, 120, 95, 70],
+      "homeDeg": [0, 0, 0, 0, 90, 0],
+      "color": "#E6E8EB"
+    },
+    {
+      "id": "kuka-kr6-r900",
+      "maker": "KUKA",
+      "name": "KR 6 R900 (KR AGILUS)",
+      "sizeClass": "small",
+      "axes": 6,
+      "payloadKg": 6,
+      "reachMm": 901,
+      "dh": [
+        { "a": 25, "alpha": -90, "d": 400, "offset": 0 },
+        { "a": 455, "alpha": 0, "d": 0, "offset": -90 },
+        { "a": 35, "alpha": -90, "d": 0, "offset": 0 },
+        { "a": 0, "alpha": 90, "d": 420, "offset": 0 },
+        { "a": 0, "alpha": -90, "d": 0, "offset": 0 },
+        { "a": 0, "alpha": 0, "d": 80, "offset": 0 }
+      ],
+      "jointLimitsDeg": [
+        [-170, 170],
+        [-100, 135],
+        [-210, 66],
+        [-185, 185],
+        [-120, 120],
+        [-350, 350]
+      ],
+      "maxJointSpeedDegS": [360, 300, 360, 381, 388, 615],
+      "linkRadiiMm": [70, 60, 50, 45, 40, 32],
+      "homeDeg": [0, 0, 0, 0, 90, 0],
+      "color": "#F28C00"
+    },
+    {
+      "id": "kuka-kr20-r1810",
+      "maker": "KUKA",
+      "name": "KR 20 R1810",
+      "sizeClass": "medium",
+      "axes": 6,
+      "payloadKg": 20,
+      "reachMm": 1813,
+      "dh": [
+        { "a": 160, "alpha": -90, "d": 520, "offset": 0 },
+        { "a": 780, "alpha": 0, "d": 0, "offset": -90 },
+        { "a": 150, "alpha": -90, "d": 0, "offset": 0 },
+        { "a": 0, "alpha": 90, "d": 860, "offset": 0 },
+        { "a": 0, "alpha": -90, "d": 0, "offset": 0 },
+        { "a": 0, "alpha": 0, "d": 153, "offset": 0 }
+      ],
+      "jointLimitsDeg": [
+        [-185, 185],
+        [-95, 155],
+        [-180, 70],
+        [-350, 350],
+        [-125, 125],
+        [-350, 350]
+      ],
+      "maxJointSpeedDegS": [200, 175, 190, 430, 430, 630],
+      "linkRadiiMm": [130, 110, 90, 75, 60, 45],
+      "homeDeg": [0, 0, 0, 0, 90, 0],
+      "color": "#F28C00"
+    },
+    {
+      "id": "kuka-kr210-r2700",
+      "maker": "KUKA",
+      "name": "KR 210 R2700 (QUANTEC)",
+      "sizeClass": "large",
+      "axes": 6,
+      "payloadKg": 210,
+      "reachMm": 2696,
+      "dh": [
+        { "a": 350, "alpha": -90, "d": 675, "offset": 0 },
+        { "a": 1150, "alpha": 0, "d": 0, "offset": -90 },
+        { "a": -41, "alpha": -90, "d": 0, "offset": 0 },
+        { "a": 0, "alpha": 90, "d": 1200, "offset": 0 },
+        { "a": 0, "alpha": -90, "d": 0, "offset": 0 },
+        { "a": 0, "alpha": 0, "d": 215, "offset": 0 }
+      ],
+      "jointLimitsDeg": [
+        [-185, 185],
+        [-50, 130],
+        [-200, 64],
+        [-350, 350],
+        [-122, 122],
+        [-350, 350]
+      ],
+      "maxJointSpeedDegS": [105, 101, 107, 136, 129, 206],
+      "linkRadiiMm": [220, 180, 150, 120, 95, 70],
+      "homeDeg": [0, 0, 0, 0, 90, 0],
+      "color": "#F28C00"
+    },
+    {
+      "id": "fanuc-lrmate200id",
+      "maker": "FANUC",
+      "name": "LR Mate 200iD",
+      "sizeClass": "small",
+      "axes": 6,
+      "payloadKg": 7,
+      "reachMm": 717,
+      "dh": [
+        { "a": 50, "alpha": -90, "d": 330, "offset": 0 },
+        { "a": 330, "alpha": 0, "d": 0, "offset": -90 },
+        { "a": 35, "alpha": -90, "d": 0, "offset": 0 },
+        { "a": 0, "alpha": 90, "d": 335, "offset": 0 },
+        { "a": 0, "alpha": -90, "d": 0, "offset": 0 },
+        { "a": 0, "alpha": 0, "d": 80, "offset": 0 }
+      ],
+      "jointLimitsDeg": [
+        [-170, 170],
+        [-100, 145],
+        [-210, 70],
+        [-190, 190],
+        [-125, 125],
+        [-360, 360]
+      ],
+      "maxJointSpeedDegS": [450, 380, 520, 550, 545, 1000],
+      "linkRadiiMm": [70, 60, 50, 45, 40, 32],
+      "homeDeg": [0, 0, 0, 0, 90, 0],
+      "color": "#F2C500"
+    },
+    {
+      "id": "fanuc-m20id-25",
+      "maker": "FANUC",
+      "name": "M-20iD/25",
+      "sizeClass": "medium",
+      "axes": 6,
+      "payloadKg": 25,
+      "reachMm": 1831,
+      "dh": [
+        { "a": 75, "alpha": -90, "d": 525, "offset": 0 },
+        { "a": 840, "alpha": 0, "d": 0, "offset": -90 },
+        { "a": 215, "alpha": -90, "d": 0, "offset": 0 },
+        { "a": 0, "alpha": 90, "d": 890, "offset": 0 },
+        { "a": 0, "alpha": -90, "d": 0, "offset": 0 },
+        { "a": 0, "alpha": 0, "d": 100, "offset": 0 }
+      ],
+      "jointLimitsDeg": [
+        [-170, 170],
+        [-100, 160],
+        [-200, 70],
+        [-200, 200],
+        [-140, 140],
+        [-450, 450]
+      ],
+      "maxJointSpeedDegS": [210, 210, 265, 420, 450, 720],
+      "linkRadiiMm": [130, 110, 90, 75, 60, 45],
+      "homeDeg": [0, 0, 0, 0, 90, 0],
+      "color": "#F2C500"
+    },
+    {
+      "id": "fanuc-r2000ic-165f",
+      "maker": "FANUC",
+      "name": "R-2000iC/165F",
+      "sizeClass": "large",
+      "axes": 6,
+      "payloadKg": 165,
+      "reachMm": 2655,
+      "dh": [
+        { "a": 312, "alpha": -90, "d": 670, "offset": 0 },
+        { "a": 1075, "alpha": 0, "d": 0, "offset": -90 },
+        { "a": 225, "alpha": -90, "d": 0, "offset": 0 },
+        { "a": 0, "alpha": 90, "d": 1248, "offset": 0 },
+        { "a": 0, "alpha": -90, "d": 0, "offset": 0 },
+        { "a": 0, "alpha": 0, "d": 215, "offset": 0 }
+      ],
+      "jointLimitsDeg": [
+        [-185, 185],
+        [-60, 80],
+        [-200, 70],
+        [-360, 360],
+        [-125, 125],
+        [-360, 360]
+      ],
+      "maxJointSpeedDegS": [110, 110, 110, 150, 150, 220],
+      "linkRadiiMm": [220, 180, 150, 120, 95, 70],
+      "homeDeg": [0, 0, 0, 0, 90, 0],
+      "color": "#F2C500"
+    },
+    {
+      "id": "nachi-mz07",
+      "maker": "NACHI",
+      "name": "MZ07",
+      "sizeClass": "small",
+      "axes": 6,
+      "payloadKg": 7,
+      "reachMm": 723,
+      "dh": [
+        { "a": 50, "alpha": -90, "d": 345, "offset": 0 },
+        { "a": 330, "alpha": 0, "d": 0, "offset": -90 },
+        { "a": 45, "alpha": -90, "d": 0, "offset": 0 },
+        { "a": 0, "alpha": 90, "d": 340, "offset": 0 },
+        { "a": 0, "alpha": -90, "d": 0, "offset": 0 },
+        { "a": 0, "alpha": 0, "d": 78, "offset": 0 }
+      ],
+      "jointLimitsDeg": [
+        [-170, 170],
+        [-100, 145],
+        [-210, 70],
+        [-190, 190],
+        [-120, 120],
+        [-360, 360]
+      ],
+      "maxJointSpeedDegS": [450, 380, 520, 550, 545, 1000],
+      "linkRadiiMm": [70, 60, 50, 45, 40, 32],
+      "homeDeg": [0, 0, 0, 0, 90, 0],
+      "color": "#3D7CC9"
+    },
+    {
+      "id": "nachi-mz25",
+      "maker": "NACHI",
+      "name": "MZ25",
+      "sizeClass": "medium",
+      "axes": 6,
+      "payloadKg": 25,
+      "reachMm": 1882,
+      "dh": [
+        { "a": 150, "alpha": -90, "d": 520, "offset": 0 },
+        { "a": 870, "alpha": 0, "d": 0, "offset": -90 },
+        { "a": 100, "alpha": -90, "d": 0, "offset": 0 },
+        { "a": 0, "alpha": 90, "d": 860, "offset": 0 },
+        { "a": 0, "alpha": -90, "d": 0, "offset": 0 },
+        { "a": 0, "alpha": 0, "d": 110, "offset": 0 }
+      ],
+      "jointLimitsDeg": [
+        [-170, 170],
+        [-90, 155],
+        [-200, 70],
+        [-190, 190],
+        [-140, 140],
+        [-360, 360]
+      ],
+      "maxJointSpeedDegS": [210, 210, 265, 420, 450, 720],
+      "linkRadiiMm": [130, 110, 90, 75, 60, 45],
+      "homeDeg": [0, 0, 0, 0, 90, 0],
+      "color": "#3D7CC9"
+    },
+    {
+      "id": "nachi-sra166",
+      "maker": "NACHI",
+      "name": "SRA166",
+      "sizeClass": "large",
+      "axes": 6,
+      "payloadKg": 166,
+      "reachMm": 2654,
+      "dh": [
+        { "a": 320, "alpha": -90, "d": 700, "offset": 0 },
+        { "a": 1150, "alpha": 0, "d": 0, "offset": -90 },
+        { "a": 250, "alpha": -90, "d": 0, "offset": 0 },
+        { "a": 0, "alpha": 90, "d": 1150, "offset": 0 },
+        { "a": 0, "alpha": -90, "d": 0, "offset": 0 },
+        { "a": 0, "alpha": 0, "d": 210, "offset": 0 }
+      ],
+      "jointLimitsDeg": [
+        [-180, 180],
+        [-70, 90],
+        [-200, 70],
+        [-360, 360],
+        [-125, 125],
+        [-360, 360]
+      ],
+      "maxJointSpeedDegS": [125, 115, 120, 180, 172, 265],
+      "linkRadiiMm": [220, 180, 150, 120, 95, 70],
+      "homeDeg": [0, 0, 0, 0, 90, 0],
+      "color": "#3D7CC9"
+    }
+  ]
+}
