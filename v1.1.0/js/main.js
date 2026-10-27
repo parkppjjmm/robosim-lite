@@ -6,7 +6,7 @@ import {
 } from './kinematics.js';
 import { Viewer } from './viewer.js';
 import { createSafetyContext, evaluatePose, violationTypes, setAttached, blockedViolations } from './safety.js';
-import { compileObstacles, capsuleObstacleDistance, rotationFromRPY } from './collision.js';
+import { compileObstacles, capsuleObstacleDistance, rotationFromRPY, checkObstacleCollision } from './collision.js';
 import { MotionController } from './motion.js';
 import { singularityLabel } from './singularity.js';
 import { raiseAlarm, resetAlarm, isAlarmActive, getActiveAlarm, onAlarmChange, mountAlarmBanner, mountAlarmLog } from './alarm.js';
@@ -122,6 +122,7 @@ async function main() {
     controller.locked = !!alarm;
     if (alarm) {
       controller.stop();
+      freezeGripper(); // 그리퍼 개폐도 그 자리에서 멈춤 → Reset 후 저절로 움직이지 않음 (4-1, M-4)
       $('#safety-chips').replaceChildren(); // 알람 배너가 우선: 근접 경고 칩은 숨긴다
     }
     viewer.setHighlights(alarm ?? {});
@@ -136,20 +137,13 @@ async function main() {
       $('#gizmo-tools').hidden = !id || activeSimMode === 'physics';
     },
     onSimMode: requestSimMode,
-    onPhysicsToggle: () => {
-      if (!physics) return;
-      physicsRunning = !physicsRunning;
-      renderSimUI();
-    },
+    onPhysicsToggle: togglePhysicsRun,
     onPhysicsReset: resetPhysics,
     onSaveLayout: savePhysicsAsLayout,
   });
   viewer.onObstaclePick((id) => obstaclePanel.select(id));
   $('#sim-badge').addEventListener('click', () => {
-    if (physics) {
-      physicsRunning = !physicsRunning;
-      return renderSimUI();
-    }
+    if (physics) return togglePhysicsRun();
     // 고정 모드: 모드 스위치가 있는 물체 · 시뮬레이션 섹션을 보여 준다
     $('[data-sec=obstacles]').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
@@ -494,7 +488,7 @@ function renderModelCards() {
 
 function applyRobot(state) {
   currentRobot = findRobot(state.selectedRobotId);
-  controller.stop();
+  stopSteps(); // 진행 중인 단계 실행(Waypoint 동작·Pick & Place)도 끝낸다 (4-1, M-2)
   const joints = clampJoints(currentRobot, state.joints);
   viewer.loadRobot(currentRobot, forwardKinematics(currentRobot, joints).frames);
   buildJointControls();
@@ -709,6 +703,7 @@ let stepRun = null; // 실행 중인 단계 시퀀스 { cancelled, paused } (Way
  * @returns {Promise<'done'|'stopped'|'blocked'|'failed'>}
  */
 async function runSteps(steps, { kind, onStep, onProgress } = {}) {
+  if (stepRun) stepRun.cancelled = true; // 이전 실행은 끝낸다 (두 실행이 번갈아 로봇을 움직이지 않도록, 4-1 M-2)
   const run = { cancelled: false, paused: false };
   stepRun = run;
   let result = 'done';
@@ -778,10 +773,44 @@ async function runAction(st, run) {
   return 'done';
 }
 
-/** 진행 중인 단계 시퀀스·모션 정지 */
+/** 진행 중인 단계 시퀀스·모션·그리퍼 개폐 정지 (Esc, 정지 버튼, 로봇 변경) */
 function stopSteps() {
   if (stepRun) stepRun.cancelled = true;
   controller.stop();
+  freezeGripper();
+}
+
+/** 그리퍼 개폐를 현재 폭에서 멈춘다 (4-1, M-4: Esc·알람이 그리퍼에도 적용) */
+function freezeGripper() {
+  if (!grip || (grip.opening === grip.target && !grip.pendingGrasp)) return;
+  grip.target = grip.opening;
+  grip.pendingGrasp = null;
+  if (controller.ctx?.tool) controller.ctx.tool.opening = grip.opening;
+  renderGripperUI();
+}
+
+/** 로봇 이동 또는 단계 실행(대기·그리퍼 동작 포함) 중 (4-1, M-2) */
+const robotBusy = () => controller.active || !!stepRun;
+
+/**
+ * 물리 실행/일시정지 (배지·패널 버튼). 재개할 때 일시정지 중 움직인 로봇·파지 물체를 바로 옮기고,
+ * 물체와 겹쳐 있으면 안내한다 (4-1, m-1 결정 (a))
+ */
+function togglePhysicsRun() {
+  if (!physics) return;
+  physicsRunning = !physicsRunning;
+  if (physicsRunning) {
+    physics.placeRobot(physicsSegments());
+    if (grip?.attached) physics.moveAttached(controller.current.frames[6], true);
+    const ctx = controller.ctx;
+    const segs = physicsSegments().filter((s) => s.link !== 8); // 손가락은 물체와 닿아도 됨
+    const hit = ctx && checkObstacleCollision(segs, ctx.compiled, 0, { floor: false, skip: ctx.obstacleSkip }).hits[0];
+    if (hit) {
+      const name = getState().obstacles.find((o) => o.id === hit.obstacleId)?.name ?? hit.obstacleId;
+      showNotice(`물리 재개: 로봇이 물체 '${name}'와 겹쳐 있습니다(일시정지 중 이동). 물체 위치를 확인하세요.`, 10000);
+    }
+  }
+  renderSimUI();
 }
 
 
@@ -1026,7 +1055,7 @@ function savePlanAsWaypoints() {
   const stamp = Date.now().toString(36);
   const last = plan.path.length - 1;
   // Pick & Place: 파지점 = 닫기, 놓기점 = 열기 동작을 함께 저장 (FR-24)
-  const ACTION_OF = { pick: { type: 'close' }, place: { type: 'open' } };
+  const ACTION_OF = plan.task ? { start: { type: 'open' }, pick: { type: 'close' }, place: { type: 'open' } } : {};
   const SUFFIX = { pick: '(집기)', place: '(놓기)' };
   const added = plan.path.map((q, i) => {
     const kind = plan.vertexMeta?.[i]?.kind;
@@ -1176,7 +1205,7 @@ function renderGripperUI() {
 
 /** 그리퍼 설정 변경은 로봇이 멈춰 있고 알람이 없을 때만 (충돌 모델이 바뀌므로) */
 function gripperSettingsBlocked() {
-  if (controller.active) {
+  if (robotBusy()) {
     showNotice('로봇이 움직이는 중에는 그리퍼 설정을 바꿀 수 없습니다. 정지한 뒤 바꾸세요.');
   } else if (isAlarmActive()) {
     showNotice('알람 상태에서는 그리퍼 설정을 바꿀 수 없습니다. Reset 후 바꾸세요.');
@@ -1378,7 +1407,7 @@ function tickGripperPhysics() {
  */
 function requestSimMode(mode) {
   if (mode === getState().settings.simMode || simLoading) return;
-  if (controller.active) return showNotice('로봇이 움직이는 중에는 시뮬레이션 모드를 바꿀 수 없습니다. 정지한 뒤 바꾸세요.');
+  if (robotBusy()) return showNotice('로봇이 움직이는 중에는 시뮬레이션 모드를 바꿀 수 없습니다. 정지한 뒤 바꾸세요.');
   if (isAlarmActive()) return showNotice('알람 상태에서는 시뮬레이션 모드를 바꿀 수 없습니다. Reset 후 바꾸세요.');
   setState((s) => ({ settings: { ...s.settings, simMode: mode } })); // → onStateChange → applySimMode
 }
@@ -1439,9 +1468,14 @@ async function applySimMode(mode) {
 /** 리셋: 물체를 배치 위치로 되돌려 다시 시작 (로봇 정지 중에만) */
 function resetPhysics() {
   if (!physics) return;
-  if (controller.active) return showNotice('로봇이 움직이는 중에는 리셋할 수 없습니다.');
+  if (robotBusy()) return showNotice('로봇이 움직이는 중에는 리셋할 수 없습니다.');
+  // 같은 월드를 다시 쓰면 바디 순서·내부 캐시가 달라져 결과가 바뀐다 → 새 월드로 시작 (4-1, M-1 / NFR-10)
+  const RAPIER = physics.RAPIER;
+  physics.dispose();
+  physics = new PhysicsWorld(RAPIER, { gravity: getState().settings.gravity });
   physics.load(getState().obstacles);
   dropGripState();
+  physics.setRobot(physicsSegments());
   lastPoses = physics.poses();
   layoutChanged = false;
   viewer.setObstacles(getState().obstacles);

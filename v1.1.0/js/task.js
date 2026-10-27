@@ -177,6 +177,8 @@ export async function planPickPlace(input, { plan }) {
   const tr1 = pathTrajectory(robot, r1.path, r1.blends);
   const tr5 = pathTrajectory(robot, r5.path, r5.blends);
   const steps = [
+    // 계획은 열린 손가락을 전제로 검사한다 → 시작할 때 연다 (4-1, M-3)
+    { kind: 'grip', cmd: 'open', label: '그리퍼 열기', objectId: object.id },
     { kind: 'move', label: '파지 접근점 이동', trajectory: tr1 },
     { kind: 'move', label: '파지 하강', trajectory: s2.tr },
     { kind: 'grip', cmd: 'close', label: '파지', objectId: object.id, objectPos: object.pos.slice() },

@@ -65,7 +65,7 @@ function simulate(robot, spec, obstacles, result) {
     w.step();
   };
   let objectMovedAbort = false;
-  for (const st of result.steps) {
+  for (const st of result.steps.filter((s, i) => !(i === 0 && s.cmd === 'open'))) { // 시작 열기는 이미 열린 상태라 생략
     if (st.kind === 'move') {
       const tr = st.trajectory;
       for (let t = 0; t <= tr.duration + 1e-9; t += DT) { q = TR.sampleTrajectory(tr, t); tick(); }
@@ -94,7 +94,7 @@ function simulate(robot, spec, obstacles, result) {
     }
   }
   for (let i = 0; i < 120; i++) tick(); // 착지 대기
-  const final = w.poses().get(result.steps.find((s) => s.kind === 'grip').objectId).pos.slice();
+  const final = w.poses().get(result.steps.find((s) => s.cmd === 'close').objectId).pos.slice();
   w.dispose();
   return { violations: worst.count, keys: [...worst.keys], final, objectMovedAbort };
 }
@@ -141,6 +141,17 @@ for (const id of ['abb-irb1200-5-09', 'kuka-kr20-r1810', 'fanuc-r2000ic-165f']) 
   const small = { id: 's', type: 'box', size: [30, 30, 60], pos: [500, 0, 30], R: [1, 0, 0, 0, 1, 0, 0, 0, 1] };
   const r2 = await TK.planPickPlace({ ...base, object: small, placeT: K.poseMatrix(DOWN, [3000, 0, 100]), obstacles: [{ ...small, rot: [0, 0, 0] }] }, { plan });
   check('도달 불가 놓기 위치 → "놓기 접근점 이동: … Out of Reach" 안내', !r2.ok && r2.stage === '놓기 접근점 이동' && r2.reason === 'ik-failed', r2.message);
+}
+
+// 4-1 M-3: 닫힌 그리퍼로 시작해도 되도록 첫 단계는 '열기'
+{
+  const robot = robots.find((r) => r.id === 'abb-irb1200-5-09');
+  const spec = G.gripperSpec(robot);
+  const ob = { id: 's', type: 'box', size: [30, 30, 60], pos: [500, -200, 30], R: [1, 0, 0, 0, 1, 0, 0, 0, 1] };
+  const res = await TK.planPickPlace({ robot, q0: K.homeJoints(robot), spec, graspDir: 'top', approachMm: 100, thresholds: TH, floor: true,
+    object: ob, placeT: K.poseMatrix(DOWN, [500, 200, 100]), obstacles: [{ ...ob, rot: [0, 0, 0] }] },
+  { plan: (req) => PL.planPath({ robot, thresholds: TH, floor: true, features: {}, timeoutMs: 5000, ...req }) });
+  check('Pick & Place 첫 단계 = 그리퍼 열기', res.ok && res.steps[0].kind === 'grip' && res.steps[0].cmd === 'open', res.ok ? res.steps.map((s) => s.label).join(' → ') : res.message);
 }
 
 // 저장 스키마: Waypoint 도착 동작 검증·기본값 (v1 데이터 = 동작 없음)

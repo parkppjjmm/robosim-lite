@@ -134,8 +134,24 @@ export class PhysicsWorld {
     return true;
   }
 
-  /** 파지한 물체의 다음 스텝 자세 = 플랜지 자세 T6 × rel */
-  moveAttached(T6) {
+  /**
+   * 물리 재개 시(4-1, m-1): 일시정지 중 움직인 로봇 바디를 밀어내지 않고 현재 자세로 바로 옮긴다
+   * (한 스텝에 큰 거리를 이동하면 물체를 통과하거나 겹친 채 남기 때문)
+   */
+  placeRobot(segments) {
+    if (segments.length !== this.robotBodies.length) return this.setRobot(segments);
+    segments.forEach((seg, i) => {
+      const { center, rot } = segmentPose(seg);
+      const body = this.robotBodies[i];
+      body.setTranslation(center, true);
+      body.setRotation(rot, true);
+      body.setNextKinematicTranslation(center);
+      body.setNextKinematicRotation(rot);
+    });
+  }
+
+  /** 파지한 물체의 다음 스텝 자세 = 플랜지 자세 T6 × rel (teleport: 바로 옮김, 재개 시) */
+  moveAttached(T6, teleport = false) {
     if (!this.attached) return;
     const o = this.objects.get(this.attached.id);
     if (!o) return;
@@ -146,8 +162,14 @@ export class PhysicsWorld {
         T[i * 4 + j] = T6[i * 4] * r[j] + T6[i * 4 + 1] * r[4 + j] + T6[i * 4 + 2] * r[8 + j] + T6[i * 4 + 3] * r[12 + j];
       }
     }
-    o.body.setNextKinematicTranslation({ x: T[3] * MM, y: T[7] * MM, z: T[11] * MM });
-    o.body.setNextKinematicRotation(quatFromMatrix([T[0], T[1], T[2], T[4], T[5], T[6], T[8], T[9], T[10]]));
+    const tr = { x: T[3] * MM, y: T[7] * MM, z: T[11] * MM };
+    const q = quatFromMatrix([T[0], T[1], T[2], T[4], T[5], T[6], T[8], T[9], T[10]]);
+    if (teleport) {
+      o.body.setTranslation(tr, true);
+      o.body.setRotation(q, true);
+    }
+    o.body.setNextKinematicTranslation(tr);
+    o.body.setNextKinematicRotation(q);
   }
 
   /**
