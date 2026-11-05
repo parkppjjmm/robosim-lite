@@ -27,7 +27,7 @@ robosim-lite/
 | [`v1.0.0/`](v1.0.0/) | v1.0.0 | **고정본 (수정 금지)** | http://localhost:8000 | [README](v1.0.0/README.md) · [PRD](v1.0.0/PRD.md) · [REVIEW](v1.0.0/REVIEW.md) · [PROMPTS](v1.0.0/PROMPTS.md) · [CHANGELOG](v1.0.0/CHANGELOG.md) |
 | [`v1.1.0/`](v1.1.0/) | v1.1.0 | **릴리스** (태그 `v1.1.0`) | http://localhost:8011 | [README](v1.1.0/README.md) · [PRD](v1.1.0/PRD_v.1.1.0.md) · [REVIEW](v1.1.0/REVIEW_v1.1.0.md) · [PROMPTS](v1.1.0/PROMPTS.md) · [CHANGELOG](v1.1.0/CHANGELOG.md) |
 | [`v1.1.2/`](v1.1.2/) | v1.1.2 | **릴리스 · 최신** (태그 `v1.1.2`) | http://localhost:8112 | [README](v1.1.2/README.md) · [PRD](v1.1.2/PRD_v.1.1.2.md) · [REVIEW](v1.1.2/REVIEW_v1.1.2.md) · [PROMPTS](v1.1.2/PROMPTS.md) · [CHANGELOG](v1.1.2/CHANGELOG.md) |
-| [`v3.0.0/`](v3.0.0/) | v3.0.0 | **PRD 초안** | http://localhost:8300 | [README](v3.0.0/README.md) · [PRD](v3.0.0/PRD_v.3.0.0.md) · [CHANGELOG](v3.0.0/CHANGELOG.md) |
+| [`v3.0.0/`](v3.0.0/) | v3.0.0 | **개발 중** | http://localhost:8300 | [README](v3.0.0/README.md) · [PRD](v3.0.0/PRD_v.3.0.0.md) · [PROMPTS](v3.0.0/PROMPTS.md) · [CHANGELOG](v3.0.0/CHANGELOG.md) |
 | [`v2.0.0/`](v2.0.0/) | v2.0.0 | **개발 중** | http://localhost:8200 | [README](v2.0.0/README.md) · [PRD](v2.0.0/PRD_v.2.0.0.md) · [PROMPTS](v2.0.0/PROMPTS.md) · [CHANGELOG](v2.0.0/CHANGELOG.md) |
 | [`v1.1.1/`](v1.1.1/) | v1.1.1 | **릴리스** (태그 `v1.1.1`) | http://localhost:8111 | [README](v1.1.1/README.md) · [PRD](v1.1.1/PRD_v.1.1.1.md) · [REVIEW](v1.1.1/REVIEW_v1.1.1.md) · [PROMPTS](v1.1.1/PROMPTS.md) · [CHANGELOG](v1.1.1/CHANGELOG.md) · [SETUP](v1.1.1/SETUP.md) |
 
@@ -158,15 +158,16 @@ robosim-lite/
 
 ---
 
-## v3.0.0 — AI 기반 스키밍 경로 최적화 (PRD 초안)
+## v3.0.0 — J1~J6 관절 학습 기반 드로스 제거 AI (개발 중)
 
 ### 역할
-- v1.1.2 코드를 그대로 복사해 뼈대로 삼은 개발 폴더입니다. 요구사항 `v3.0.0/PRD_v.3.0.0.md`(초안, 결정 사항 D1~D9 확정 전).
+- v1.1.2 코드를 그대로 복사해 뼈대로 삼은 개발 폴더입니다. 요구사항 `v3.0.0/PRD_v.3.0.0.md`(초안 2), 진행표 `v3.0.0/PROMPTS.md`.
 - 배경: 지금 스키밍 경로는 스쿱 방향이 고정(J6가 거의 안 돎)된 평행 직선 레인이라, 벽 앞 띠·모서리 드로스가 남습니다.
-- 목표: AI가 드로스 분포를 보고 **스트로크(곡선 경로 + J6 yaw·기울임 변화)** 를 정해 그 드로스까지 회수합니다.
-  - 단계: 사람이 만든 스트로크(L0) → 최적화(L1, CMA-ES) → 학습 정책(L2)
-  - 학습은 Python 오프라인이고, 앱은 순수 JS로 추론합니다.
-  - 모든 이동은 기존 안전 게이트를 먼저 통과합니다.
+- 목표: AI가 **J1~J6 전 관절**을 학습해(계층형: 상위 = 구역·스킬 선택, 하위 = 관절 Δq 20 Hz), 스나우트 앞 작업 영역 드로스를 **제한 시간(기본 10분) 안에 목표 회수율(기본 80%)** 까지 제거하고, 그 모델을 실제 로봇에 적용할 준비까지 하는 것이 목표입니다. AI 로봇은 3대 중 1대를 고르고 나머지는 기존 경로로 함께 일합니다.
+  - 행동 방식은 B(계층형 + 관절 직접)로 먼저 개발합니다. A(순수 관절 직접)는 비교 실험 후보입니다.
+  - 학습은 Python 오프라인이고, 앱은 순수 JS, 현장은 ONNX로 추론합니다.
+  - 모든 관절 움직임은 안전 필터를 먼저 통과합니다.
+- 기준선(규칙 경로, 10분): KR 210 단독 61.9%, 로봇 3대 38.8%.
 
 ---
 
