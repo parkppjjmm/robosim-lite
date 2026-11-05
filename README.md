@@ -17,7 +17,7 @@ robosim-lite/
 ├─ v1.0.0/          v1.0.0 고정본 — 수정 금지, 포트 8000
 ├─ v1.1.0/          v1.1.0 고정본 — 물리엔진 통합 (태그 v1.1.0), 포트 8011
 ├─ v1.1.1/          v1.1.1 고정본 — 드로스 제거 셀·UR·측면 로봇 (태그 v1.1.1), 포트 8111
-├─ v1.1.2/          v1.1.2 개발 폴더 — 관절 실시간 계측·데이터 엑셀 추출·머신러닝 계획, 포트 8112
+├─ v1.1.2/          v1.1.2 고정본 — 관절 실시간 계측·데이터 엑셀 추출·머신러닝 계획 (태그 v1.1.2), 포트 8112
 └─ v1.2.0/          v1.2.0 예정 폴더 (AI 경로 최적화, 아직 비어 있음)
 ```
 
@@ -25,8 +25,8 @@ robosim-lite/
 |---|---|---|---|---|
 | [`v1.0.0/`](v1.0.0/) | v1.0.0 | **고정본 (수정 금지)** | http://localhost:8000 | [README](v1.0.0/README.md) · [PRD](v1.0.0/PRD.md) · [REVIEW](v1.0.0/REVIEW.md) · [PROMPTS](v1.0.0/PROMPTS.md) · [CHANGELOG](v1.0.0/CHANGELOG.md) |
 | [`v1.1.0/`](v1.1.0/) | v1.1.0 | **릴리스** (태그 `v1.1.0`) | http://localhost:8011 | [README](v1.1.0/README.md) · [PRD](v1.1.0/PRD_v.1.1.0.md) · [REVIEW](v1.1.0/REVIEW_v1.1.0.md) · [PROMPTS](v1.1.0/PROMPTS.md) · [CHANGELOG](v1.1.0/CHANGELOG.md) |
-| [`v1.1.2/`](v1.1.2/) | v1.1.2 | **개발 중** | http://localhost:8112 | [README](v1.1.2/README.md) · [PRD](v1.1.2/PRD_v.1.1.2.md) · [REVIEW](v1.1.2/REVIEW_v1.1.2.md) · [PROMPTS](v1.1.2/PROMPTS.md) · [CHANGELOG](v1.1.2/CHANGELOG.md) |
-| [`v1.1.1/`](v1.1.1/) | v1.1.1 | **릴리스 · 최신** (태그 `v1.1.1`) | http://localhost:8111 | [README](v1.1.1/README.md) · [PRD](v1.1.1/PRD_v.1.1.1.md) · [REVIEW](v1.1.1/REVIEW_v1.1.1.md) · [PROMPTS](v1.1.1/PROMPTS.md) · [CHANGELOG](v1.1.1/CHANGELOG.md) · [SETUP](v1.1.1/SETUP.md) |
+| [`v1.1.2/`](v1.1.2/) | v1.1.2 | **릴리스 · 최신** (태그 `v1.1.2`) | http://localhost:8112 | [README](v1.1.2/README.md) · [PRD](v1.1.2/PRD_v.1.1.2.md) · [REVIEW](v1.1.2/REVIEW_v1.1.2.md) · [PROMPTS](v1.1.2/PROMPTS.md) · [CHANGELOG](v1.1.2/CHANGELOG.md) |
+| [`v1.1.1/`](v1.1.1/) | v1.1.1 | **릴리스** (태그 `v1.1.1`) | http://localhost:8111 | [README](v1.1.1/README.md) · [PRD](v1.1.1/PRD_v.1.1.1.md) · [REVIEW](v1.1.1/REVIEW_v1.1.1.md) · [PROMPTS](v1.1.1/PROMPTS.md) · [CHANGELOG](v1.1.1/CHANGELOG.md) · [SETUP](v1.1.1/SETUP.md) |
 
 각 폴더는 **독립 실행본**입니다. 폴더마다 앱 코드, 실행 스크립트, 문서를 모두 갖고 있어서 그 폴더만으로 실행할 수 있습니다.
 
@@ -132,15 +132,25 @@ robosim-lite/
 
 ---
 
+## v1.1.2 — 관절 실시간 계측 · 데이터 추출 (릴리스, 태그 `v1.1.2`)
+
+### 역할
+- v1.1.1 폴더의 코드를 복사해서 시작했습니다(`v1.1.1/`은 수정하지 않음). 요구사항은 `v1.1.2/PRD_v.1.1.2.md`, 작업 기록은 `v1.1.2/WORKLOG.md`.
+- **실시간 계측:** 버튼(각도·속도·전류·토크)으로 켠 항목만 J1~J6 값을 3D 화면에 표시. 막대와 시계열 그래프(최근 5·10·30 s). 대형·측면 로봇을 골라 볼 수 있습니다. 전류·토크는 근사 동역학 **추정값**입니다.
+- **데이터 기록·엑셀 추출:** 시간대별·상황별(단계·사이클·레인·알람·부하) 49열 기록 → `.xlsx`(시트 data·cycles·events·columns·meta). 머신러닝 기반 데이터용입니다.
+- **머신러닝 계획:** PRD 5장(과제 후보·과정·첫 실험 레시피). 실제 구현(고장 주입, 대량 데이터 생성, 학습)은 v2 단계(머신러닝·AI 활용)로 넘겼습니다.
+
+---
+
 ## 실행
 
 1. 실행할 버전 폴더로 들어갑니다.
 2. **Windows:** `start.bat`을 더블클릭합니다. **macOS/Linux:** `python3 serve.py`를 실행합니다(Python 필요).
-3. 브라우저가 열립니다. v1.0.0은 http://localhost:8000, v1.1.0은 http://localhost:8011, v1.1.1은 http://localhost:8111입니다.
+3. 브라우저가 열립니다. v1.0.0은 http://localhost:8000, v1.1.0은 http://localhost:8011, v1.1.1은 http://localhost:8111, v1.1.2는 http://localhost:8112입니다.
    - 포트가 달라서 여러 버전을 동시에 열어도 저장 데이터가 섞이지 않습니다.
    - 이전 버전에서 만든 장면은 데이터 관리의 내보내기 → 새 버전에서 가져오기로 옮길 수 있습니다(v1.0.0 장면은 고정 모드로 열림).
 
-새 PC에서 처음 받는 경우(설치, 저장소 받기, 동작 확인, Claude Code 연결)는 [v1.1.1/SETUP.md](v1.1.1/SETUP.md)를 따르세요.
+새 PC에서 처음 받는 경우(설치, 저장소 받기, 동작 확인, Claude Code 연결)는 [v1.1.2/SETUP.md](v1.1.2/SETUP.md)를 따르세요.
 
 ## 버전 규칙
 
