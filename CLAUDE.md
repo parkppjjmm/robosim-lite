@@ -20,7 +20,7 @@ robosim-lite/
 - **`v1.1.0/` 폴더는 수정하지 않는다**(릴리스 대기: 태그 `v1.1.0`은 사용자 확인 후). 새 버전은 이전 폴더를 복사해 새 폴더에서 시작한다.
 - 버전 계획: v1.1.0 = 물리엔진(Rapier) + 그리퍼·Pick & Place, v1.1.1 = v1.1.0 경미 이슈 9건 + 드로스 제거 셀(2026-11-05 결정, 컨베이어 등은 이후로), v1.2.0 = AI 경로 최적화.
 - 변경 내용은 작업 중인 버전 폴더의 `CHANGELOG.md` `[Unreleased]`에 기록한다. 릴리스 시 같은 이름의 태그를 붙인다. 릴리스한 태그는 이후에도 수정하지 않는다.
-- 저장소는 private: https://github.com/parkppjjmm/robosim-lite (계정 parkppjjmm). 커밋 작성자는 `parkppjjmm <parkppjjmm@gmail.com>`이며, 저장소 로컬 git config로 설정한다(전역 설정 변경 금지).
+- 저장소는 public(2026-11-05 사용자가 private → public으로 변경): https://github.com/parkppjjmm/robosim-lite (계정 parkppjjmm). 공개 저장소이므로 토큰·개인 자료(예: `Document (현대제철 결과보고서)/`)를 커밋하지 않는다. 커밋 작성자는 `parkppjjmm <parkppjjmm@gmail.com>`이며, 저장소 로컬 git config로 설정한다(전역 설정 변경 금지).
 - 커밋·push·태그·GitHub 설정 변경은 사용자가 요청할 때만 한다.
 
 ## 실행 / 검증 (v1.1.1 기준, `v1.1.1/` 폴더에서)

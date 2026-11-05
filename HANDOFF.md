@@ -1,7 +1,7 @@
 # HANDOFF — 작업 인수인계 로그 (새 세션·다른 PC의 Claude Code는 이 문서부터 읽을 것)
 
 - 최종 갱신: 2026-11-05
-- 저장소: https://github.com/parkppjjmm/robosim-lite (private, 계정 parkppjjmm), 브랜치 `main`
+- 저장소: https://github.com/parkppjjmm/robosim-lite (public — 2026-11-05 사용자가 private에서 변경, 계정 parkppjjmm), 브랜치 `main`
 - 이 문서의 목적: 사용자가 같은 지시를 다시 하지 않아도, 어디까지 했고 앞으로 무엇을 할지 바로 파악하도록 한다. **작업을 마칠 때마다 이 문서의 "현재 상태"와 "다음 할 일"을 갱신하고 커밋한다.**
 
 ## 1. 먼저 지킬 규칙 (사용자 결정, 자세한 것은 CLAUDE.md)
@@ -58,4 +58,4 @@
 - 실행: `cd v1.1.1 && python serve.py` (포트 8111, 또는 `start.bat`) / 검증: `node tests/run-all.mjs [--full]` (v1.1.1/ 안에서)
 - 드로스 셀 시연: 대형 로봇(예: KUKA KR 210) → 드로스 제거 셀 켜기 → ▶ 1사이클 또는 ⟳ 자동 연속
 - 문서: 루트 `README.md`(버전별 역할), `CLAUDE.md`(규칙·구조·함정), `v1.1.1/PRD_v.1.1.1.md`(요구사항·영상 분석), `v1.1.1/PROMPTS.md`(단계·진행표), `v1.1.1/REVIEW_v1.1.1.md`(검토·남은 이슈), `v1.1.1/CHANGELOG.md`, `v1.1.1/SETUP.md`(새 PC 설정), v1.1.0 문서는 `v1.1.0/`
-- 새 PC에서 처음: private 저장소 로그인 필요 → `v1.1.1/SETUP.md`. 로그인은 사용자가 직접(`! git ...` 또는 브라우저 로그인 창).
+- 새 PC에서 처음: 공개 저장소라 받기(clone)는 로그인 없이 됨, push할 때만 parkppjjmm 로그인 → `v1.1.1/SETUP.md`. 로그인은 사용자가 직접(`! git ...` 또는 브라우저 로그인 창).

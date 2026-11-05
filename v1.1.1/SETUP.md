@@ -1,6 +1,6 @@
 # 새 노트북(다른 PC)에서 RoboSim Lite 설정하기
 
-GitHub의 private 저장소 `parkppjjmm/robosim-lite`를 받아, 지금과 똑같이 실행하고 Claude Code로 이어서 작업하는 방법입니다.
+GitHub의 공개(public) 저장소 `parkppjjmm/robosim-lite`를 받아, 지금과 똑같이 실행하고 Claude Code로 이어서 작업하는 방법입니다.
 
 ## 1. 준비물
 
@@ -16,9 +16,15 @@ GitHub의 private 저장소 `parkppjjmm/robosim-lite`를 받아, 지금과 똑�
 - `python --version`을 쳤는데 Microsoft Store가 열리면, Python이 설치되지 않은 상태입니다(Windows 기본 바로가기만 있는 경우). python.org에서 설치하거나, **설정 → 앱 → 고급 앱 설정 → 앱 실행 별칭**에서 `python.exe` / `python3.exe` 별칭을 끄세요.
 - 인터넷 연결이 필요합니다. 3D 라이브러리 Three.js를 CDN에서 불러옵니다.
 
-## 2. 저장소 받기 (private 저장소 로그인)
+## 2. 저장소 받기
 
-저장소가 private이라 **parkppjjmm 계정 로그인**이 필요합니다. 주소에 계정명을 넣으면, 그 PC에 다른 GitHub 계정이 저장돼 있어도 parkppjjmm로 로그인 창이 뜹니다.
+저장소는 **공개(public)** 입니다(2026-11-05 변경). 받기만 할 때는 로그인이 필요 없습니다.
+
+```bash
+git clone https://github.com/parkppjjmm/robosim-lite.git
+```
+
+수정 내용을 **올릴(push) 때는 parkppjjmm 계정 로그인**이 필요합니다. 그 PC에 다른 GitHub 계정이 저장돼 있으면, 주소에 계정명을 넣어 받아 두면 push할 때 parkppjjmm로 로그인 창이 뜹니다.
 
 ```bash
 git clone https://parkppjjmm@github.com/parkppjjmm/robosim-lite.git
@@ -34,12 +40,12 @@ git clone https://parkppjjmm@github.com/parkppjjmm/robosim-lite.git
 
 - v1.0.0 시점의 저장소 전체가 필요하면 `git clone --branch backup/v1.0.0 …`으로 받을 수 있습니다. 태그 `v1.0.0`과 같습니다.
 
-- 처음 clone할 때 브라우저에 GitHub 승인 페이지가 열립니다. **parkppjjmm로 로그인 → Authorize** 하면 이후로는 자동 인증됩니다.
+- 처음 push할 때 브라우저에 GitHub 승인 페이지가 열립니다. **parkppjjmm로 로그인 → Authorize** 하면 이후로는 자동 인증됩니다.
 - 로그인 창이 안 뜨면 아래 명령으로 직접 띄울 수 있습니다.
   ```bash
   git credential-manager github login --username parkppjjmm --browser
   ```
-- 403(Permission denied)이 나면 다른 계정으로 인증된 것입니다. 주소에 `parkppjjmm@`가 들어 있는지 확인하세요.
+- push할 때 403(Permission denied)이 나면 다른 계정으로 인증된 것입니다. 주소에 `parkppjjmm@`가 들어 있는지 확인하세요.
 
 ## 3. 실행
 
@@ -78,4 +84,4 @@ claude
 | start.bat 창에 "Python was not found" 또는 Store가 열림 | 1장의 Python 설치/앱 실행 별칭 안내 참고 |
 | "포트를 이미 사용 중" | 같은 버전의 다른 start.bat 창을 닫거나, `python serve.py 8021`처럼 다른 포트로 실행 (포트를 바꾸면 저장 데이터도 별도) |
 | 로봇이 안 보이거나 "경로 계획 Worker 오류" | 다른 서버로 연 적이 있어 예전 파일이 캐시된 경우입니다. start.bat으로 다시 열고 새로고침. 계속되면 Ctrl+Shift+Delete → "캐시된 이미지 및 파일"만 삭제 |
-| git push/clone 403 | 2장 참고 (parkppjjmm 계정으로 인증) |
+| git push 403 | 2장 참고 (parkppjjmm 계정으로 인증) |

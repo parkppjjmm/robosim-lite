@@ -25,7 +25,7 @@
 
 ## 실행 방법
 
-> **다른 PC(새 노트북)에서 처음 받는 경우**에는 [SETUP.md](SETUP.md)를 따르세요. 준비물, private 저장소 로그인, v1.0.0 백업본 받기, 동작 확인, Claude Code 연결을 다룹니다.
+> **다른 PC(새 노트북)에서 처음 받는 경우**에는 [SETUP.md](SETUP.md)를 따르세요. 준비물, 저장소 받기(공개), v1.0.0 백업본 받기, 동작 확인, Claude Code 연결을 다룹니다.
 
 ES Module과 Web Worker는 `file://` 경로에서 브라우저 보안 정책으로 차단됩니다. 그래서 **로컬 정적 서버로 실행합니다.** 빌드나 설치 과정은 없습니다.
 
@@ -173,7 +173,7 @@ tests/                 Node 검증 스크립트 (run-all.mjs로 일괄 실행, p
 | [../v1.0.0/REVIEW.md](../v1.0.0/REVIEW.md) | v1.0.0 검토 보고서, 이슈별 조치 결과 |
 | [../v1.0.0/PROMPTS.md](../v1.0.0/PROMPTS.md) | v1.0.0 단계별 프롬프트 |
 | [CHANGELOG.md](CHANGELOG.md) | 버전별 변경 이력 |
-| [SETUP.md](SETUP.md) | 새 PC 설정: 설치, private 저장소 로그인, v1.0.0 백업본 받기, 동작 확인 |
+| [SETUP.md](SETUP.md) | 새 PC 설정: 설치, 저장소 받기, v1.0.0 백업본 받기, 동작 확인 |
 | [../CLAUDE.md](../CLAUDE.md) | Claude Code용 프로젝트 안내 (저장소 루트, 버전 규칙, 실행·검증, 구조, 알려진 함정) |
 
 ## 버전 관리
