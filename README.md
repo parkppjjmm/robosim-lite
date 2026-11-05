@@ -17,6 +17,7 @@ robosim-lite/
 ├─ v1.0.0/          v1.0.0 고정본 — 수정 금지, 포트 8000
 ├─ v1.1.0/          v1.1.0 고정본 — 물리엔진 통합 (태그 v1.1.0), 포트 8011
 ├─ v1.1.1/          v1.1.1 고정본 — 드로스 제거 셀·UR·측면 로봇 (태그 v1.1.1), 포트 8111
+├─ v1.1.2/          v1.1.2 개발 폴더 — 관절 실시간 계측·데이터 엑셀 추출·머신러닝 계획, 포트 8112
 └─ v1.2.0/          v1.2.0 예정 폴더 (AI 경로 최적화, 아직 비어 있음)
 ```
 
@@ -24,6 +25,7 @@ robosim-lite/
 |---|---|---|---|---|
 | [`v1.0.0/`](v1.0.0/) | v1.0.0 | **고정본 (수정 금지)** | http://localhost:8000 | [README](v1.0.0/README.md) · [PRD](v1.0.0/PRD.md) · [REVIEW](v1.0.0/REVIEW.md) · [PROMPTS](v1.0.0/PROMPTS.md) · [CHANGELOG](v1.0.0/CHANGELOG.md) |
 | [`v1.1.0/`](v1.1.0/) | v1.1.0 | **릴리스** (태그 `v1.1.0`) | http://localhost:8011 | [README](v1.1.0/README.md) · [PRD](v1.1.0/PRD_v.1.1.0.md) · [REVIEW](v1.1.0/REVIEW_v1.1.0.md) · [PROMPTS](v1.1.0/PROMPTS.md) · [CHANGELOG](v1.1.0/CHANGELOG.md) |
+| [`v1.1.2/`](v1.1.2/) | v1.1.2 | **개발 중** | http://localhost:8112 | [README](v1.1.2/README.md) · [PRD](v1.1.2/PRD_v.1.1.2.md) · [REVIEW](v1.1.2/REVIEW_v1.1.2.md) · [PROMPTS](v1.1.2/PROMPTS.md) · [CHANGELOG](v1.1.2/CHANGELOG.md) |
 | [`v1.1.1/`](v1.1.1/) | v1.1.1 | **릴리스 · 최신** (태그 `v1.1.1`) | http://localhost:8111 | [README](v1.1.1/README.md) · [PRD](v1.1.1/PRD_v.1.1.1.md) · [REVIEW](v1.1.1/REVIEW_v1.1.1.md) · [PROMPTS](v1.1.1/PROMPTS.md) · [CHANGELOG](v1.1.1/CHANGELOG.md) · [SETUP](v1.1.1/SETUP.md) |
 
 각 폴더는 **독립 실행본**입니다. 폴더마다 앱 코드, 실행 스크립트, 문서를 모두 갖고 있어서 그 폴더만으로 실행할 수 있습니다.

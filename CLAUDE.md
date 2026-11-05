@@ -12,22 +12,23 @@ robosim-lite/
 ├─ v1.0.0/   # v1.0.0 고정본 — 태그 v1.0.0과 동일, 포트 8000
 ├─ v1.1.0/   # v1.1.0 고정본 — 태그 v1.1.0, 물리엔진·그리퍼, 수정 금지, 포트 8011
 ├─ v1.1.1/   # v1.1.1 고정본 — 태그 v1.1.1, 드로스 셀·UR·측면 로봇, 수정 금지, 포트 8111
+├─ v1.1.2/   # v1.1.2 개발 폴더 — 관절 실시간 계측·데이터 엑셀 추출·머신러닝 계획, 포트 8112
 └─ v1.2.0/   # v1.2.0 예정(AI 경로 최적화) — 아직 비어 있음, 포트 8012 권장
 ```
 
 - **v1.0.0은 영구 백업이다.** `v1.0.0/` 폴더, 태그 `v1.0.0`, 브랜치 `backup/v1.0.0`(커밋 c8f3fdb)은 절대 수정·삭제·이동·강제 push하지 않는다.
-- **최신 릴리스는 `v1.1.1/`**(태그 `v1.1.1`, 2026-11-05)이다. 다음 개발은 이 폴더를 복사해 `v1.2.0/`에서 한다(사용자 확인 후). 요구사항은 `v1.1.1/PRD_v.1.1.1.md`이고, 없는 부분은 `v1.1.0/PRD_v.1.1.0.md` → `v1.0.0/PRD.md` 순으로 따른다. 단계별 작업·진행표는 `v1.1.1/PROMPTS.md`.
+- **최신 릴리스는 `v1.1.1/`**(태그 `v1.1.1`, 2026-11-05)이고, **현재 개발 폴더는 `v1.1.2/`**(관절 계측·데이터 추출, 요구사항 `v1.1.2/PRD_v.1.1.2.md`, 진행표 `v1.1.2/PROMPTS.md`)다. 요구사항은 `v1.1.1/PRD_v.1.1.1.md`이고, 없는 부분은 `v1.1.0/PRD_v.1.1.0.md` → `v1.0.0/PRD.md` 순으로 따른다. 단계별 작업·진행표는 `v1.1.1/PROMPTS.md`.
 - **릴리스한 폴더(`v1.0.0/`·`v1.1.0/`·`v1.1.1/`)와 태그는 수정하지 않는다.** 새 버전은 이전 폴더를 복사해 새 폴더에서 시작한다.
 - 버전 계획: v1.1.0 = 물리엔진(Rapier) + 그리퍼·Pick & Place, v1.1.1 = v1.1.0 경미 이슈 9건 + 드로스 제거 셀(2026-11-05 결정, 컨베이어 등은 이후로), v1.2.0 = AI 경로 최적화.
 - 변경 내용은 작업 중인 버전 폴더의 `CHANGELOG.md` `[Unreleased]`에 기록한다. 릴리스 시 같은 이름의 태그를 붙인다. 릴리스한 태그는 이후에도 수정하지 않는다.
 - 저장소는 public(2026-11-05 사용자가 private → public으로 변경): https://github.com/parkppjjmm/robosim-lite (계정 parkppjjmm). 공개 저장소이므로 토큰·개인 자료(예: `Document (현대제철 결과보고서)/`)를 커밋하지 않는다. 커밋 작성자는 `parkppjjmm <parkppjjmm@gmail.com>`이며, 저장소 로컬 git config로 설정한다(전역 설정 변경 금지).
 - 커밋·push·태그·GitHub 설정 변경은 사용자가 요청할 때만 한다.
 
-## 실행 / 검증 (v1.1.1 기준, `v1.1.1/` 폴더에서)
-- 실행: `start.bat`(Windows) 또는 `python serve.py [port] [--no-browser]` (기본 8111). file:// 직접 실행은 지원하지 않는다(ES 모듈·Worker).
-- 버전마다 포트가 달라 localStorage(`robosim-lite:v1`)가 분리된다(v1.0.0 8000 / v1.1.0 8011 / v1.1.1 8111). 같은 포트로 여러 버전을 번갈아 열지 않는다(저장 형식 충돌).
+## 실행 / 검증 (v1.1.2 기준, `v1.1.2/` 폴더에서 — v1.1.1도 같은 방법, 포트만 다름)
+- 실행: `start.bat`(Windows) 또는 `python serve.py [port] [--no-browser]` (기본 8112). **Claude가 테스트용 서버를 띄웠다면 끝나고 반드시 끈다** — 같은 포트가 열려 있으면 사용자의 start.bat이 "포트 사용 중"으로 닫힌다(2026-11-05 사례). file:// 직접 실행은 지원하지 않는다(ES 모듈·Worker).
+- 버전마다 포트가 달라 localStorage(`robosim-lite:v1`)가 분리된다(v1.0.0 8000 / v1.1.0 8011 / v1.1.1 8111 / v1.1.2 8112). 같은 포트로 여러 버전을 번갈아 열지 않는다(저장 형식 충돌).
 - 디버그 핸들: URL에 `?debug` → `window.__robosim` (viewer, controller, getState, setState, physics, dross, skim).
-- Node 검증: `node tests/run-all.mjs` (빠른 9종: 도달거리·안전·IK·계획·물리·그리퍼·Pick & Place·경미 이슈·드로스 셀), `--full` (스트레스·수치·측면 로봇 동시 실행 `cell-robots.mjs` 포함). `cell-robots.mjs`는 `ONLY=A|B|C`, `SIM_S`, `PROFILE=1`, `DBG=1` 환경 변수로 일부만·짧게 돌릴 수 있다. 기능을 바꾸면 반드시 다시 실행한다. 다른 폴더 검증은 스크립트에 경로 인자(예: `node tests/planner.mjs ../v1.0.0`).
+- Node 검증: `node tests/run-all.mjs` (빠른 10종: 도달거리·안전·IK·계획·물리·그리퍼·Pick & Place·경미 이슈·드로스 셀·계측(v1.1.2)), `--full` (스트레스·수치·측면 로봇 동시 실행 `cell-robots.mjs` 포함). `cell-robots.mjs`는 `ONLY=A|B|C`, `SIM_S`, `PROFILE=1`, `DBG=1` 환경 변수로 일부만·짧게 돌릴 수 있다. 기능을 바꾸면 반드시 다시 실행한다. 다른 폴더 검증은 스크립트에 경로 인자(예: `node tests/planner.mjs ../v1.0.0`).
 - 브라우저 확인: v1.0.0 AC-1~AC-10(`v1.0.0/PRD.md` 7장), v1.1.0 AC-11~20(`v1.1.0/PRD_v.1.1.0.md` 7장), v1.1.1 AC-21~29(`PRD_v.1.1.1.md` 7장). 자동화할 때는 캐시를 피하려고 요청에 no-cache 헤더를 붙인다. Playwright가 없으면 헤드리스 Chrome + CDP 스크립트(`--use-angle=swiftshader`)로 할 수 있다(소프트웨어 렌더링이라 FPS는 참고값).
 
 ## 구조 핵심 (`v1.1.1/js/`)
@@ -36,6 +37,7 @@ robosim-lite/
 - 상태와 저장은 `state.js`(localStorage `robosim-lite:v1`, sanitize/migrate)가 맡는다. 저장 스키마를 바꾸면 sanitize·migrate와 PRD 스키마 절을 함께 고친다.
 - 물리: `physics.js`(Rapier 래퍼: 물체·로봇 운동학 바디·고정 설비·입자·액체 부력·구름 저항, DOM 비의존), 툴: `gripper.js`(평행 그리퍼 + 드로스 스키머), Pick & Place: `task.js`.
 - 드로스 제거 셀(설계·수치·재구현 프롬프트는 `v1.1.1/DROSS_PATH.md`, 그림 문서는 `v1.1.1/docs/*.docx`): `dross.js`(셀 배치 상수, 설비, DrossField 입자 관리, 레인, `planSkimCycle`·`planPushStroke`) + `cell-robot.js`(측면 로봇·조정기, 로컬 좌표 계획) + `dross-panel.js`, 흐름은 `main.js`의 "드로스 제거 셀" 절. 설비는 `envObstacles()`로 안전 검사·경로 계획에 들어가고, 드로스 입자는 장애물이 아니다(작업 대상).
+- 계측(v1.1.2): `telemetry.js`(JointTelemetry 근사 동역학 → 추정 전류, TelemetryLog 기록), `xlsx.js`(자체 엑셀 작성기), `telemetry-panel.js`, 흐름은 `main.js`의 "실시간 계측 · 데이터 기록" 절. 전류·토크는 추정값임을 항상 명시한다.
 - 원칙: 로봇 이동(스키밍 포함)은 물리엔진보다 먼저 안전 게이트를 통과해야 한다(적용 전 검사). 시뮬레이션 모드(고정/물리)는 전체 단위로만 선택한다(물체별 선택 금지). 고정 모드·셀 꺼짐은 이전 버전과 동일하게 동작해야 한다.
 
 ## 알려진 함정
