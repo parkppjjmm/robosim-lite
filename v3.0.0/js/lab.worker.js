@@ -2,7 +2,8 @@
 // 후보 평가는 lab-eval.worker.js 여러 개(병렬)에 나눠 맡긴다. tools/train.mjs(Node)와 같은 흐름.
 // 메시지: { cmd: 'start', task, lab, robots, workers, compare } / { cmd: 'stop' }
 //   → { type: 'status', text } / { type: 'progress', p } / { type: 'done', summary, log, episode, rule } / { type: 'error', message }
-import { runLab } from './stroke-lab.js';
+import { runLab, runPolicy, sanitizeLab } from './stroke-lab.js';
+import { importPolicy } from './ppo.js';
 import { runEpisode } from './cell-sim.js';
 import { EpisodeRecorder } from './replay.js';
 
@@ -72,10 +73,29 @@ self.onmessage = async (e) => {
     const mod = await import(RAPIER_URL);
     const RAPIER = mod.default ?? mod;
     await RAPIER.init();
+    const t0 = performance.now();
+    if (m.lab.method === 'policy') {
+      // 학습된 PPO 정책 실행: 시도(평가 Worker) 없이 관측 → 정책 → 스트로크
+      const agent = importPolicy(m.policy);
+      const lab = sanitizeLab(m.policy.lab ?? m.lab);
+      self.postMessage({ type: 'status', text: '학습된 정책 실행 중…' });
+      const pr = await runPolicy({
+        RAPIER, robots: m.robots, task: m.task, lab, agent, runEpisode, record: new EpisodeRecorder({ everyS: 0.1 }),
+        onProgress: (p) => self.postMessage({ type: 'progress', p: { ...p, elapsedS: (performance.now() - t0) / 1000 } }),
+        shouldStop: () => stop,
+      });
+      let rule = null;
+      if (m.compare && !stop) {
+        self.postMessage({ type: 'status', text: '비교용 규칙 경로 실행 중…' });
+        rule = await runEpisode(m.task, { RAPIER, robots: m.robots, record: new EpisodeRecorder({ everyS: 0.1 }) });
+      }
+      const summary = { ...pr.summary, decisions: pr.log.decisions.length, emptyStrokes: '—', trials: 0, ruleChosen: 0, policy: true };
+      self.postMessage({ type: 'done', summary, log: pr.log, episode: { ...pr.episode, lab: { method: 'ppo-policy', reward: lab.reward } }, rule: rule ? { summary: rule.summary, episode: rule.episode } : null, stopped: stop, elapsedS: (performance.now() - t0) / 1000 });
+      return;
+    }
     pool = new EvalPool(m.workers, m.robots);
     await pool.ready;
     self.postMessage({ type: 'status', text: `학습 중 (평가 Worker ${m.workers}개)` });
-    const t0 = performance.now();
     const res = await runLab({
       RAPIER, robots: m.robots, task: m.task, lab: m.lab, runEpisode, record: new EpisodeRecorder({ everyS: 0.1 }),
       evalBatch: (jobs) => pool.run(jobs),

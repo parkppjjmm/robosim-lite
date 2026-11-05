@@ -32,3 +32,4 @@ desktop.ini
 # v3.0.0 학습 결과의 큰 파일(3D 재생·전체 시도 로그) — report.md만 저장소에 남긴다
 **/results/lab/**/*.gz
 **/results/lab/**/log.json
+**/results/ppo/**/*.gz

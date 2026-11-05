@@ -125,7 +125,7 @@ let replayPanel;
 const replayUI = { slot: 'main' };
 // ---- 학습 (Trial & Error) (PRD_v.3.0.0 4.5·FR-67) ----
 let labPanel;
-const labRun = { worker: null, running: false, status: '', decisions: [], progress: null, result: null, task: null, startedAt: 0 };
+const labRun = { worker: null, running: false, status: '', decisions: [], progress: null, result: null, task: null, startedAt: 0, policy: null };
 
 async function main() {
   // file:// 실행 안내는 index.html의 일반 스크립트가 담당한다 (이 모듈은 file://에서 로드되지 않음)
@@ -253,6 +253,7 @@ async function main() {
       if (ep) showEpisode(parseEpisode(ep), which === 'rule' ? '규칙 경로 (비교)' : '학습 결과 (최선 채택)');
     },
     onSaveLog: saveLabResult,
+    onPolicy: loadLabPolicy,
   });
   labPanel.setDefaultWorkers(Math.max(1, Math.min(12, (navigator.hardwareConcurrency || 4) - 2)));
   renderLabUI();
@@ -2288,7 +2289,7 @@ function renderLabUI() {
     ['학습 회수율', `${S.rateCount}% (질량 ${S.rateMass}%) — 목표 ${S.targetRatePct}% ${S.reached ? `도달 ${S.reachS} s` : '미도달'}`],
     ...(R ? [['규칙 경로 회수율', `${R.rateCount}% (질량 ${R.rateMass}%) ${R.reached ? `도달 ${R.reachS} s` : '미도달'}`]] : []),
     ['대형 스트로크 / 헛질', `${S.decisions} / ${S.emptyStrokes}`],
-    ['시도(후보 평가)', `${S.trials}개 · 규칙 레인이 최선으로 뽑힌 결정 ${S.ruleChosen}`],
+    ...(S.policy ? [['방식', '학습된 PPO 정책 (시도 없이 관측 → 스트로크)']] : [['시도(후보 평가)', `${S.trials}개 · 규칙 레인이 최선으로 뽑힌 결정 ${S.ruleChosen}`]]),
     ['흘림', `${S.spilled}${R ? ` (규칙 ${R.spilled})` : ''}`],
   ] : [];
   labPanel.render({
@@ -2306,6 +2307,10 @@ function startLab(cfg) {
     return renderLabUI();
   }
   const lab = sanitizeLab(cfg.lab);
+  if (lab.method === 'policy' && !labRun.policy) {
+    labRun.status = "방법 '학습된 정책 실행'은 [정책 불러오기]로 policy.json을 먼저 불러와야 합니다.";
+    return renderLabUI();
+  }
   Object.assign(labRun, { running: true, status: '준비 중…', decisions: [], progress: { rate: 0, t: 0 }, result: null, task, startedAt: performance.now() });
   const w = new Worker(new URL('./lab.worker.js', import.meta.url), { type: 'module' });
   labRun.worker = w;
@@ -2316,6 +2321,7 @@ function startLab(cfg) {
       const p = m.p;
       labRun.progress = { rate: p.rate, t: p.t };
       if (p.kind === 'decision') labRun.decisions.push(p.decision);
+      if (p.kind === 'policy') labRun.decisions.push({ n: p.decision.n, t: p.decision.t, rate: p.decision.rate, best: { score: '정책', rule: false, values: p.decision.values }, ruleScore: null });
       labRun.status = `학습 중 · 시뮬레이션 ${p.t.toFixed(0)} / ${task.timeLimitS} s · 회수율 ${p.rate.toFixed(1)}% · 결정 ${labRun.decisions.length} · 경과 ${p.elapsedS.toFixed(0)} s`;
     } else if (m.type === 'done') {
       labRun.result = { summary: m.summary, log: m.log, episode: m.episode, rule: m.rule };
@@ -2332,7 +2338,7 @@ function startLab(cfg) {
     finishLab();
     renderLabUI();
   };
-  w.postMessage({ cmd: 'start', task, lab, robots: catalog.robots, workers: Math.max(1, Math.min(32, cfg.workers || 4)), compare: !!cfg.compare });
+  w.postMessage({ cmd: 'start', task, lab, policy: lab.method === 'policy' ? labRun.policy : null, robots: catalog.robots, workers: Math.max(1, Math.min(32, cfg.workers || 4)), compare: !!cfg.compare });
   renderLabUI();
 }
 
@@ -2358,6 +2364,22 @@ function exportLab(cfg) {
   const out = { schema: 'robosim-lab/1', lab: sanitizeLab(cfg.lab), task, workers: cfg.workers };
   downloadBlob(new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' }), `robosim-lab-${stampName()}.json`);
   showNotice('학습 설정을 내보냈습니다. 헤드리스: v3.0.0 폴더에서 node tools/train.mjs --lab <파일>', 10000);
+}
+
+/** PPO 정책(policy.json, robosim-policy/1) 불러오기 → 방법 '학습된 정책 실행' */
+async function loadLabPolicy(file) {
+  try {
+    const obj = JSON.parse(await file.text());
+    if (obj.schema !== 'robosim-policy/1') throw new Error(`정책 형식이 아닙니다 (schema = ${obj.schema ?? '없음'})`);
+    labRun.policy = obj;
+    const e = obj.eval;
+    labRun.status = `정책을 불러왔습니다: ${file.name}${e ? ` (학습 평가 회수율 ${e.rate.toFixed(1)}%, ${obj.phase === 'bc' ? '모방 직후' : `PPO 반복 ${obj.iter}`})` : ''}. 방법을 '학습된 정책 실행'으로 두고 ▶ 학습 시작을 누르세요.`;
+    const sel = $('#lab-panel [data-lab=method]');
+    if (sel) sel.value = 'policy';
+  } catch (err) {
+    labRun.status = `정책 불러오기 실패: ${err.message}`;
+  }
+  renderLabUI();
 }
 
 async function importLab(file) {

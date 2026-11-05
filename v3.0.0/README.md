@@ -126,6 +126,15 @@ Three.js(`three@0.160.0`)와 물리엔진 Rapier(`@dimforge/rapier3d-compat@0.21
    ```
    결과는 `results/lab/<이름>/`에 `report.md`(규칙 경로와 비교), `episode.rsim.json.gz`·`rule.rsim.json.gz`(3D 재생 파일), `log.json`(모든 시도)으로 남습니다.
 
+### PPO 강화학습 (v3.0.0)
+진화 탐색은 매번 시뮬레이터로 시도해야 해서 실제 로봇에 그대로 쓸 수 없습니다. PPO는 미리 연습해 **드로스 분포만 보고 바로 스트로크를 고르는 정책(신경망)**을 만듭니다.
+```bash
+node tools/ppo-train.mjs --iterations 40 --bc 3 --workers 14      # 학습 (이 PC 약 2시간) → results/ppo/<이름>/policy.json
+node tools/ppo-eval.mjs --policy results/ppo/<이름>/policy.json --config alone   # 10분 과제 정책 vs 규칙 + 3D 재생 파일
+```
+앱에서는 **학습 (Trial & Error) → 정책 불러오기 (PPO)** 로 `policy.json`을 고르고 방법 '학습된 정책 실행'으로 ▶ 학습 시작 → 결과 3D 재생.
+첫 결과(KR 210 단독 10분): 정책 평균 65.6%, 규칙 경로 61.3% (`results/ppo/kr210-run1/eval-alone.md`).
+
 ### 단축키
 - `Space`: 재생/일시정지 (계획 경로 시작 자세면 경로 실행, 아니면 Waypoint 재생)
 - `Esc`: 정지 (경로 계산 취소, 드로스 자동 연속 정지, 드로어/알람 로그 닫기 포함). 로봇·그리퍼 동작만 멈추며 물리 시뮬레이션은 계속됩니다(물리 일시정지는 상단 `PHYS` 배지 또는 물체 패널의 일시정지)
@@ -210,6 +219,8 @@ tools/episode.mjs      (v3.0.0) 헤드리스 1회 실행 → 3D 재생 파일(.r
 js/stroke-lab.js       (v3.0.0) 학습(Trial & Error): 스트로크 변수·점수 규칙·후보 평가(evaluateStroke)·진화 탐색(CEM)·runLab (DOM 비의존)
 js/lab-panel.js        (v3.0.0) 학습 설정 창, js/lab.worker.js(학습 실행 Worker)·js/lab-eval.worker.js(후보 평가 Worker)
 tools/train.mjs        (v3.0.0) 헤드리스 학습(worker_threads 병렬, tools/lab-worker.mjs) → results/lab/<이름>/
+js/ppo.js              (v3.0.0) PPO 강화학습 코어(순수 JS MLP·Adam·PPO·GAE·모방·정책 저장) (DOM 비의존)
+tools/ppo-train.mjs    (v3.0.0) PPO 학습(tools/ppo-worker.mjs 병렬 롤아웃), tools/ppo-eval.mjs = 정책 10분 과제 평가
 tests/                 Node 검증 스크립트 (run-all.mjs로 일괄 실행, physics.mjs는 첫 실행 시 Rapier를 tests/.cache/에 받음)
 ```
 

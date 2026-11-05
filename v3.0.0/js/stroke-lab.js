@@ -41,7 +41,7 @@ export const WALL_BAND_MM = 250;
 /** 실험 설정 기본값 */
 export const LAB_DEFAULTS = Object.freeze({
   schema: 'robosim-lab/1',
-  method: 'cem', // 'cem' 진화 탐색 | 'random' 무작위 탐색 (| 'ppo' 강화학습 — 다음 단계)
+  method: 'cem', // 'cem' 진화 탐색 | 'random' 무작위 탐색 | 'policy' 학습된 PPO 정책 실행(탐색 없음)
   population: 16, // 세대당 후보 수
   iterations: 3, // 세대 수 (결정 1번에)
   eliteFrac: 0.25,
@@ -69,7 +69,7 @@ export function sanitizeLab(raw = {}) {
   for (const [k, v] of Object.entries(REWARD_DEFAULTS)) reward[k] = num(raw.reward?.[k], v, -1e4, 1e4);
   return {
     schema: D.schema,
-    method: ['cem', 'random'].includes(raw.method) ? raw.method : D.method,
+    method: ['cem', 'random', 'policy'].includes(raw.method) ? raw.method : D.method,
     population: Math.round(num(raw.population, D.population, 2, 256)),
     iterations: Math.round(num(raw.iterations, D.iterations, 1, 50)),
     eliteFrac: num(raw.eliteFrac, D.eliteFrac, 0.05, 0.9),
@@ -95,19 +95,44 @@ export function decodeStroke(u, lab) {
   return strokeFromValues(v);
 }
 
-/** 변수 값 → 실행용 스트로크 (끝점은 포트 안쪽으로 자름) */
-export function strokeFromValues(v) {
+/** 스쿱 중심이 갈 수 있는 기본 상자 = 규칙 레인과 같은 여유(판 반폭 180 + 장애물 여유 20 + 30) → 앞벽 1330, 스나우트 앞 2070, 좌우 ±670 */
+const BOX_MARGIN = 230;
+export const STROKE_BOX = { x0: POT.x0 + BOX_MARGIN, x1: SNOUT.x0 - BOX_MARGIN, y0: POT.y0 + BOX_MARGIN, y1: POT.y1 - BOX_MARGIN };
+
+/**
+ * 측면 로봇 구역 제약(PRD 2장: AI 로봇도 기존 조정 규칙을 지킴): 모드 1 측면 로봇이 있는 쪽은 대형 레인 범위(mainLaneRange)까지만.
+ * @returns 스쿱 중심 상자
+ */
+export function zoneBox(sides = {}) {
+  const r = mainLaneRange(SKIMMER_SPEC, sides);
+  return { ...STROKE_BOX, y0: Math.max(STROKE_BOX.y0, r.yLo), y1: Math.min(STROKE_BOX.y1, r.yHi) };
+}
+
+/** 변수 값 → 실행용 스트로크 (시작·끝점은 상자 안으로 자름) */
+export function strokeFromValues(v, box = STROKE_BOX) {
   const h = (v.headingDeg * Math.PI) / 180;
-  // 스쿱 중심이 갈 수 있는 상자 = 규칙 레인과 같은 여유(판 반폭 180 + 장애물 여유 20 + 30) → 앞벽 1330, 스나우트 앞 2070, 좌우 ±670
-  const m = 230;
-  const box = { x0: POT.x0 + m, x1: SNOUT.x0 - m, y0: POT.y0 + m, y1: POT.y1 - m };
   const x0 = clamp(v.x0, box.x0, box.x1), y0 = clamp(v.y0, box.y0, box.y1);
   // 끝점: 방향으로 길이만큼, 상자 밖이면 상자 경계에서 멈춤
-  let L = v.lengthMm;
-  const dx = Math.cos(h), dy = Math.sin(h);
-  for (const [d, p, lo, hi] of [[dx, x0, box.x0, box.x1], [dy, y0, box.y0, box.y1]]) {
-    if (d > 1e-9) L = Math.min(L, (hi - p) / d);
-    else if (d < -1e-9) L = Math.min(L, (lo - p) / d);
+  const reach = (dx, dy) => {
+    let L = v.lengthMm;
+    for (const [d, p, lo, hi] of [[dx, x0, box.x0, box.x1], [dy, y0, box.y0, box.y1]]) {
+      if (d > 1e-9) L = Math.min(L, (hi - p) / d);
+      else if (d < -1e-9) L = Math.min(L, (lo - p) / d);
+    }
+    return Math.max(0, L);
+  };
+  let dx = Math.cos(h), dy = Math.sin(h);
+  let L = reach(dx, dy);
+  // 시작점이 상자 경계에 붙어 바깥을 향하면 길이가 0에 가까워진다(헛스트로크) → 방향을 좌우·앞뒤로 뒤집어 충분히 긴 쪽을 쓴다
+  const need = Math.min(200, v.lengthMm);
+  if (L < need) {
+    for (const [mx, my] of [[1, -1], [-1, 1], [-1, -1]]) {
+      const L2 = reach(dx * mx, dy * my);
+      if (L2 > L) {
+        [dx, dy, L] = [dx * mx, dy * my, L2];
+        if (L >= need) break;
+      }
+    }
   }
   return {
     values: { ...v },
@@ -166,12 +191,12 @@ export function scoreStroke(r, reward) {
  * 행동 보정 (정책 실행용, 안전한 강화학습의 action repair): 계획이 안 되는 스트로크를 안전한 쪽으로 당긴다.
  * k = 1: 시작점을 규칙 레인 범위 안으로, 열린 면 회전·기울임 절반 / k = 2: 회전·기울임 0, 벽에서 15% 더 안쪽
  */
-export function repairValues(v, k) {
+export function repairValues(v, k, box = STROKE_BOX) {
   const f = k === 1 ? 0.5 : 0;
   return {
     ...v,
-    x0: clamp(v.x0, 1350, 2050),
-    y0: clamp(v.y0, -640, 640) * (k === 1 ? 1 : 0.85),
+    x0: clamp(v.x0, box.x0 + 20, box.x1 - 20),
+    y0: clamp(v.y0, box.y0 + 30, box.y1 - 30) * (k === 1 ? 1 : 0.85),
     yaw0Deg: v.yaw0Deg * f,
     yaw1Deg: v.yaw1Deg * f,
     tiltDeg: v.tiltDeg * f,
@@ -179,11 +204,11 @@ export function repairValues(v, k) {
 }
 
 /** 계획 가능한 스트로크 찾기: 원래 값 → 보정 1 → 보정 2. @returns { values, res, repaired(0~2) } (res.ok가 false면 모두 실패) */
-export async function planWithRepair({ robot, q0, values, sides = {}, thresholds, repair = true }) {
+export async function planWithRepair({ robot, q0, values, sides = {}, thresholds, repair = true, box = STROKE_BOX }) {
   let res = null;
   for (let k = 0; k <= (repair ? 2 : 0); k++) {
-    const v = k ? repairValues(values, k) : values;
-    res = await planStroke({ robot, q0, stroke: strokeFromValues(v), sides, thresholds });
+    const v = k ? repairValues(values, k, box) : values;
+    res = await planStroke({ robot, q0, stroke: strokeFromValues(v, box), sides, thresholds });
     if (res.ok) return { values: v, res, repaired: k };
   }
   return { values, res, repaired: -1 };
@@ -484,26 +509,35 @@ const workCountOf = (ps) => {
 };
 
 /**
- * runEpisode의 mainChooser로 쓰는 정책 선택기. 결정적(평균 행동). 같은 자세에서 다시 불리면(직전 스트로크 계획 실패)
- * 표준편차만큼 흔든 행동으로 다시 시도한다(같은 실패 반복 방지).
+ * runEpisode의 mainChooser로 쓰는 정책 선택기. 결정적(평균 행동).
+ * - 직전 스트로크 계획이 실패해 곧바로(시뮬레이션 4.5 s 안) 다시 불리면 표준편차만큼 흔든 행동으로 다시 시도한다.
+ *   (덤프 뒤 복귀 자세는 매번 같으므로 관절값 비교로는 실패를 알 수 없다 — 시간으로 판단)
+ * - 계획 가능 여부를 먼저 확인해 보정(repair)하고, 그래도 안 되면 규칙 레인으로 대신한다(안전한 대체 동작).
  */
 export function makePolicyChooser(agent, lab, { rand = rng(7), onDecision = () => {} } = {}) {
-  let initial = null, lastQ = null, retries = 0;
+  let initial = null, lastT = -Infinity, retries = 0;
   return async ({ q, sim, evaluator }) => {
     const ps = snapshotParticles(sim.world);
     const work = workCountOf(ps);
     if (initial === null) initial = work;
     if (!work) return null;
-    const same = lastQ && q.every((v, i) => Math.abs(v - lastQ[i]) < 1e-6);
-    retries = same ? retries + 1 : 0;
-    lastQ = q.slice();
-    if (retries > 6) return null;
-    const obs = observe(ps, { initialCount: initial, tFrac: Math.min(1, evaluator.last.t / sim.task.timeLimitS) });
+    const t = evaluator.last.t;
+    retries = t - lastT < 4.5 ? retries + 1 : 0;
+    lastT = t;
+    const obs = observe(ps, { initialCount: initial, tFrac: Math.min(1, t / sim.task.timeLimitS) });
     const { u } = act(agent, obs, rand, retries === 0);
-    // 계획 가능한지 먼저 확인하고, 안 되면 보정(repair)
-    const fix = await planWithRepair({ robot: sim.robot, q0: q, values: decodeStroke(u, lab).values, sides: sim.sides, thresholds: sim.thresholds });
-    const st = strokeFromValues(fix.values);
-    onDecision({ t: evaluator.last.t, rate: evaluator.last.rateCount, values: st.values, retry: retries, repaired: fix.repaired });
+    const box = zoneBox(sim.sides); // 측면 로봇 구역은 침범하지 않음
+    let fix = await planWithRepair({ robot: sim.robot, q0: q, values: decodeStroke(u, lab).values, sides: sim.sides, thresholds: sim.thresholds, box });
+    let fallback = false;
+    if (fix.repaired < 0) {
+      const rv = ruleValues(sim.world.particleState(), sim.sides, sim.thresholds, sim.task);
+      if (rv) {
+        fix = { values: rv, repaired: -1 };
+        fallback = true;
+      }
+    }
+    const st = strokeFromValues(fix.values, fallback ? STROKE_BOX : box);
+    onDecision({ t, rate: evaluator.last.rateCount, values: st.values, retry: retries, repaired: fix.repaired, fallback });
     return { lane: { start: st.start, end: st.end }, stroke: { yaw0Deg: st.yaw0Deg, yaw1Deg: st.yaw1Deg, tiltDeg: st.tiltDeg }, immersionMm: st.depthMm, sweepMmS: st.speedMmS };
   };
 }
@@ -513,7 +547,7 @@ export async function runPolicy({ RAPIER, robots, task, lab, agent, runEpisode, 
   const decisions = [];
   const chooser = makePolicyChooser(agent, lab, {
     onDecision: (d) => {
-      decisions.push({ n: decisions.length + 1, t: +d.t.toFixed(1), rate: +d.rate.toFixed(1), values: d.values, retry: d.retry });
+      decisions.push({ n: decisions.length + 1, t: +d.t.toFixed(1), rate: +d.rate.toFixed(1), values: d.values, retry: d.retry, repaired: d.repaired, fallback: d.fallback });
       onProgress({ kind: 'policy', decision: decisions.at(-1), rate: d.rate, t: d.t });
     },
   });

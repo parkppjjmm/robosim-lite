@@ -53,7 +53,19 @@
   - 헤드리스 `tools/train.mjs`(worker_threads, `tools/lab-worker.mjs`) → `results/lab/<이름>/report.md`·3D 재생 파일
   - `runEpisode`의 `mainChooser`·`shouldStop`, 브라우저 Worker용 이벤트 루프 양보
 - **첫 결과 (10분 회수율, 진화 탐색 vs 규칙):** KR 210 단독 시드 11 **75.0%** vs 61.9%, 시드 12 **75.6%** vs 56.9%, 3대 모드 1 **52.5%** vs 38.8%.
-- **PPO 강화학습 (진행 중):** `js/ppo.js`(순수 JS MLP·Adam·PPO·GAE·모방(BC)·정책 저장 `robosim-policy/1`), `tools/ppo-train.mjs`·`tools/ppo-worker.mjs`. 학습 엔진을 Python 대신 JS로 바꿈(PRD D13).
+- **PPO 강화학습 (1차):**
+  - `js/ppo.js`: 순수 JS MLP·Adam·PPO·GAE·모방(BC)·정책 저장 `robosim-policy/1`
+  - `tools/ppo-train.mjs`·`tools/ppo-worker.mjs`: 모방 → PPO → 최고 체크포인트
+  - `tools/ppo-eval.mjs`: 전체 셀 10분 과제 정책 vs 규칙, 3D 재생 파일
+  - 학습 엔진을 Python 대신 JS로 바꿈(PRD D13)
+  - 첫 결과(KR 210, 40회): 학습 평가 71.9%. 전체 셀 10분은 대형 단독 평균 **65.6%**(규칙 61.3%), 3대 모드 1은 34.6%(규칙 37.1%)
+- **정책 실행 (앱·Node):** `makePolicyChooser`·`runPolicy`
+  - 행동 보정(repair) → 안 되면 규칙 레인으로 대체
+  - 측면 로봇 구역 제약(`zoneBox`)
+  - 경계에서 바깥을 향한 길이 0 스트로크는 방향을 뒤집음
+  - 앱 '학습' 패널 [정책 불러오기] + 방법 '학습된 정책 실행 (PPO)' → 실행·3D 재생
+- **수정:** 정책 실행기가 덤프 뒤 같은 복귀 자세를 '계획 실패 재시도'로 잘못 판단해 무작위 행동 → 대형 로봇 정지(10분 33%로 잘못 측정). 실패 판정을 시뮬레이션 시간 기준으로 바꿈.
+- 스트로크 상자를 규칙 레인 여유(앞벽 1330 ~ 스나우트 앞 2070, ±670)로 맞춤.
 - 테스트 `tests/stroke-lab.mjs`(12항목, 빠른 목록에 추가).
 
 ### 변경

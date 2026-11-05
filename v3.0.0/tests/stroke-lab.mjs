@@ -28,8 +28,12 @@ const check = (name, ok, detail = '') => {
   check('탐색 변수 = 켠 것만 (기울임 끔 → 8개)', L.searchKeys(lab).length === 8);
   const s = L.decodeStroke(new Array(8).fill(0.5), lab);
   check('탐색 끈 변수는 고정값 (기울임 7°)', s.tiltDeg === 7);
-  const clipped = L.strokeFromValues({ x0: 2000, y0: 0, headingDeg: 0, lengthMm: 2000, yaw0Deg: 0, yaw1Deg: 0, tiltDeg: 0, depthMm: 60, speedMmS: 120 });
+  const clipped = L.strokeFromValues({ x0: 1500, y0: 0, headingDeg: 0, lengthMm: 2000, yaw0Deg: 0, yaw1Deg: 0, tiltDeg: 0, depthMm: 60, speedMmS: 120 });
   check('끝점은 포트 안쪽(스나우트 앞 230 mm = 규칙 레인 여유)에서 멈춤', Math.abs(clipped.end[0] - (D.SNOUT.x0 - 230)) < 1e-6 && clipped.lengthMm < 2000, `끝 X ${clipped.end[0].toFixed(0)}, 길이 ${clipped.lengthMm.toFixed(0)}`);
+  const flip = L.strokeFromValues({ x0: 2050, y0: 0, headingDeg: 0, lengthMm: 600, yaw0Deg: 0, yaw1Deg: 0, tiltDeg: 0, depthMm: 60, speedMmS: 120 });
+  check('경계에서 바깥을 향한 스트로크(길이 ≈ 0)는 방향을 뒤집어 헛스트로크 방지', flip.lengthMm >= 200 && flip.end[0] < flip.start[0], `길이 ${flip.lengthMm.toFixed(0)}, 끝 X ${flip.end[0].toFixed(0)}`);
+  const zb = L.zoneBox({ left: { robotId: 'ur-ur10e', mode: 1 }, right: { robotId: null } });
+  check('측면 로봇 구역 제약: 왼쪽 모드 1이면 대형 스트로크 Y ≤ 230 (규칙 레인과 같음)', zb.y1 === 230 && zb.y0 === -670, JSON.stringify(zb));
   const v = { x0: 1800, y0: -300, headingDeg: 200, lengthMm: 600, yaw0Deg: 30, yaw1Deg: -40, tiltDeg: 5, depthMm: 50, speedMmS: 100 };
   const full = L.sanitizeLab({});
   const back = L.decodeStroke(L.encodeValues(v, full), full).values;

@@ -17,7 +17,8 @@ const REWARD_LABELS = [
  */
 export function mountLabPanel(root, h) {
   root.innerHTML = `
-    <p class="hint">스쿱 열린 면 방향(J6)·쓸어 가는 방향·위치·기울임 등을 바꿔 가며 시도(Trial)하고, 점수 규칙으로 가장 좋은 것만 실행합니다(진화 탐색 → 다음 단계 강화학습).
+    <p class="hint">스쿱 열린 면 방향(J6)·쓸어 가는 방향·위치·기울임 등을 바꿔 가며 시도(Trial)하고, 점수 규칙으로 가장 좋은 것만 실행합니다(진화 탐색).
+    PPO로 학습한 정책(<code>node tools/ppo-train.mjs</code>의 policy.json)을 불러오면 방법 '학습된 정책 실행'으로 시도 없이 바로 실행합니다.
     대형 로봇이 학습 대상이고, 측면 로봇은 '드로스 제거 셀'에서 고른 대로 기존 경로로 함께 일합니다.</p>
     <fieldset class="lab-box"><legend>과제</legend>
       <div class="lab-grid">
@@ -41,7 +42,7 @@ export function mountLabPanel(root, h) {
     </fieldset>
     <fieldset class="lab-box"><legend>탐색 방법 · 양</legend>
       <div class="lab-grid">
-        <label>방법 <select data-lab="method"><option value="cem">진화 탐색 (CEM)</option><option value="random">무작위 탐색</option><option value="ppo" disabled>강화학습 (PPO) — 다음 단계</option></select></label>
+        <label>방법 <select data-lab="method"><option value="cem">진화 탐색 (CEM)</option><option value="random">무작위 탐색</option><option value="policy">학습된 정책 실행 (PPO)</option></select></label>
         <label>세대당 후보 <input type="number" data-lab="population" min="2" max="256" value="16" /></label>
         <label>세대 수 (결정마다) <input type="number" data-lab="iterations" min="1" max="50" value="3" /></label>
         <label>병렬 Worker <input type="number" data-lab="workers" min="1" max="64" value="4" /></label>
@@ -57,7 +58,9 @@ export function mountLabPanel(root, h) {
       <button type="button" class="btn btn-small" data-lab-act="export" title="node tools/train.mjs --lab 파일 로 헤드리스 실행">설정 내보내기</button>
       <button type="button" class="btn btn-small" data-lab-act="import">설정 가져오기</button>
       <button type="button" class="btn btn-small" data-lab-act="reset">기본값</button>
+      <button type="button" class="btn btn-small" data-lab-act="policy" title="node tools/ppo-train.mjs가 만든 policy.json">정책 불러오기 (PPO)</button>
       <input type="file" data-lab-act="file" accept=".json,application/json" hidden />
+      <input type="file" data-lab-act="policy-file" accept=".json,application/json" hidden />
     </div>
     <p class="sim-status lab-status" aria-live="polite"></p>
     <div class="lab-progress" hidden>
@@ -83,6 +86,12 @@ export function mountLabPanel(root, h) {
   act('replay-lab', () => h.onReplay('lab'));
   act('replay-rule', () => h.onReplay('rule'));
   act('save', () => h.onSaveLog());
+  const polIn = $('[data-lab-act=policy-file]');
+  act('policy', () => polIn.click());
+  polIn.addEventListener('change', () => {
+    if (polIn.files[0]) h.onPolicy(polIn.files[0]);
+    polIn.value = '';
+  });
   fileIn.addEventListener('change', () => {
     if (fileIn.files[0]) h.onImport(fileIn.files[0]);
     fileIn.value = '';
