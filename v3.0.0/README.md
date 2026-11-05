@@ -93,6 +93,39 @@ Three.js(`three@0.160.0`)와 물리엔진 Rapier(`@dimforge/rapier3d-compat@0.21
 - 전류·토크는 시뮬레이터에 모터 모델이 없어 **근사 동역학으로 추정한 값**입니다(중력 + 관성 + 마찰 + 욕 저항). 실측이 아닙니다. 수식·가정은 `PRD_v.1.1.2.md` 2장과 엑셀 `meta` 시트에 있습니다.
 - 머신러닝 과정·과제 아이디어는 `PRD_v.1.1.2.md` 5장.
 
+### 헤드리스 결과 3D 재생 (v3.0.0)
+1. 헤드리스로 10분 실행해 기록 파일을 만듭니다(`v3.0.0/` 폴더에서, Node 18+).
+   ```bash
+   node tools/episode.mjs --config mode1            # KR 210 + 왼쪽 UR10e + 오른쪽 IRB 1200 (모드 1), 시드 11, 600 s
+   node tools/episode.mjs --config alone --seed 12  # 대형 단독
+   # 옵션: --main <로봇 id> --left ur-ur10e:2 --right none --seed --count --simS --every 0.1 --out <파일>
+   ```
+   결과는 `results/episodes/*.rsim.json.gz`(10분에 약 0.5 MB)입니다.
+2. 앱 오른쪽 패널 **에피소드 재생 → 에피소드 불러오기**에서 그 파일을 고릅니다.
+3. 3D 화면 아래 막대로 조작합니다: ⏮ 처음으로, ▶/⏸ 재생·일시정지(**Space**), 배속 0.25~20×, 시간 막대(앞뒤 이동).
+   - 오른쪽 위에는 회수율(목표선), 대형 로봇 단계, 고른 로봇의 J1~J6 관절각이 나옵니다.
+   - 패널에는 에피소드 정보·최종 결과·회수율 곡선이 나옵니다.
+4. **재생 종료**를 누르면 원래 장면으로 돌아옵니다. 재생 중에는 앱 시뮬레이션이 멈추고, 저장된 설정은 바뀌지 않습니다.
+
+기준선 표(규칙 경로 10분 회수율, 대형 4종 × 단독·모드 1·모드 2 × 시드 3개)는 `node tools/baseline.mjs` → `results/baseline.md`.
+
+### 학습 (Trial & Error) (v3.0.0)
+스쿱의 열린 면 방향(J6), 쓸어 가는 방향, 시작 위치, 스윕 중 회전, 기울임, 깊이, 속도를 바꿔 가며 시도합니다. 내가 정한 점수 규칙으로 가장 좋은 스트로크만 실행합니다(진화 탐색. 강화학습 PPO는 다음 단계).
+1. **드로스 제거 셀** 패널에서 대형 로봇·측면 로봇·드로스 개수·시드를 정합니다. 학습은 이 설정을 씁니다.
+2. **학습 (Trial & Error)** 패널을 설정합니다.
+   - 목표 회수율·제한 시간
+   - **점수 규칙**: 회수 +, 벽 띠 보너스 +, 헛질 −, 흘림 −, 시간 −, 계획 불가 −
+   - **시도할 범위**: 변수마다 탐색 켜기·최소·최대·고정값
+   - 방법·후보 수·세대 수·병렬 Worker
+3. **▶ 학습 시작**을 누르면 브라우저 Worker에서 돌고, 진행률·결정별 최고 점수(규칙 경로 점수와 비교)·스트로크가 표시됩니다.
+   - 끝나면 **학습 결과 3D 재생 / 규칙 결과 3D 재생 / 결과 저장**을 쓸 수 있습니다.
+4. 큰 학습은 헤드리스로 돌리는 편이 빠릅니다. **설정 내보내기**로 파일을 만든 뒤 아래처럼 실행합니다.
+   ```bash
+   node tools/train.mjs --lab robosim-lab-*.json          # 또는
+   node tools/train.mjs --config alone --seed 11 --population 32 --iterations 4 --workers 14
+   ```
+   결과는 `results/lab/<이름>/`에 `report.md`(규칙 경로와 비교), `episode.rsim.json.gz`·`rule.rsim.json.gz`(3D 재생 파일), `log.json`(모든 시도)으로 남습니다.
+
 ### 단축키
 - `Space`: 재생/일시정지 (계획 경로 시작 자세면 경로 실행, 아니면 Waypoint 재생)
 - `Esc`: 정지 (경로 계산 취소, 드로스 자동 연속 정지, 드로어/알람 로그 닫기 포함). 로봇·그리퍼 동작만 멈추며 물리 시뮬레이션은 계속됩니다(물리 일시정지는 상단 `PHYS` 배지 또는 물체 패널의 일시정지)
@@ -169,6 +202,14 @@ js/telemetry.js        관절 계측(각도·속도·가속도·토크·추정 �
 js/xlsx.js             엑셀(.xlsx) 작성기 — Office Open XML + ZIP(무압축, CRC-32), 라이브러리 없음 (v1.1.2)
 js/telemetry-panel.js  실시간 계측 패널(각도·속도·전류·토크 버튼, 기록·추출)과 3D 오버레이 표 (v1.1.2)
 js/cell-robot.js       측면 로봇(CellRobot: 슬롯 좌표·대기 자세·레인·계획·실행·양보)·조정기(CellCoordinator: 모드 2 잠금) (DOM 비의존, v1.1.1)
+js/task-eval.js        (v3.0.0) 작업 설정(목표 회수율·제한 시간·AI 로봇·셀) 검증과 회수율 평가기 (DOM 비의존)
+js/cell-sim.js         (v3.0.0) 헤드리스 셀 시뮬레이터 runEpisode: 측면 → 대형(규칙 | 정책 Δq 20 Hz) → 물리, 규칙 재생 컨트롤러 (DOM 비의존)
+tools/baseline.mjs     (v3.0.0) 규칙 경로 기준선 측정(대형 × 셀 구성 × 시드, 병렬) → results/baseline.md
+js/replay.js           (v3.0.0) 에피소드 기록·형식(robosim-episode/1)·재생기 (DOM 비의존), js/replay-panel.js = 재생 패널·3D 재생 막대
+tools/episode.mjs      (v3.0.0) 헤드리스 1회 실행 → 3D 재생 파일(.rsim.json.gz)
+js/stroke-lab.js       (v3.0.0) 학습(Trial & Error): 스트로크 변수·점수 규칙·후보 평가(evaluateStroke)·진화 탐색(CEM)·runLab (DOM 비의존)
+js/lab-panel.js        (v3.0.0) 학습 설정 창, js/lab.worker.js(학습 실행 Worker)·js/lab-eval.worker.js(후보 평가 Worker)
+tools/train.mjs        (v3.0.0) 헤드리스 학습(worker_threads 병렬, tools/lab-worker.mjs) → results/lab/<이름>/
 tests/                 Node 검증 스크립트 (run-all.mjs로 일괄 실행, physics.mjs는 첫 실행 시 Rapier를 tests/.cache/에 받음)
 ```
 

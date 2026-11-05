@@ -281,6 +281,22 @@ export function levelPose(p, dir) {
   return poseMatrix([X[0], Y[0], Z[0], X[1], Y[1], Z[1], X[2], Y[2], Z[2]], p);
 }
 
+/** 진행 방향 dir을 yawDeg만큼 돌린 방향 (Z축 기준, 반시계 +) */
+export function rotateDir(dir, yawDeg) {
+  if (!yawDeg) return dir;
+  const a = (yawDeg * Math.PI) / 180, c = Math.cos(a), s = Math.sin(a);
+  return [dir[0] * c - dir[1] * s, dir[0] * s + dir[1] * c];
+}
+
+/**
+ * 방향을 바꾼 스쿱 자세 (v3.0.0): 열린 앞면 = 진행 방향 dir을 yawDeg 돌린 방향(J6 회전), tiltDeg만큼 앞을 숙임(+) / 듦(−).
+ * yaw 0·tilt 0이면 levelPose와 같다.
+ */
+export function orientedPose(p, dir, yawDeg = 0, tiltDeg = 0) {
+  const T = levelPose(p, rotateDir(dir, yawDeg));
+  return tiltDeg ? tiltPose(T, tiltDeg) : T;
+}
+
 /** 앞쪽이 아래로 가도록 툴 Y축 기준으로 기울인 자세 (덤프): R · Ry(−θ) */
 export function tiltPose(T, deg) {
   const t = (-deg * Math.PI) / 180, c = Math.cos(t), s = Math.sin(t);
@@ -430,19 +446,24 @@ function motionKit({ robot, spec, obstacles, thresholds, floor = true, avoidSing
  * 모든 직선 구간은 실행 기준 여유거리로 세분 검사한다. ①만 막히면 경로 계획(RRT, plan이 없으면 관절 보간)을 쓴다.
  * @param input { robot, q0, spec, lane, immersionMm, sweepMmS, obstacles(설비 + 물체), thresholds, floor, avoidSingularity,
  *                cell?: { bathZ, liftZ, bin{ x0,x1,y0,y1,h } } }  — 기본값 = 대형 로봇 셀(로봇 좌표 = 월드)
- *   lane: { y, xs, xe } (대형 기본, X 방향 스윕) 또는 { start:[x,y], end:[x,y] } (측면 로봇, 로컬 좌표)
+ *   lane: { y, xs, xe } (대형 기본, X 방향 스윕) 또는 { start:[x,y], end:[x,y] } (측면 로봇, 로컬 좌표 / v3.0.0 자유 스트로크)
+ *   stroke (v3.0.0, 없으면 v1.1.2와 같음): { yaw0Deg, yaw1Deg, tiltDeg, segments } — 스윕 시작·끝의 스쿱 방향(열린 앞면을
+ *     진행 방향에서 돌린 각도, J6 회전), 스윕 중 기울임, 스윕을 나눌 직선 구간 수(방향 보간). 들기·운반·덤프는 끝 방향 기준.
  * @param deps { plan(req) | null }  req = { start, goal, obstacles, tool, attached: null, physicsMode: true }
  * @returns {Promise<{ ok: true, steps, vertices, duration } | { ok: false, stage, message }>}
  */
 export async function planSkimCycle(input, { plan = null } = {}) {
   const { robot, q0, spec, lane, immersionMm = DROSS_DEFAULTS.immersionMm, sweepMmS = DROSS_DEFAULTS.sweepMmS,
-    obstacles, thresholds, floor = true, avoidSingularity = false, cell = {} } = input;
+    obstacles, thresholds, floor = true, avoidSingularity = false, cell = {}, stroke = null } = input;
   const bathZ = cell.bathZ ?? BATH_Z_MM, liftZ = cell.liftZ ?? SKIM.liftZMm, bin = cell.bin ?? BIN;
   const kit = motionKit({ robot, spec, obstacles, thresholds, floor, avoidSingularity });
   const { linear, joint } = kit;
   const fail = (stage, message) => ({ ok: false, stage, message: `${stage}: ${message}` });
   const start = lane.start ?? [lane.xs, lane.y], end = lane.end ?? [lane.xe, lane.y];
   const sweepDir = [end[0] - start[0], end[1] - start[1]]; // 열린 앞쪽이 진행 방향 → 판이 드로스 밑으로 들어가고 뒤 턱이 모은다
+  const yaw0 = stroke?.yaw0Deg ?? 0, yaw1 = stroke?.yaw1Deg ?? yaw0, tilt = stroke?.tiltDeg ?? 0;
+  const segN = Math.max(1, Math.round(stroke?.segments ?? (yaw0 !== yaw1 ? 6 : 1)));
+  const dir0 = rotateDir(sweepDir, yaw0), endDir = rotateDir(sweepDir, yaw1); // 스윕 시작·끝 스쿱 방향
   const steps = [];
   const verts = [{ q: q0.slice(), kind: 'start' }];
   const move = (label, tr, q, kind = 'via') => {
@@ -451,30 +472,49 @@ export async function planSkimCycle(input, { plan = null } = {}) {
   };
 
   // ① 레인 시작 위로
-  const Tapp = levelPose([start[0], start[1], bathZ + SKIM.approachAboveMm], sweepDir);
+  const Tapp = orientedPose([start[0], start[1], bathZ + SKIM.approachAboveMm], sweepDir, yaw0, tilt);
   // cell.corridor: 측면 로봇이 있으면 대형 로봇은 드로스 박스 쪽 통로로만 오간다 —
   //   레인 접근 = 지금 X에서 Y 먼저, 박스로 이동 = 박스 X까지 먼저 간 뒤 Y (측면 띠 위를 대각선으로 지나지 않음)
   // cell.dumpVia: 박스로 가는 경유 순서 — 'x'(박스 X까지 먼저: 대형) | 'y'(박스 Y까지 먼저: 측면 로봇, 스나우트를 피함)
   const corridor = !!cell.corridor;
   const dumpVia = cell.dumpVia ?? (corridor ? 'x' : null);
-  const s1 = await kit.reach(q0, Tapp, sweepDir, liftZ, plan, '레인 접근', corridor ? 'y-first' : 'auto');
+  const s1 = await kit.reach(q0, Tapp, dir0, liftZ, plan, '레인 접근', corridor ? 'y-first' : 'auto');
   if (s1.error) return fail('레인 접근', s1.error);
   s1.moves.forEach((m) => move(m.label, m.tr, m.q));
   const q = s1.moves.at(-1).q;
 
   // ② 하강 ③ 스윕 ④ 상승
   const z = bathZ - immersionMm;
-  const s2 = linear(q, levelPose([start[0], start[1], z], sweepDir), SKIM.verticalMmS);
+  const s2 = linear(q, orientedPose([start[0], start[1], z], sweepDir, yaw0, tilt), SKIM.verticalMmS);
   if (s2.error) return fail('스쿱 하강', s2.error);
   move('스쿱 하강', s2.tr, s2.q);
-  const s3 = linear(s2.q, levelPose([end[0], end[1], z], sweepDir), sweepMmS);
+  let s3;
+  if (segN === 1) s3 = linear(s2.q, orientedPose([end[0], end[1], z], sweepDir, yaw1, tilt), sweepMmS);
+  else {
+    // 방향을 바꾸며 쓸기: 직선 segN개로 나누고 구간마다 스쿱 방향을 yaw0 → yaw1로 보간 (J6가 돈다)
+    const trs = [];
+    let qq = s2.q;
+    s3 = null;
+    for (let k = 1; k <= segN; k++) {
+      const f = k / segN;
+      const pk = [start[0] + (end[0] - start[0]) * f, start[1] + (end[1] - start[1]) * f, z];
+      const m = linear(qq, orientedPose(pk, sweepDir, yaw0 + (yaw1 - yaw0) * f, tilt), sweepMmS);
+      if (m.error) {
+        s3 = m;
+        break;
+      }
+      trs.push(m.tr);
+      qq = m.q;
+    }
+    s3 ??= { tr: concatTrajectories(trs), q: qq };
+  }
   if (s3.error) return fail('스윕', s3.error);
   move('스윕', s3.tr, s3.q, 'pick');
-  const s4a = linear(s3.q, levelPose([end[0], end[1], liftZ], sweepDir), SKIM.verticalMmS, true);
+  const s4a = linear(s3.q, levelPose([end[0], end[1], liftZ], endDir), SKIM.verticalMmS, true);
   if (s4a.error) return fail('스쿱 상승', s4a.error);
   move('스쿱 상승', s4a.tr, s4a.q);
   const carry = (T) => tiltPose(T, -SKIM.carryTiltDeg);
-  const s4 = linear(s4a.q, carry(levelPose([end[0], end[1], liftZ], sweepDir)), undefined, true);
+  const s4 = linear(s4a.q, carry(levelPose([end[0], end[1], liftZ], endDir)), undefined, true);
   if (s4.error) return fail('스쿱 뒤로 기울임', s4.error);
   move('스쿱 뒤로 기울임', s4.tr, s4.q);
 
@@ -490,7 +530,7 @@ export async function planSkimCycle(input, { plan = null } = {}) {
     let a;
     if (dumpVia) {
       const via = dumpVia === 'x' ? [center[0], end[1]] : [end[0], center[1]];
-      const v = linear(s4.q, carry(levelPose([via[0], via[1], liftZ], sweepDir)), SKIM.loadedMmS, true);
+      const v = linear(s4.q, carry(levelPose([via[0], via[1], liftZ], endDir)), SKIM.loadedMmS, true);
       const w = v.error ? v : linear(v.q, Tover, SKIM.loadedMmS, true);
       a = w.error ? w : { tr: concatTrajectories([v.tr, w.tr]), q: w.q };
     } else a = linear(s4.q, Tover, SKIM.loadedMmS, true);

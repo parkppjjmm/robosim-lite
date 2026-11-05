@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
-const quick = ['reach.mjs', 'safety.mjs', 'ik-trajectory.mjs', 'planner.mjs', 'physics.mjs', 'gripper.mjs', 'pick-place.mjs', 'minor-fixes.mjs', 'dross.mjs', 'telemetry.mjs'];
+const quick = ['reach.mjs', 'safety.mjs', 'ik-trajectory.mjs', 'planner.mjs', 'physics.mjs', 'gripper.mjs', 'pick-place.mjs', 'minor-fixes.mjs', 'dross.mjs', 'telemetry.mjs', 'task-eval.mjs', 'stroke-lab.mjs']; // v3.0.0: task-eval(작업 설정·헤드리스 셀·재생), stroke-lab(학습 Trial & Error)
 const full = [...quick, 'planner-stress.mjs', 'numeric-review.mjs', 'cell-robots.mjs']; // cell-robots: 측면 로봇 동시 실행 재현(수 분)
 const list = process.argv.includes('--full') ? full : quick;
 

@@ -23,8 +23,41 @@
 - `PROMPTS.md`(0~11단계 프롬프트·진행표).
 - 기준선 1차 측정(Node, 600 s, 드로스 160개·시드 11): 규칙 경로 KR 210 단독 61.9%, 3대(모드 1) 38.8%.
 
+- **1단계 구현 (2026-11-05):**
+  - `js/task-eval.js`: 작업 설정(목표 회수율·제한 시간·AI 로봇·셀) 검증과 회수율 평가기(개수·질량, 목표 도달 시각, 로봇별 기여, 스나우트 너머 제외)
+  - `js/cell-sim.js`: 헤드리스 셀 시뮬레이터 `runEpisode`
+    - 대형 로봇: 규칙 또는 정책(20 Hz Δq, 매 스텝 적용 전 검사)
+    - `RuleReplayController`: 규칙 경로를 Δq로 재생
+    - 계획 실패 시 3 s 뒤 다시 시도, 2번 실패한 레인은 건너뜀
+  - `tests/cell-robots.mjs`: 이 모듈을 쓰도록 바꿈
+  - `js/planner.js`: `deterministic` 옵션 — Shortcut·최적화·블렌딩을 시간 대신 반복 횟수로 끝냄(기본 동작 불변)
+  - `tools/baseline.mjs`: 병렬 기준선 측정 → `results/baseline.md`·`.json`
+  - **에피소드 기록·3D 재생:**
+    - `js/replay.js`: 기록기·형식 `robosim-episode/1`·재생기
+    - `tools/episode.mjs`: 10분 기록 약 0.5 MB gzip
+    - 앱 '에피소드 재생' 패널과 3D 재생 막대(`js/replay-panel.js`): 불러오기·재생/일시정지(Space)·처음으로·배속 0.25~20×·시간 막대·회수율 곡선·관절각 표·종료
+  - `tests/task-eval.mjs`(14항목, 빠른 목록에 추가)
+- **기준선 (36회):** 10분 80% 도달 0회. 단독 약 61%, 3대 모드 1 약 37%, 모드 2 약 55%. IRB 6700 + 측면(모드 1)은 덤프 자세 자기 충돌(S:1-7)로 대형 작업 불가(v1.1.1부터 있던 한계 발견).
+- PRD: D11(강화학습·최선 채택), D12(3D 재생), 4.5절, FR-63a·67, AC-71·72.
+- **스트로크 방향 자유도 (사용자 요청: 열린 면 방향을 크게 바꿔 푸기):** `planSkimCycle`의 `stroke` 옵션
+  - 스윕 시작·끝의 스쿱 열린 면 방향(진행 방향 기준, J6 회전)
+  - 스윕 중 회전(구간 나눠 방향 보간), 기울임
+  - 없으면 v1.1.2와 똑같음(회귀 확인)
+- **학습 (Trial & Error):**
+  - 엔진 `js/stroke-lab.js`
+    - 스트로크 변수 9개, 점수 규칙
+    - 후보 평가: 복사한 드로스 위에서 한 사이클
+    - 진화 탐색(CEM, 규칙 레인 포함), `runLab`, `StrokeEnv`(강화학습 환경)
+    - 행동 보정(repair), 정책 실행(`makePolicyChooser`·`runPolicy`)
+  - 앱 '학습' 패널(`js/lab-panel.js`, Worker `js/lab.worker.js`·`js/lab-eval.worker.js`)
+  - 헤드리스 `tools/train.mjs`(worker_threads, `tools/lab-worker.mjs`) → `results/lab/<이름>/report.md`·3D 재생 파일
+  - `runEpisode`의 `mainChooser`·`shouldStop`, 브라우저 Worker용 이벤트 루프 양보
+- **첫 결과 (10분 회수율, 진화 탐색 vs 규칙):** KR 210 단독 시드 11 **75.0%** vs 61.9%, 시드 12 **75.6%** vs 56.9%, 3대 모드 1 **52.5%** vs 38.8%.
+- **PPO 강화학습 (진행 중):** `js/ppo.js`(순수 JS MLP·Adam·PPO·GAE·모방(BC)·정책 저장 `robosim-policy/1`), `tools/ppo-train.mjs`·`tools/ppo-worker.mjs`. 학습 엔진을 Python 대신 JS로 바꿈(PRD D13).
+- 테스트 `tests/stroke-lab.mjs`(12항목, 빠른 목록에 추가).
+
 ### 변경
-- 기본 포트 8300, 페이지 제목 v3.0.0. 기능 코드는 v1.1.2와 같음.
+- 기본 포트 8300, 페이지 제목 v3.0.0.
 
 ## [1.1.2] - 2026-11-05 (태그 `v1.1.2`, 관절 실시간 계측 · 데이터 추출 · 머신러닝 준비)
 

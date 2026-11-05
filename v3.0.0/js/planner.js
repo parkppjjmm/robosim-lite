@@ -16,7 +16,9 @@ const OPTIMIZE_MAX_MS = 250; // 궤적 최적화 시간 상한
 const BLEND_FRACTIONS = [1, 0.5, 0.25]; // maxBlend 대비 시도할 블렌드 크기 (큰 것부터)
 
 /**
- * @param {object} req { robot, obstacles, thresholds, floor, start, goal, reference?, avoidSingularity?, features?, timeoutMs }
+ * @param {object} req { robot, obstacles, thresholds, floor, start, goal, reference?, avoidSingularity?, features?, timeoutMs, deterministic? }
+ *   deterministic (v3.0.0): { shortcutIters, maxSamples } 또는 true — 시간 예산 대신 반복 횟수로 후처리를 끝내
+ *   PC 속도와 무관하게 같은 결과를 낸다(헤드리스 학습·평가용). 없으면 기존(시간 예산) 동작.
  *   start / goal: { type: 'joints', joints } | { type: 'pose', pos: number[], rpy: number[] } (start는 관절값 배열도 허용)
  *   reference: TCP 지정 시 여러 IK 해 중 가까운 해를 고르는 기준 관절값 (보통 현재 자세)
  *   avoidSingularity: 특이점 회피 여부 (없으면 features.singularity를 따른다)
@@ -30,6 +32,8 @@ const BLEND_FRACTIONS = [1, 0.5, 0.25]; // maxBlend 대비 시도할 블렌드 �
 export async function planPath(req, { onProgress = () => {}, isCancelled = () => false } = {}) {
   const t0 = now();
   const timeoutMs = req.timeoutMs ?? 5000;
+  const det = req.deterministic ? { shortcutIters: 200, maxSamples: 40000, ...(req.deterministic === true ? {} : req.deterministic) } : null;
+  let samples = 0;
   const { robot } = req;
   // 장애물 회피가 목적이므로 충돌 검사는 감지 토글과 무관하게 항상 켠다. 특이점 회피는 감지 기능이 켜졌을 때만.
   const avoidSingularity = req.avoidSingularity ?? !!req.features?.singularity;
@@ -173,7 +177,7 @@ export async function planPath(req, { onProgress = () => {}, isCancelled = () =>
   let path = null;
   while (!path) {
     const elapsed = now() - t0;
-    if (elapsed > timeoutMs) {
+    if (det ? samples > det.maxSamples : elapsed > timeoutMs) {
       stats.nodes = A.nodes.length + B.nodes.length;
       return done({ ok: false, reason: 'timeout', message: `${(timeoutMs / 1000).toFixed(0)}초 안에 경로를 찾지 못했습니다. 장애물 배치나 목표를 확인하세요.` });
     }
@@ -184,6 +188,7 @@ export async function planPath(req, { onProgress = () => {}, isCancelled = () =>
       onProgress({ phase: 'search', ratio: Math.min(0.95, elapsed / timeoutMs), nodes: A.nodes.length + B.nodes.length });
     }
     const qr = sample();
+    samples++;
     if (!validNode(evaluatePose(ctx, qr))) continue;
     const ra = extend(A, qr);
     if (ra.status !== 'trapped') {
@@ -203,7 +208,7 @@ export async function planPath(req, { onProgress = () => {}, isCancelled = () =>
   // ---- 3) Shortcut smoothing ----
   onProgress({ phase: 'smooth', ratio: 0.96, nodes: stats.nodes });
   const smoothBudget = Math.min(SHORTCUT_MAX_MS, Math.max(30, timeoutMs - (now() - t0)));
-  path = shortcut(path, edgeOk, smoothBudget, rand);
+  path = shortcut(path, edgeOk, det ? Infinity : smoothBudget, rand, det ? det.shortcutIters : Infinity);
   return finish(path);
 
   /** 직선 경로와 탐색 경로 공통 마무리: 궤적 최적화 → 모서리 블렌딩 */
@@ -212,7 +217,7 @@ export async function planPath(req, { onProgress = () => {}, isCancelled = () =>
     onProgress({ phase: 'optimize', ratio: 0.97, nodes: stats.nodes });
     if (await cancelled()) return done({ ok: false, reason: 'cancelled', message: '경로 계획을 취소했습니다.' });
     const tOpt = now();
-    const opt = optimizePath(p, ctx, { edgeOk, avoidSingularity, budgetMs: OPTIMIZE_MAX_MS });
+    const opt = optimizePath(p, ctx, { edgeOk, avoidSingularity, budgetMs: det ? Infinity : OPTIMIZE_MAX_MS });
     stats.optimized = {
       ms: Math.round(now() - tOpt),
       applied: opt.applied,
@@ -226,7 +231,7 @@ export async function planPath(req, { onProgress = () => {}, isCancelled = () =>
     // ---- 5) 모서리 블렌딩: 경유점에서 멈추지 않도록 둥글게 깎는다 (충돌 검증 통과한 크기만) ----
     onProgress({ phase: 'blend', ratio: 0.98, nodes: stats.nodes });
     const tBlend = now();
-    const blends = blendCorners(p, edgeOk, BLEND_MAX_MS);
+    const blends = blendCorners(p, edgeOk, det ? Infinity : BLEND_MAX_MS);
     stats.blendMs = Math.round(now() - tBlend);
     stats.blended = blends.filter((b) => b > 0).length;
     return done({ ok: true, path: p, blends, goal: p[p.length - 1] });
@@ -258,7 +263,7 @@ function blendCorners(path, edgeOk, budgetMs) {
 /**
  * Shortcut smoothing: 그리디(가장 먼 직결 가능 점) 1회 후, 남은 시간 동안 무작위 두 점 직결 시도.
  */
-function shortcut(path, edgeOk, budgetMs, rand) {
+function shortcut(path, edgeOk, budgetMs, rand, maxIters = Infinity) {
   // 그리디: 앞에서부터 가장 멀리 직선으로 갈 수 있는 점으로 점프
   const greedy = [path[0]];
   for (let i = 0; i < path.length - 1; ) {
@@ -270,7 +275,8 @@ function shortcut(path, edgeOk, budgetMs, rand) {
   let p = greedy;
   // 무작위: 구간 중간점끼리 연결해서 꼭짓점을 깎는다
   const t0 = now();
-  while (now() - t0 < budgetMs && p.length > 2) {
+  let iter = 0;
+  while (now() - t0 < budgetMs && iter++ < maxIters && p.length > 2) {
     const i = Math.floor(rand() * (p.length - 1));
     const j = Math.floor(rand() * (p.length - 1));
     if (Math.abs(i - j) < 1) continue;

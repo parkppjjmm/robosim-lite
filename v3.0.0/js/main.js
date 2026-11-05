@@ -20,14 +20,19 @@ import { ICONS, mountThemeToggle, mountSections, mountDrawers, mountShortcuts } 
 import { robotThumbnail } from './thumbnail.js';
 import { PhysicsWorld, rpyFromMatrix } from './physics.js';
 import { loadRapier } from './physics-loader.js';
-import { gripperSpec, toolMatrix, findGraspCandidate, GRIPPER_DEFAULTS, SKIMMER_SPEC, skimmerBoxes } from './gripper.js';
+import { gripperSpec, toolMatrix, findGraspCandidate, GRIPPER_DEFAULTS, SKIMMER_SPEC, SKIMMER_SMALL_SPEC, RAKE_SPEC, skimmerBoxes } from './gripper.js';
 import { mountGripperPanel } from './gripper-panel.js';
 import { DrossField, drossFixtures, drossRobotOk, skimLanes, chooseLane, planSkimCycle, BATH_Z_MM, POT, SNOUT, BIN, SIDE_SLOTS, drossBins, mainLaneRange, sideBin, sideBinDistFor } from './dross.js';
-import { CellRobot, CellCoordinator, sideRobotOk } from './cell-robot.js';
+import { CellRobot, CellCoordinator, sideRobotOk, slotFrame } from './cell-robot.js';
 import { JointTelemetry, TelemetryLog, LINK_DENSITY, RATED_CURRENT_A, FRICTION, NOISE_PCT, BATH_DRAG_NS_M } from './telemetry.js';
 import { buildXlsx } from './xlsx.js';
 import { mountTelemetryPanel, drawTelemetryChart, METRICS } from './telemetry-panel.js';
 import { mountDrossPanel } from './dross-panel.js';
+import { parseEpisode, EpisodePlayer } from './replay.js';
+import { mountReplayPanel } from './replay-panel.js';
+import { mountLabPanel } from './lab-panel.js';
+import { sanitizeLab, LAB_DEFAULTS } from './stroke-lab.js';
+import { sanitizeTask } from './task-eval.js';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -114,6 +119,13 @@ const toolLoadCache = new Map(); // 로봇 → { kg, count, imm } (최근 스텝
 let tmPanel;
 let stepLabel = ''; // 단계 실행 중인 단계 이름 (계측 '상황' 라벨)
 let tmFrame = 0;
+// ---- 에피소드 재생 (PRD_v.3.0.0 FR-63 일부: 헤드리스 결과를 3D로) ----
+let replay = null; // { ep, player, main, sides: { slot: { robot, mode, binDist } } }
+let replayPanel;
+const replayUI = { slot: 'main' };
+// ---- 학습 (Trial & Error) (PRD_v.3.0.0 4.5·FR-67) ----
+let labPanel;
+const labRun = { worker: null, running: false, status: '', decisions: [], progress: null, result: null, task: null, startedAt: 0 };
 
 async function main() {
   // file:// 실행 안내는 index.html의 일반 스크립트가 담당한다 (이 모듈은 file://에서 로드되지 않음)
@@ -215,6 +227,35 @@ async function main() {
     onSideRobot: (slot, robotId) => setSideConfig(slot, { robotId }),
     onSideMode: (slot, mode) => setSideConfig(slot, { mode }),
   });
+  replayPanel = mountReplayPanel($('#replay-panel'), $('#replay-bar'), $('#replay-info'), {
+    onFile: openReplay,
+    onPlay: toggleReplay,
+    onRestart: () => {
+      if (!replay) return;
+      replay.player.t = 0;
+      replay.player.playing = true;
+    },
+    onSpeed: (x) => replay && (replay.player.speed = x),
+    onSeek: (f) => replay && (replay.player.t = f * replay.player.duration),
+    onExit: exitReplay,
+    onRobot: (slot) => (replayUI.slot = slot),
+  });
+  replayPanel.render({ active: false });
+  labPanel = mountLabPanel($('#lab-panel'), {
+    onStart: startLab,
+    onStop: () => labRun.worker?.postMessage({ cmd: 'stop' }),
+    onExport: exportLab,
+    onImport: importLab,
+    onReset: () => labPanel.load({ lab: LAB_DEFAULTS, task: { targetRatePct: 80, timeLimitS: 600 } }),
+    onReplay: (which) => {
+      const r = labRun.result;
+      const ep = which === 'rule' ? r?.rule?.episode : r?.episode;
+      if (ep) showEpisode(parseEpisode(ep), which === 'rule' ? '규칙 경로 (비교)' : '학습 결과 (최선 채택)');
+    },
+    onSaveLog: saveLabResult,
+  });
+  labPanel.setDefaultWorkers(Math.max(1, Math.min(12, (navigator.hardwareConcurrency || 4) - 2)));
+  renderLabUI();
   tmPanel = mountTelemetryPanel($('#telemetry-panel'), $('#telemetry-overlay'), {
     onToggle: (k) => {
       tmUI.show[k] = !tmUI.show[k];
@@ -578,6 +619,7 @@ function renderModelCards() {
 
 /** 로봇 변경: 관절은 홈 자세, 이전 경로 결과 초기화, 장애물/설정은 유지 (PRD FR-3) */
 function selectRobot(robot) {
+  if (replay) return showNotice('에피소드 재생 중입니다. 재생을 종료한 뒤 로봇을 바꾸세요.');
   // 알람은 Reset으로만 해제한다 (PRD FR-11) → 알람 중에는 로봇 변경도 거부
   if (isAlarmActive()) return showNotice('알람 상태에서는 로봇을 변경할 수 없습니다. Reset 후 변경하세요.');
   stopSkim();
@@ -718,6 +760,7 @@ function jogJoint(i, value) {
 
 /** 조그 명령: 관절별 최대속도로 목표까지 이동 (매 tick 안전 검사) */
 function jog(target) {
+  if (replay) return showNotice('에피소드 재생 중에는 조작할 수 없습니다. 재생을 종료하세요.');
   if (!controller.jogTo(clampJoints(currentRobot, target))) rejectWhileAlarm();
 }
 
@@ -913,7 +956,7 @@ function freezeGripper() {
 }
 
 /** 로봇 이동 또는 단계 실행(대기·그리퍼 동작 포함) 중 (4-1, M-2) */
-const robotBusy = () => controller.active || !!stepRun || skim.status === 'planning' || coord.busy;
+const robotBusy = () => controller.active || !!stepRun || skim.status === 'planning' || coord.busy || !!replay;
 
 /**
  * 물리 실행/일시정지 (배지·패널 버튼). 재개할 때 일시정지 중 움직인 로봇·파지 물체를 바로 옮기고,
@@ -2096,6 +2139,253 @@ function renderSimUI() {
   $('#viewport').classList.toggle('paused', paused);
 }
 
+// ---------- 에피소드 재생 (PRD_v.3.0.0 FR-63 일부): 헤드리스 결과(.rsim.json.gz)를 3D로 다시 보기 ----------
+// 재생 중에는 앱의 시뮬레이션(로봇 제어·측면 로봇·물리)을 멈추고 기록된 관절값·드로스 위치만 그린다. 저장 상태는 바꾸지 않는다.
+
+async function readEpisodeFile(file) {
+  let text;
+  if (/\.gz$/i.test(file.name)) {
+    if (typeof DecompressionStream === 'undefined') throw new Error('이 브라우저는 gzip 풀기(DecompressionStream)를 지원하지 않습니다. 최신 Chrome·Edge를 쓰세요.');
+    text = await new Response(file.stream().pipeThrough(new DecompressionStream('gzip'))).text();
+  } else text = await file.text();
+  return parseEpisode(JSON.parse(text));
+}
+
+function replayMeta(ep) {
+  const s = ep.summary ?? {};
+  const name = (id) => findRobot(id)?.name ?? id;
+  const side = (slot) => (ep.cell[slot]?.robotId ? `${name(ep.cell[slot].robotId)} · 모드 ${ep.cell[slot].mode}` : '없음');
+  const by = s.byRobot ? Object.entries(s.byRobot).map(([k, v]) => `${{ main: '대형', left: '왼쪽', right: '오른쪽' }[k] ?? k} ${v.n}`).join(' · ') : '—';
+  return [
+    ['대형 로봇', name(ep.cell.main)],
+    ['왼쪽 / 오른쪽', `${side('left')} / ${side('right')}`],
+    ['드로스', `${ep.task?.dross?.count ?? '—'}개 · 시드 ${ep.task?.dross?.seed ?? '—'}`],
+    ['길이', `${ep.frames.at(-1).t.toFixed(0)} s (기록 ${ep.dt} s 간격)`],
+    ['최종 회수율', s.rateCount != null ? `${s.rateCount}% (질량 ${s.rateMass}%) — 목표 ${s.targetRatePct}% ${s.reached ? `도달 ${s.reachS} s` : '미도달'}` : '—'],
+    ['로봇별 회수', by],
+    ['흘림', s.spilled ?? '—'],
+  ];
+}
+
+async function openReplay(file) {
+  if (isAlarmActive()) return showNotice('알람 상태입니다. Reset 후 재생하세요.');
+  let ep;
+  try {
+    ep = await readEpisodeFile(file);
+  } catch (err) {
+    return replayPanel.render({ active: false, status: `불러오기 실패: ${err.message}` });
+  }
+  showEpisode(ep, file.name);
+}
+
+/** 읽은 에피소드를 3D로 재생 (파일 또는 학습 결과) */
+function showEpisode(ep, name) {
+  if (isAlarmActive()) return showNotice('알람 상태입니다. Reset 후 재생하세요.');
+  const main = findRobot(ep.cell.main);
+  const sides = {};
+  const missing = [];
+  if (!main) missing.push(ep.cell.main);
+  for (const slot of Object.keys(SIDE_SLOTS)) {
+    const c = ep.cell[slot];
+    if (!c?.robotId) continue;
+    const robot = findRobot(c.robotId);
+    if (!robot) missing.push(c.robotId);
+    else sides[slot] = { robot, robotId: c.robotId, mode: c.mode, binDist: c.binDist ?? undefined };
+  }
+  if (missing.length) return replayPanel.render({ active: false, status: `불러오기 실패: 로봇 모델을 찾을 수 없습니다 (${missing.join(', ')})` });
+  if (replay) clearReplayRobots();
+  stopAll();
+  coord.stop();
+  for (const slot of coord.robots.keys()) viewer.removeExtraRobot(slot);
+  replay = { ep, player: new EpisodePlayer(ep), main, sides };
+  // 장면: 기록된 셀(설비·박스) + 대형 로봇(스키머) + 측면 로봇
+  viewer.setCell({
+    fixtures: drossFixtures(sides), bathZ: BATH_Z_MM, pot: POT, snout: SNOUT, bin: BIN,
+    sideBins: Object.entries(sides).map(([slot, c]) => sideBin(slot, c.binDist)),
+  });
+  viewer.cellKey = null; // 재생이 끝나면 앱 셀을 다시 그린다
+  const f0 = ep.frames[0].q;
+  viewer.loadRobot(main, forwardKinematics(main, f0.main).frames);
+  viewer.setGripper(SKIMMER_SPEC);
+  for (const [slot, c] of Object.entries(sides)) {
+    viewer.setExtraRobot(`rp-${slot}`, {
+      robot: c.robot, baseT: slotFrame(slot).baseT, spec: c.mode === 1 ? SKIMMER_SMALL_SPEC : RAKE_SPEC,
+      frames: forwardKinematics(c.robot, f0[slot] ?? homeJoints(c.robot)).frames, label: slot === 'left' ? 'L' : 'R',
+    });
+  }
+  $('#viewport-label').innerHTML = `<i></i><strong>재생 · ${main.name}</strong><small>${name}</small><span class="badge">헤드리스 결과</span>`;
+  viewer.setCamera(CELL_CAMERA);
+  replayUI.slot = 'main';
+  replay.player.playing = true;
+  $('[data-sec=replay]')?.scrollIntoView({ block: 'nearest' });
+  replayPanel.render({ active: true, status: `재생 중: ${name}`, meta: replayMeta(ep), speed: replay.player.speed, slots: ['main', ...Object.keys(sides)], slot: 'main' });
+  renderReplayFrame();
+}
+
+function renderReplayFrame() {
+  const p = replay.player;
+  const s = p.stateAt(p.t);
+  viewer.update(forwardKinematics(replay.main, s.q.main).frames);
+  for (const [slot, c] of Object.entries(replay.sides)) if (s.q[slot]) viewer.updateExtraRobot(`rp-${slot}`, forwardKinematics(c.robot, s.q[slot]).frames);
+  viewer.setDross(s.particles);
+  replayPanel.renderFrame({
+    t: s.t, duration: p.duration, playing: p.playing, rate: s.rate, rateKg: s.rateKg, label: s.label,
+    target: replay.ep.task?.targetRatePct ?? 80, q: s.q, slot: replayUI.slot, history: replay.ep.history,
+  });
+}
+
+function toggleReplay() {
+  if (!replay) return;
+  const p = replay.player;
+  if (!p.playing && p.t >= p.duration) p.t = 0;
+  p.playing = !p.playing;
+}
+
+function clearReplayRobots() {
+  for (const slot of Object.keys(replay.sides)) viewer.removeExtraRobot(`rp-${slot}`);
+}
+
+/** 재생 종료: 앱 장면(현재 로봇·셀·측면 로봇)을 다시 만든다 */
+function exitReplay() {
+  if (!replay) return;
+  clearReplayRobots();
+  replay = null;
+  sideKey = ''; // 측면 로봇 다시 설치
+  viewer.setDross(null);
+  applyRobot(getState());
+  if (!cellActive()) viewer.setCell(null);
+  if (drossField && physics) viewer.setDross(physics.particleState());
+  replayPanel.render({ active: false, status: '재생을 마쳤습니다. 원래 장면으로 돌아왔습니다(물리 모드였다면 드로스는 다시 배치됩니다).' });
+}
+
+// ---------- 학습 (Trial & Error) (PRD_v.3.0.0 4.5·FR-67): 스트로크 후보를 시도해 점수가 가장 높은 것만 실행 ----------
+// 10분 과제 시뮬레이션과 탐색은 lab.worker.js(Worker)에서, 후보 평가는 lab-eval.worker.js 여러 개에서 병렬로 돈다(화면 멈춤 없음).
+
+/** 학습 과제 = 패널(목표·시간) + 지금 앱의 드로스 셀 설정(대형 로봇·측면 로봇·드로스 개수·시드·깊이·속도) */
+function buildLabTask(cfgTask = {}) {
+  const d = getState().cell.dross;
+  const main = currentRobot && drossRobotOk(currentRobot) ? currentRobot.id : 'kuka-kr210-r2700';
+  return sanitizeTask({
+    targetRatePct: cfgTask.targetRatePct, timeLimitS: cfgTask.timeLimitS, aiRobot: { slot: 'main' },
+    cell: { main, left: d.sides?.left ?? { robotId: null, mode: 1 }, right: d.sides?.right ?? { robotId: null, mode: 1 } },
+    dross: { count: d.count, seed: d.seed, ratePerMin: 0, immersionMm: d.immersionMm, sweepMmS: d.sweepMmS },
+  }, catalog.robots);
+}
+
+function labCellText() {
+  const { task, errors } = buildLabTask();
+  if (errors.length) return `과제 설정 오류: ${errors.join(' / ')}`;
+  const n = (id) => findRobot(id)?.name ?? id;
+  const side = (c) => (c.robotId ? `${n(c.robotId)} 모드 ${c.mode}` : '없음');
+  return `대형(학습 대상): ${n(task.cell.main)} · 왼쪽: ${side(task.cell.left)} · 오른쪽: ${side(task.cell.right)} · 드로스 ${task.dross.count}개(시드 ${task.dross.seed}) — '드로스 제거 셀' 패널 설정을 씁니다.`;
+}
+
+function renderLabUI() {
+  if (!labPanel) return;
+  const r = labRun.result;
+  const S = r?.summary, R = r?.rule?.summary;
+  const summary = S ? [
+    ['학습 회수율', `${S.rateCount}% (질량 ${S.rateMass}%) — 목표 ${S.targetRatePct}% ${S.reached ? `도달 ${S.reachS} s` : '미도달'}`],
+    ...(R ? [['규칙 경로 회수율', `${R.rateCount}% (질량 ${R.rateMass}%) ${R.reached ? `도달 ${R.reachS} s` : '미도달'}`]] : []),
+    ['대형 스트로크 / 헛질', `${S.decisions} / ${S.emptyStrokes}`],
+    ['시도(후보 평가)', `${S.trials}개 · 규칙 레인이 최선으로 뽑힌 결정 ${S.ruleChosen}`],
+    ['흘림', `${S.spilled}${R ? ` (규칙 ${R.spilled})` : ''}`],
+  ] : [];
+  labPanel.render({
+    status: labRun.status, running: labRun.running, cellText: labCellText(), target: labRun.task?.targetRatePct ?? 80,
+    progress: labRun.progress, decisions: labRun.decisions, summary, hasResult: !!r?.episode, hasRule: !!r?.rule,
+  });
+}
+
+function startLab(cfg) {
+  if (labRun.running) return;
+  if (replay) return showNotice('에피소드 재생 중입니다. 재생을 종료한 뒤 학습을 시작하세요.');
+  const { task, errors } = buildLabTask(cfg.task);
+  if (errors.length) {
+    labRun.status = `시작할 수 없습니다: ${errors.join(' / ')}`;
+    return renderLabUI();
+  }
+  const lab = sanitizeLab(cfg.lab);
+  Object.assign(labRun, { running: true, status: '준비 중…', decisions: [], progress: { rate: 0, t: 0 }, result: null, task, startedAt: performance.now() });
+  const w = new Worker(new URL('./lab.worker.js', import.meta.url), { type: 'module' });
+  labRun.worker = w;
+  w.onmessage = (e) => {
+    const m = e.data;
+    if (m.type === 'status') labRun.status = m.text;
+    else if (m.type === 'progress') {
+      const p = m.p;
+      labRun.progress = { rate: p.rate, t: p.t };
+      if (p.kind === 'decision') labRun.decisions.push(p.decision);
+      labRun.status = `학습 중 · 시뮬레이션 ${p.t.toFixed(0)} / ${task.timeLimitS} s · 회수율 ${p.rate.toFixed(1)}% · 결정 ${labRun.decisions.length} · 경과 ${p.elapsedS.toFixed(0)} s`;
+    } else if (m.type === 'done') {
+      labRun.result = { summary: m.summary, log: m.log, episode: m.episode, rule: m.rule };
+      labRun.status = `${m.stopped ? '중지됨' : '완료'} — ${m.elapsedS.toFixed(0)} s. 아래 버튼으로 3D 재생·저장할 수 있습니다.`;
+      finishLab();
+    } else if (m.type === 'error') {
+      labRun.status = `오류: ${m.message}`;
+      finishLab();
+    }
+    renderLabUI();
+  };
+  w.onerror = (e) => {
+    labRun.status = `Worker 오류: ${e.message ?? e}`;
+    finishLab();
+    renderLabUI();
+  };
+  w.postMessage({ cmd: 'start', task, lab, robots: catalog.robots, workers: Math.max(1, Math.min(32, cfg.workers || 4)), compare: !!cfg.compare });
+  renderLabUI();
+}
+
+function finishLab() {
+  labRun.running = false;
+  labRun.worker?.terminate();
+  labRun.worker = null;
+}
+
+function downloadBlob(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+const stampName = () => new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
+
+/** 설정 내보내기 → node tools/train.mjs --lab <파일> */
+function exportLab(cfg) {
+  const { task } = buildLabTask(cfg.task);
+  const out = { schema: 'robosim-lab/1', lab: sanitizeLab(cfg.lab), task, workers: cfg.workers };
+  downloadBlob(new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' }), `robosim-lab-${stampName()}.json`);
+  showNotice('학습 설정을 내보냈습니다. 헤드리스: v3.0.0 폴더에서 node tools/train.mjs --lab <파일>', 10000);
+}
+
+async function importLab(file) {
+  try {
+    const obj = JSON.parse(await file.text());
+    if (obj.schema !== 'robosim-lab/1') throw new Error(`형식이 다릅니다 (schema = ${obj.schema ?? '없음'})`);
+    labPanel.load({ lab: sanitizeLab(obj.lab), task: obj.task, workers: obj.workers });
+    labRun.status = `설정을 불러왔습니다: ${file.name} (대형·측면 로봇·드로스는 지금 앱 설정을 씁니다)`;
+  } catch (err) {
+    labRun.status = `설정 불러오기 실패: ${err.message}`;
+  }
+  renderLabUI();
+}
+
+/** 결과 저장: 로그(JSON) + 학습 에피소드(.rsim.json.gz, 3D 재생 파일) */
+async function saveLabResult() {
+  const r = labRun.result;
+  if (!r) return;
+  const stamp = stampName();
+  downloadBlob(new Blob([JSON.stringify(r.log, null, 1)], { type: 'application/json' }), `robosim-lab-log-${stamp}.json`);
+  const gz = async (obj) => new Response(new Blob([JSON.stringify(obj)]).stream().pipeThrough(new CompressionStream('gzip'))).blob();
+  if (typeof CompressionStream !== 'undefined') {
+    downloadBlob(await gz(r.episode), `robosim-lab-${stamp}.rsim.json.gz`);
+    if (r.rule) downloadBlob(await gz(r.rule.episode), `robosim-rule-${stamp}.rsim.json.gz`);
+  }
+  showNotice('학습 로그와 3D 재생 파일을 저장했습니다.');
+}
+
 // ---------- 데이터 관리 (PRD FR-16) ----------
 
 function mountDataActions() {
@@ -2165,6 +2455,7 @@ const atPlanStart = () =>
 
 /** Space: 진행 중인 재생을 일시정지/계속. 정지 상태면 계획 경로 시작 자세에서는 경로 실행, 아니면 Waypoint 재생. */
 function togglePlayPause() {
+  if (replay) return toggleReplay();
   if (isAlarmActive()) return rejectWhileAlarm();
   if (playback.status === 'playing') return pauseSequence();
   if (playback.status === 'paused') return resumeSequence();
@@ -2193,6 +2484,7 @@ function toggleSkimPause() {
 
 /** Esc: 모든 모션 정지, 진행 중인 경로 계획 취소, 열린 드로어/알람 로그 닫기 */
 function stopAll() {
+  if (replay) replay.player.playing = false;
   stopSkim();
   stopSteps();
   cancelPlan();
@@ -2224,7 +2516,7 @@ function flashLimit(row) {
 
 function updatePose(joints) {
   const fk = forwardKinematics(currentRobot, joints);
-  viewer.update(fk.frames);
+  if (!replay) viewer.update(fk.frames); // 재생 중에는 화면 로봇 = 기록된 로봇
   syncJointInputs(joints, false);
   const T = tcpMatrix(fk.frames); // 그리퍼가 있으면 손가락 끝
   const [x, y, z] = origin(T);
@@ -2467,6 +2759,15 @@ function startLoop() {
   const checkEl = $('#status-check');
   let acc = 0;
   const tick = (now) => {
+    if (replay) {
+      replay.player.advance(Math.min((now - lastTime) / 1000, 0.25));
+      lastTime = now;
+      acc = 0;
+      renderReplayFrame();
+      viewer.render();
+      requestAnimationFrame(tick);
+      return;
+    }
     // 고정 60Hz 시뮬레이션 스텝: 렌더 프레임이 느려도 실제 시간과 같은 속도로 움직인다
     acc += Math.min((now - lastTime) / 1000, 0.25); // 탭 비활성 후 큰 점프 방지
     lastTime = now;

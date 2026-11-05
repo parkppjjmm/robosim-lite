@@ -1,0 +1,5927 @@
+{
+ "simS": 600,
+ "target": 80,
+ "seeds": [
+  11,
+  12,
+  13
+ ],
+ "mains": [
+  "abb-irb6700-200-260",
+  "kuka-kr210-r2700",
+  "fanuc-r2000ic-165f",
+  "nachi-sra166"
+ ],
+ "configs": [
+  "alone",
+  "mode1",
+  "mode2"
+ ],
+ "elapsedS": 654.845,
+ "results": [
+  {
+   "main": "abb-irb6700-200-260",
+   "config": "alone",
+   "seed": 13,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 66.9,
+    "rateMass": 64.1,
+    "reached": false,
+    "reachS": null,
+    "collected": 107,
+    "total": 160,
+    "remaining": 51,
+    "spilled": 1,
+    "byRobot": {
+     "main": {
+      "n": 107,
+      "kg": 64.3
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 54,
+    "speedup": 11.11,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 14,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {},
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     13.75,
+     14.68
+    ],
+    [
+     60,
+     13.75,
+     14.68
+    ],
+    [
+     90,
+     29.38,
+     27.79
+    ],
+    [
+     120,
+     29.38,
+     27.79
+    ],
+    [
+     150,
+     41.25,
+     38.12
+    ],
+    [
+     180,
+     51.25,
+     46.04
+    ],
+    [
+     210,
+     57.5,
+     52.6
+    ],
+    [
+     240,
+     57.5,
+     52.6
+    ],
+    [
+     270,
+     58.75,
+     54.01
+    ],
+    [
+     300,
+     62.5,
+     58.68
+    ],
+    [
+     330,
+     62.5,
+     58.68
+    ],
+    [
+     360,
+     63.13,
+     59.15
+    ],
+    [
+     390,
+     64.38,
+     61.04
+    ],
+    [
+     420,
+     65.63,
+     62.69
+    ],
+    [
+     450,
+     65.63,
+     62.69
+    ],
+    [
+     480,
+     66.88,
+     64.09
+    ],
+    [
+     510,
+     66.88,
+     64.09
+    ],
+    [
+     540,
+     66.88,
+     64.09
+    ],
+    [
+     570,
+     66.88,
+     64.09
+    ],
+    [
+     600,
+     66.88,
+     64.09
+    ]
+   ]
+  },
+  {
+   "main": "abb-irb6700-200-260",
+   "config": "alone",
+   "seed": 12,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 56.9,
+    "rateMass": 57.4,
+    "reached": false,
+    "reachS": null,
+    "collected": 91,
+    "total": 160,
+    "remaining": 55,
+    "spilled": 6,
+    "byRobot": {
+     "main": {
+      "n": 91,
+      "kg": 51.7
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 55.6,
+    "speedup": 10.8,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 15,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {},
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     13.13,
+     12.82
+    ],
+    [
+     90,
+     27.5,
+     23.97
+    ],
+    [
+     120,
+     35,
+     31.51
+    ],
+    [
+     150,
+     35,
+     31.51
+    ],
+    [
+     180,
+     43.75,
+     40.77
+    ],
+    [
+     210,
+     48.75,
+     47.28
+    ],
+    [
+     240,
+     50.63,
+     49.82
+    ],
+    [
+     270,
+     50.63,
+     49.82
+    ],
+    [
+     300,
+     54.38,
+     52.9
+    ],
+    [
+     330,
+     55.63,
+     55.19
+    ],
+    [
+     360,
+     55.63,
+     55.19
+    ],
+    [
+     390,
+     55.63,
+     55.19
+    ],
+    [
+     420,
+     56.25,
+     56.18
+    ],
+    [
+     450,
+     56.25,
+     56.18
+    ],
+    [
+     480,
+     56.88,
+     57.38
+    ],
+    [
+     510,
+     56.88,
+     57.38
+    ],
+    [
+     540,
+     56.88,
+     57.38
+    ],
+    [
+     570,
+     56.88,
+     57.38
+    ],
+    [
+     600,
+     56.88,
+     57.38
+    ]
+   ]
+  },
+  {
+   "main": "abb-irb6700-200-260",
+   "config": "alone",
+   "seed": 11,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 59.4,
+    "rateMass": 57.8,
+    "reached": false,
+    "reachS": null,
+    "collected": 95,
+    "total": 160,
+    "remaining": 58,
+    "spilled": 5,
+    "byRobot": {
+     "main": {
+      "n": 95,
+      "kg": 58
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 56.1,
+    "speedup": 10.69,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 15,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {},
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     14.38,
+     14.76
+    ],
+    [
+     60,
+     14.38,
+     14.76
+    ],
+    [
+     90,
+     27.5,
+     27.72
+    ],
+    [
+     120,
+     40.63,
+     40.63
+    ],
+    [
+     150,
+     40.63,
+     40.63
+    ],
+    [
+     180,
+     47.5,
+     46.01
+    ],
+    [
+     210,
+     51.88,
+     49.33
+    ],
+    [
+     240,
+     51.88,
+     49.33
+    ],
+    [
+     270,
+     56.88,
+     54.97
+    ],
+    [
+     300,
+     57.5,
+     55.9
+    ],
+    [
+     330,
+     58.75,
+     57.16
+    ],
+    [
+     360,
+     58.75,
+     57.16
+    ],
+    [
+     390,
+     58.75,
+     57.16
+    ],
+    [
+     420,
+     58.75,
+     57.16
+    ],
+    [
+     450,
+     58.75,
+     57.16
+    ],
+    [
+     480,
+     58.75,
+     57.16
+    ],
+    [
+     510,
+     59.38,
+     57.8
+    ],
+    [
+     540,
+     59.38,
+     57.8
+    ],
+    [
+     570,
+     59.38,
+     57.8
+    ],
+    [
+     600,
+     59.38,
+     57.8
+    ]
+   ]
+  },
+  {
+   "main": "abb-irb6700-200-260",
+   "config": "mode1",
+   "seed": 12,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 6.9,
+    "rateMass": 5.7,
+    "reached": false,
+    "reachS": null,
+    "collected": 11,
+    "total": 160,
+    "remaining": 138,
+    "spilled": 10,
+    "byRobot": {
+     "main": {
+      "n": 0,
+      "kg": 0
+     },
+     "left": {
+      "n": 7,
+      "kg": 3.4
+     },
+     "right": {
+      "n": 4,
+      "kg": 1.7
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 0,
+    "simS": 600,
+    "wallS": 102.3,
+    "speedup": 5.86,
+    "mainControl": "rule",
+    "mainGaveUp": true,
+    "mainCycles": 0,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 6
+   },
+   "side": {
+    "left": {
+     "name": "UR10e",
+     "mode": 1,
+     "cycles": 16,
+     "lanes": 2,
+     "minOther": 397.99874727717986,
+     "status": "running",
+     "label": "쏟는 중"
+    },
+    "right": {
+     "name": "IRB 1200-5/0.9",
+     "mode": 1,
+     "cycles": 17,
+     "lanes": 2,
+     "minOther": 404.9983411684915,
+     "status": "running",
+     "label": "레인 접근"
+    }
+   },
+   "firstFail": "덤프: 드로스 박스 위에서 기울일 수 있는 자세가 없습니다 (직선 경로에 충돌/특이점이 있습니다 (S:1-7))",
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0.63,
+     1.21
+    ],
+    [
+     60,
+     2.5,
+     2.63
+    ],
+    [
+     90,
+     6.88,
+     5.67
+    ],
+    [
+     120,
+     6.88,
+     5.67
+    ],
+    [
+     150,
+     6.88,
+     5.67
+    ],
+    [
+     180,
+     6.88,
+     5.67
+    ],
+    [
+     210,
+     6.88,
+     5.67
+    ],
+    [
+     240,
+     6.88,
+     5.67
+    ],
+    [
+     270,
+     6.88,
+     5.67
+    ],
+    [
+     300,
+     6.88,
+     5.67
+    ],
+    [
+     330,
+     6.88,
+     5.67
+    ],
+    [
+     360,
+     6.88,
+     5.67
+    ],
+    [
+     390,
+     6.88,
+     5.67
+    ],
+    [
+     420,
+     6.88,
+     5.67
+    ],
+    [
+     450,
+     6.88,
+     5.67
+    ],
+    [
+     480,
+     6.88,
+     5.67
+    ],
+    [
+     510,
+     6.88,
+     5.67
+    ],
+    [
+     540,
+     6.88,
+     5.67
+    ],
+    [
+     570,
+     6.88,
+     5.67
+    ],
+    [
+     600,
+     6.88,
+     5.67
+    ]
+   ]
+  },
+  {
+   "main": "abb-irb6700-200-260",
+   "config": "mode1",
+   "seed": 11,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 8.1,
+    "rateMass": 7.1,
+    "reached": false,
+    "reachS": null,
+    "collected": 13,
+    "total": 160,
+    "remaining": 136,
+    "spilled": 11,
+    "byRobot": {
+     "main": {
+      "n": 0,
+      "kg": 0
+     },
+     "left": {
+      "n": 8,
+      "kg": 4
+     },
+     "right": {
+      "n": 5,
+      "kg": 3.2
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 0,
+    "simS": 600,
+    "wallS": 108.8,
+    "speedup": 5.51,
+    "mainControl": "rule",
+    "mainGaveUp": true,
+    "mainCycles": 0,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 6
+   },
+   "side": {
+    "left": {
+     "name": "UR10e",
+     "mode": 1,
+     "cycles": 17,
+     "lanes": 2,
+     "minOther": 397.9987484808586,
+     "status": "running",
+     "label": "레인 접근: 이동"
+    },
+    "right": {
+     "name": "IRB 1200-5/0.9",
+     "mode": 1,
+     "cycles": 17,
+     "lanes": 2,
+     "minOther": 404.9983411684916,
+     "status": "running",
+     "label": "스윕"
+    }
+   },
+   "firstFail": "덤프: 드로스 박스 위에서 기울일 수 있는 자세가 없습니다 (직선 경로에 충돌/특이점이 있습니다 (S:1-7))",
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     4.38,
+     4.75
+    ],
+    [
+     90,
+     8.13,
+     7.13
+    ],
+    [
+     120,
+     8.13,
+     7.13
+    ],
+    [
+     150,
+     8.13,
+     7.13
+    ],
+    [
+     180,
+     8.13,
+     7.13
+    ],
+    [
+     210,
+     8.13,
+     7.13
+    ],
+    [
+     240,
+     8.13,
+     7.13
+    ],
+    [
+     270,
+     8.13,
+     7.13
+    ],
+    [
+     300,
+     8.13,
+     7.13
+    ],
+    [
+     330,
+     8.13,
+     7.13
+    ],
+    [
+     360,
+     8.13,
+     7.13
+    ],
+    [
+     390,
+     8.13,
+     7.13
+    ],
+    [
+     420,
+     8.13,
+     7.13
+    ],
+    [
+     450,
+     8.13,
+     7.13
+    ],
+    [
+     480,
+     8.13,
+     7.13
+    ],
+    [
+     510,
+     8.13,
+     7.13
+    ],
+    [
+     540,
+     8.13,
+     7.13
+    ],
+    [
+     570,
+     8.13,
+     7.13
+    ],
+    [
+     600,
+     8.13,
+     7.13
+    ]
+   ]
+  },
+  {
+   "main": "abb-irb6700-200-260",
+   "config": "mode1",
+   "seed": 13,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 8.8,
+    "rateMass": 7.8,
+    "reached": false,
+    "reachS": null,
+    "collected": 14,
+    "total": 160,
+    "remaining": 138,
+    "spilled": 8,
+    "byRobot": {
+     "main": {
+      "n": 0,
+      "kg": 0
+     },
+     "left": {
+      "n": 7,
+      "kg": 3
+     },
+     "right": {
+      "n": 7,
+      "kg": 4.8
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 0,
+    "simS": 600,
+    "wallS": 121.7,
+    "speedup": 4.93,
+    "mainControl": "rule",
+    "mainGaveUp": true,
+    "mainCycles": 0,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 6
+   },
+   "side": {
+    "left": {
+     "name": "UR10e",
+     "mode": 1,
+     "cycles": 17,
+     "lanes": 2,
+     "minOther": 397.99874727717986,
+     "status": "running",
+     "label": "레인 접근: 이동"
+    },
+    "right": {
+     "name": "IRB 1200-5/0.9",
+     "mode": 1,
+     "cycles": 17,
+     "lanes": 2,
+     "minOther": 404.9983411684915,
+     "status": "running",
+     "label": "레인 접근: 이동"
+    }
+   },
+   "firstFail": "덤프: 드로스 박스 위에서 기울일 수 있는 자세가 없습니다 (직선 경로에 충돌/특이점이 있습니다 (S:1-7))",
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     1.25,
+     1.59
+    ],
+    [
+     60,
+     3.75,
+     4.76
+    ],
+    [
+     90,
+     7.5,
+     7.5
+    ],
+    [
+     120,
+     8.75,
+     7.8
+    ],
+    [
+     150,
+     8.75,
+     7.8
+    ],
+    [
+     180,
+     8.75,
+     7.8
+    ],
+    [
+     210,
+     8.75,
+     7.8
+    ],
+    [
+     240,
+     8.75,
+     7.8
+    ],
+    [
+     270,
+     8.75,
+     7.8
+    ],
+    [
+     300,
+     8.75,
+     7.8
+    ],
+    [
+     330,
+     8.75,
+     7.8
+    ],
+    [
+     360,
+     8.75,
+     7.8
+    ],
+    [
+     390,
+     8.75,
+     7.8
+    ],
+    [
+     420,
+     8.75,
+     7.8
+    ],
+    [
+     450,
+     8.75,
+     7.8
+    ],
+    [
+     480,
+     8.75,
+     7.8
+    ],
+    [
+     510,
+     8.75,
+     7.8
+    ],
+    [
+     540,
+     8.75,
+     7.8
+    ],
+    [
+     570,
+     8.75,
+     7.8
+    ],
+    [
+     600,
+     8.75,
+     7.8
+    ]
+   ]
+  },
+  {
+   "main": "kuka-kr210-r2700",
+   "config": "alone",
+   "seed": 11,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 61.9,
+    "rateMass": 61.4,
+    "reached": false,
+    "reachS": null,
+    "collected": 99,
+    "total": 160,
+    "remaining": 59,
+    "spilled": 2,
+    "byRobot": {
+     "main": {
+      "n": 99,
+      "kg": 61.6
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 57.3,
+    "speedup": 10.46,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 15,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {},
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     13.13,
+     13.31
+    ],
+    [
+     60,
+     13.13,
+     13.31
+    ],
+    [
+     90,
+     27.5,
+     28.75
+    ],
+    [
+     120,
+     40,
+     40.28
+    ],
+    [
+     150,
+     40,
+     40.28
+    ],
+    [
+     180,
+     46.88,
+     45.66
+    ],
+    [
+     210,
+     51.88,
+     49.24
+    ],
+    [
+     240,
+     53.75,
+     51.94
+    ],
+    [
+     270,
+     53.75,
+     51.94
+    ],
+    [
+     300,
+     55.63,
+     54.18
+    ],
+    [
+     330,
+     60,
+     58.86
+    ],
+    [
+     360,
+     60,
+     58.86
+    ],
+    [
+     390,
+     60,
+     58.86
+    ],
+    [
+     420,
+     60,
+     58.86
+    ],
+    [
+     450,
+     60,
+     58.86
+    ],
+    [
+     480,
+     60,
+     58.86
+    ],
+    [
+     510,
+     60.63,
+     59.5
+    ],
+    [
+     540,
+     60.63,
+     59.5
+    ],
+    [
+     570,
+     61.88,
+     61.41
+    ],
+    [
+     600,
+     61.88,
+     61.41
+    ]
+   ]
+  },
+  {
+   "main": "kuka-kr210-r2700",
+   "config": "alone",
+   "seed": 12,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 56.9,
+    "rateMass": 58.3,
+    "reached": false,
+    "reachS": null,
+    "collected": 91,
+    "total": 160,
+    "remaining": 63,
+    "spilled": 5,
+    "byRobot": {
+     "main": {
+      "n": 91,
+      "kg": 52.5
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 59.5,
+    "speedup": 10.08,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 14,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {},
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     12.5,
+     13.14
+    ],
+    [
+     90,
+     27.5,
+     25.57
+    ],
+    [
+     120,
+     35,
+     33.11
+    ],
+    [
+     150,
+     35,
+     33.11
+    ],
+    [
+     180,
+     43.13,
+     41.1
+    ],
+    [
+     210,
+     48.75,
+     48.01
+    ],
+    [
+     240,
+     50.63,
+     51.52
+    ],
+    [
+     270,
+     50.63,
+     51.52
+    ],
+    [
+     300,
+     54.38,
+     54.6
+    ],
+    [
+     330,
+     55,
+     55.73
+    ],
+    [
+     360,
+     55.63,
+     56.11
+    ],
+    [
+     390,
+     55.63,
+     56.11
+    ],
+    [
+     420,
+     56.88,
+     58.3
+    ],
+    [
+     450,
+     56.88,
+     58.3
+    ],
+    [
+     480,
+     56.88,
+     58.3
+    ],
+    [
+     510,
+     56.88,
+     58.3
+    ],
+    [
+     540,
+     56.88,
+     58.3
+    ],
+    [
+     570,
+     56.88,
+     58.3
+    ],
+    [
+     600,
+     56.88,
+     58.3
+    ]
+   ]
+  },
+  {
+   "main": "kuka-kr210-r2700",
+   "config": "alone",
+   "seed": 13,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 65,
+    "rateMass": 63.2,
+    "reached": false,
+    "reachS": null,
+    "collected": 104,
+    "total": 160,
+    "remaining": 51,
+    "spilled": 3,
+    "byRobot": {
+     "main": {
+      "n": 104,
+      "kg": 63.4
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 53.8,
+    "speedup": 11.15,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 13,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {},
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     11.88,
+     13.41
+    ],
+    [
+     60,
+     11.88,
+     13.41
+    ],
+    [
+     90,
+     28.13,
+     27.58
+    ],
+    [
+     120,
+     28.13,
+     27.58
+    ],
+    [
+     150,
+     40,
+     37.91
+    ],
+    [
+     180,
+     50,
+     45.83
+    ],
+    [
+     210,
+     56.25,
+     52.39
+    ],
+    [
+     240,
+     56.25,
+     52.39
+    ],
+    [
+     270,
+     60,
+     57.06
+    ],
+    [
+     300,
+     60.63,
+     57.26
+    ],
+    [
+     330,
+     60.63,
+     57.26
+    ],
+    [
+     360,
+     61.88,
+     58.94
+    ],
+    [
+     390,
+     63.13,
+     60.83
+    ],
+    [
+     420,
+     63.13,
+     60.83
+    ],
+    [
+     450,
+     64.38,
+     62.23
+    ],
+    [
+     480,
+     65,
+     63.19
+    ],
+    [
+     510,
+     65,
+     63.19
+    ],
+    [
+     540,
+     65,
+     63.19
+    ],
+    [
+     570,
+     65,
+     63.19
+    ],
+    [
+     600,
+     65,
+     63.19
+    ]
+   ]
+  },
+  {
+   "main": "abb-irb6700-200-260",
+   "config": "mode2",
+   "seed": 13,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 18.8,
+    "rateMass": 18.5,
+    "reached": false,
+    "reachS": null,
+    "collected": 30,
+    "total": 160,
+    "remaining": 128,
+    "spilled": 2,
+    "byRobot": {
+     "main": {
+      "n": 30,
+      "kg": 18.6
+     },
+     "left": {
+      "n": 0,
+      "kg": 0
+     },
+     "right": {
+      "n": 0,
+      "kg": 0
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 196.6,
+    "speedup": 3.05,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 3,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 8
+   },
+   "side": {
+    "left": {
+     "name": "UR10e",
+     "mode": 2,
+     "cycles": 5,
+     "lanes": 5,
+     "minOther": 247.72257311851268,
+     "status": "idle",
+     "label": "밀어 줄 드로스가 없음 — 대기"
+    },
+    "right": {
+     "name": "UR10e",
+     "mode": 2,
+     "cycles": 4,
+     "lanes": 5,
+     "minOther": 353.6854124352839,
+     "status": "idle",
+     "label": "밀어 줄 드로스가 없음 — 대기"
+    }
+   },
+   "firstFail": "덤프: 드로스 박스 위에서 기울일 수 있는 자세가 없습니다 (직선 경로에 충돌/특이점이 있습니다 (S:1-7))",
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     11.88,
+     12.65
+    ],
+    [
+     90,
+     11.88,
+     12.65
+    ],
+    [
+     120,
+     11.88,
+     12.65
+    ],
+    [
+     150,
+     18.13,
+     17.66
+    ],
+    [
+     180,
+     18.75,
+     18.5
+    ],
+    [
+     210,
+     18.75,
+     18.5
+    ],
+    [
+     240,
+     18.75,
+     18.5
+    ],
+    [
+     270,
+     18.75,
+     18.5
+    ],
+    [
+     300,
+     18.75,
+     18.5
+    ],
+    [
+     330,
+     18.75,
+     18.5
+    ],
+    [
+     360,
+     18.75,
+     18.5
+    ],
+    [
+     390,
+     18.75,
+     18.5
+    ],
+    [
+     420,
+     18.75,
+     18.5
+    ],
+    [
+     450,
+     18.75,
+     18.5
+    ],
+    [
+     480,
+     18.75,
+     18.5
+    ],
+    [
+     510,
+     18.75,
+     18.5
+    ],
+    [
+     540,
+     18.75,
+     18.5
+    ],
+    [
+     570,
+     18.75,
+     18.5
+    ],
+    [
+     600,
+     18.75,
+     18.5
+    ]
+   ]
+  },
+  {
+   "main": "kuka-kr210-r2700",
+   "config": "mode1",
+   "seed": 11,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 38.8,
+    "rateMass": 36.5,
+    "reached": false,
+    "reachS": null,
+    "collected": 62,
+    "total": 160,
+    "remaining": 83,
+    "spilled": 14,
+    "byRobot": {
+     "main": {
+      "n": 48,
+      "kg": 28.4
+     },
+     "left": {
+      "n": 9,
+      "kg": 5
+     },
+     "right": {
+      "n": 5,
+      "kg": 3.2
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 77.4,
+    "simS": 600,
+    "wallS": 103,
+    "speedup": 5.82,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 11,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {
+    "left": {
+     "name": "UR10e",
+     "mode": 1,
+     "cycles": 17,
+     "lanes": 2,
+     "minOther": 176.03430946225848,
+     "status": "running",
+     "label": "레인 접근: 이동"
+    },
+    "right": {
+     "name": "IRB 1200-5/0.9",
+     "mode": 1,
+     "cycles": 17,
+     "lanes": 2,
+     "minOther": 239.99414858359125,
+     "status": "running",
+     "label": "스윕"
+    }
+   },
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     15.63,
+     14.51
+    ],
+    [
+     90,
+     19.38,
+     16.89
+    ],
+    [
+     120,
+     25.63,
+     23.33
+    ],
+    [
+     150,
+     33.75,
+     31.59
+    ],
+    [
+     180,
+     33.75,
+     31.59
+    ],
+    [
+     210,
+     36.25,
+     34.19
+    ],
+    [
+     240,
+     36.25,
+     34.19
+    ],
+    [
+     270,
+     36.88,
+     35.14
+    ],
+    [
+     300,
+     38.13,
+     35.68
+    ],
+    [
+     330,
+     38.13,
+     35.68
+    ],
+    [
+     360,
+     38.13,
+     35.68
+    ],
+    [
+     390,
+     38.13,
+     35.68
+    ],
+    [
+     420,
+     38.75,
+     36.48
+    ],
+    [
+     450,
+     38.75,
+     36.48
+    ],
+    [
+     480,
+     38.75,
+     36.48
+    ],
+    [
+     510,
+     38.75,
+     36.48
+    ],
+    [
+     540,
+     38.75,
+     36.48
+    ],
+    [
+     570,
+     38.75,
+     36.48
+    ],
+    [
+     600,
+     38.75,
+     36.48
+    ]
+   ]
+  },
+  {
+   "main": "abb-irb6700-200-260",
+   "config": "mode2",
+   "seed": 11,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 15.6,
+    "rateMass": 15.1,
+    "reached": false,
+    "reachS": null,
+    "collected": 25,
+    "total": 160,
+    "remaining": 131,
+    "spilled": 2,
+    "byRobot": {
+     "main": {
+      "n": 25,
+      "kg": 15.1
+     },
+     "left": {
+      "n": 0,
+      "kg": 0
+     },
+     "right": {
+      "n": 0,
+      "kg": 0
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 210.4,
+    "speedup": 2.85,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 12,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 8
+   },
+   "side": {
+    "left": {
+     "name": "UR10e",
+     "mode": 2,
+     "cycles": 5,
+     "lanes": 5,
+     "minOther": 739.196599233047,
+     "status": "idle",
+     "label": "밀어 줄 드로스가 없음 — 대기"
+    },
+    "right": {
+     "name": "UR10e",
+     "mode": 2,
+     "cycles": 4,
+     "lanes": 5,
+     "minOther": 353.6854124352839,
+     "status": "idle",
+     "label": "밀어 줄 드로스가 없음 — 대기"
+    }
+   },
+   "firstFail": "덤프: 드로스 박스 위에서 기울일 수 있는 자세가 없습니다 (직선 경로에 충돌/특이점이 있습니다 (S:1-7))",
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     12.5,
+     12.91
+    ],
+    [
+     90,
+     12.5,
+     12.91
+    ],
+    [
+     120,
+     15.63,
+     15.1
+    ],
+    [
+     150,
+     15.63,
+     15.1
+    ],
+    [
+     180,
+     15.63,
+     15.1
+    ],
+    [
+     210,
+     15.63,
+     15.1
+    ],
+    [
+     240,
+     15.63,
+     15.1
+    ],
+    [
+     270,
+     15.63,
+     15.1
+    ],
+    [
+     300,
+     15.63,
+     15.1
+    ],
+    [
+     330,
+     15.63,
+     15.1
+    ],
+    [
+     360,
+     15.63,
+     15.1
+    ],
+    [
+     390,
+     15.63,
+     15.1
+    ],
+    [
+     420,
+     15.63,
+     15.1
+    ],
+    [
+     450,
+     15.63,
+     15.1
+    ],
+    [
+     480,
+     15.63,
+     15.1
+    ],
+    [
+     510,
+     15.63,
+     15.1
+    ],
+    [
+     540,
+     15.63,
+     15.1
+    ],
+    [
+     570,
+     15.63,
+     15.1
+    ],
+    [
+     600,
+     15.63,
+     15.1
+    ]
+   ]
+  },
+  {
+   "main": "abb-irb6700-200-260",
+   "config": "mode2",
+   "seed": 12,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 12.5,
+    "rateMass": 10.4,
+    "reached": false,
+    "reachS": null,
+    "collected": 20,
+    "total": 160,
+    "remaining": 139,
+    "spilled": 1,
+    "byRobot": {
+     "main": {
+      "n": 20,
+      "kg": 9.3
+     },
+     "left": {
+      "n": 0,
+      "kg": 0
+     },
+     "right": {
+      "n": 0,
+      "kg": 0
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 219.7,
+    "speedup": 2.73,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 13,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 8
+   },
+   "side": {
+    "left": {
+     "name": "UR10e",
+     "mode": 2,
+     "cycles": 5,
+     "lanes": 5,
+     "minOther": 792.1664728315397,
+     "status": "idle",
+     "label": "밀어 줄 드로스가 없음 — 대기"
+    },
+    "right": {
+     "name": "UR10e",
+     "mode": 2,
+     "cycles": 4,
+     "lanes": 5,
+     "minOther": 85.69064503737206,
+     "status": "idle",
+     "label": "밀어 줄 드로스가 없음 — 대기"
+    }
+   },
+   "firstFail": "덤프: 드로스 박스 위에서 기울일 수 있는 자세가 없습니다 (직선 경로에 충돌/특이점이 있습니다 (S:1-7))",
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     8.75,
+     6.86
+    ],
+    [
+     90,
+     8.75,
+     6.86
+    ],
+    [
+     120,
+     12.5,
+     10.37
+    ],
+    [
+     150,
+     12.5,
+     10.37
+    ],
+    [
+     180,
+     12.5,
+     10.37
+    ],
+    [
+     210,
+     12.5,
+     10.37
+    ],
+    [
+     240,
+     12.5,
+     10.37
+    ],
+    [
+     270,
+     12.5,
+     10.37
+    ],
+    [
+     300,
+     12.5,
+     10.37
+    ],
+    [
+     330,
+     12.5,
+     10.37
+    ],
+    [
+     360,
+     12.5,
+     10.37
+    ],
+    [
+     390,
+     12.5,
+     10.37
+    ],
+    [
+     420,
+     12.5,
+     10.37
+    ],
+    [
+     450,
+     12.5,
+     10.37
+    ],
+    [
+     480,
+     12.5,
+     10.37
+    ],
+    [
+     510,
+     12.5,
+     10.37
+    ],
+    [
+     540,
+     12.5,
+     10.37
+    ],
+    [
+     570,
+     12.5,
+     10.37
+    ],
+    [
+     600,
+     12.5,
+     10.37
+    ]
+   ]
+  },
+  {
+   "main": "kuka-kr210-r2700",
+   "config": "mode1",
+   "seed": 12,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 31.9,
+    "rateMass": 32.9,
+    "reached": false,
+    "reachS": null,
+    "collected": 51,
+    "total": 160,
+    "remaining": 95,
+    "spilled": 12,
+    "byRobot": {
+     "main": {
+      "n": 38,
+      "kg": 23.4
+     },
+     "left": {
+      "n": 9,
+      "kg": 4.2
+     },
+     "right": {
+      "n": 4,
+      "kg": 2
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 74.5,
+    "simS": 600,
+    "wallS": 112.9,
+    "speedup": 5.32,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 11,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {
+    "left": {
+     "name": "UR10e",
+     "mode": 1,
+     "cycles": 16,
+     "lanes": 2,
+     "minOther": 124.95093973548322,
+     "status": "running",
+     "label": "쏟는 중"
+    },
+    "right": {
+     "name": "IRB 1200-5/0.9",
+     "mode": 1,
+     "cycles": 17,
+     "lanes": 2,
+     "minOther": 123.11734723269223,
+     "status": "running",
+     "label": "스쿱 하강"
+    }
+   },
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0.63,
+     1.21
+    ],
+    [
+     60,
+     12.5,
+     12.26
+    ],
+    [
+     90,
+     16.88,
+     15.64
+    ],
+    [
+     120,
+     25,
+     25.18
+    ],
+    [
+     150,
+     26.88,
+     26.16
+    ],
+    [
+     180,
+     26.88,
+     26.16
+    ],
+    [
+     210,
+     29.38,
+     30.26
+    ],
+    [
+     240,
+     29.38,
+     30.26
+    ],
+    [
+     270,
+     30,
+     31.46
+    ],
+    [
+     300,
+     30,
+     31.46
+    ],
+    [
+     330,
+     30,
+     31.46
+    ],
+    [
+     360,
+     30.63,
+     31.62
+    ],
+    [
+     390,
+     31.25,
+     31.91
+    ],
+    [
+     420,
+     31.25,
+     31.91
+    ],
+    [
+     450,
+     31.25,
+     31.91
+    ],
+    [
+     480,
+     31.25,
+     31.91
+    ],
+    [
+     510,
+     31.25,
+     31.91
+    ],
+    [
+     540,
+     31.25,
+     31.91
+    ],
+    [
+     570,
+     31.88,
+     32.9
+    ],
+    [
+     600,
+     31.88,
+     32.9
+    ]
+   ]
+  },
+  {
+   "main": "kuka-kr210-r2700",
+   "config": "mode1",
+   "seed": 13,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 40.6,
+    "rateMass": 38,
+    "reached": false,
+    "reachS": null,
+    "collected": 65,
+    "total": 160,
+    "remaining": 86,
+    "spilled": 9,
+    "byRobot": {
+     "main": {
+      "n": 52,
+      "kg": 30.5
+     },
+     "left": {
+      "n": 6,
+      "kg": 2.8
+     },
+     "right": {
+      "n": 7,
+      "kg": 4.8
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 80,
+    "simS": 600,
+    "wallS": 112.5,
+    "speedup": 5.34,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 11,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {
+    "left": {
+     "name": "UR10e",
+     "mode": 1,
+     "cycles": 17,
+     "lanes": 2,
+     "minOther": 120.87089145222376,
+     "status": "running",
+     "label": "레인 접근: 이동"
+    },
+    "right": {
+     "name": "IRB 1200-5/0.9",
+     "mode": 1,
+     "cycles": 17,
+     "lanes": 2,
+     "minOther": 123.11752894864563,
+     "status": "running",
+     "label": "레인 접근: 이동"
+    }
+   },
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     1.25,
+     1.59
+    ],
+    [
+     60,
+     16.88,
+     16.04
+    ],
+    [
+     90,
+     20.63,
+     18.78
+    ],
+    [
+     120,
+     33.13,
+     29.98
+    ],
+    [
+     150,
+     35.63,
+     32.15
+    ],
+    [
+     180,
+     35.63,
+     32.15
+    ],
+    [
+     210,
+     38.13,
+     35.24
+    ],
+    [
+     240,
+     38.13,
+     35.24
+    ],
+    [
+     270,
+     38.75,
+     35.38
+    ],
+    [
+     300,
+     39.38,
+     36.42
+    ],
+    [
+     330,
+     39.38,
+     36.42
+    ],
+    [
+     360,
+     39.38,
+     36.42
+    ],
+    [
+     390,
+     39.38,
+     36.42
+    ],
+    [
+     420,
+     39.38,
+     36.42
+    ],
+    [
+     450,
+     39.38,
+     36.42
+    ],
+    [
+     480,
+     39.38,
+     36.42
+    ],
+    [
+     510,
+     40.63,
+     37.99
+    ],
+    [
+     540,
+     40.63,
+     37.99
+    ],
+    [
+     570,
+     40.63,
+     37.99
+    ],
+    [
+     600,
+     40.63,
+     37.99
+    ]
+   ]
+  },
+  {
+   "main": "kuka-kr210-r2700",
+   "config": "mode2",
+   "seed": 11,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 52.5,
+    "rateMass": 50.2,
+    "reached": false,
+    "reachS": null,
+    "collected": 84,
+    "total": 160,
+    "remaining": 61,
+    "spilled": 12,
+    "byRobot": {
+     "main": {
+      "n": 84,
+      "kg": 50.3
+     },
+     "left": {
+      "n": 0,
+      "kg": 0
+     },
+     "right": {
+      "n": 0,
+      "kg": 0
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 119.8,
+    "speedup": 5.01,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 11,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {
+    "left": {
+     "name": "UR10e",
+     "mode": 2,
+     "cycles": 8,
+     "lanes": 5,
+     "minOther": 411.8815738823288,
+     "status": "idle",
+     "label": "밀어 줄 드로스가 없음 — 대기"
+    },
+    "right": {
+     "name": "UR10e",
+     "mode": 2,
+     "cycles": 9,
+     "lanes": 5,
+     "minOther": 352.7481154486995,
+     "status": "idle",
+     "label": "밀어 줄 드로스가 없음 — 대기"
+    }
+   },
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     11.88,
+     12.55
+    ],
+    [
+     90,
+     11.88,
+     12.55
+    ],
+    [
+     120,
+     28.75,
+     28.25
+    ],
+    [
+     150,
+     44.38,
+     41.54
+    ],
+    [
+     180,
+     44.38,
+     41.54
+    ],
+    [
+     210,
+     50.63,
+     47.48
+    ],
+    [
+     240,
+     50.63,
+     47.48
+    ],
+    [
+     270,
+     52.5,
+     50.18
+    ],
+    [
+     300,
+     52.5,
+     50.18
+    ],
+    [
+     330,
+     52.5,
+     50.18
+    ],
+    [
+     360,
+     52.5,
+     50.18
+    ],
+    [
+     390,
+     52.5,
+     50.18
+    ],
+    [
+     420,
+     52.5,
+     50.18
+    ],
+    [
+     450,
+     52.5,
+     50.18
+    ],
+    [
+     480,
+     52.5,
+     50.18
+    ],
+    [
+     510,
+     52.5,
+     50.18
+    ],
+    [
+     540,
+     52.5,
+     50.18
+    ],
+    [
+     570,
+     52.5,
+     50.18
+    ],
+    [
+     600,
+     52.5,
+     50.18
+    ]
+   ]
+  },
+  {
+   "main": "fanuc-r2000ic-165f",
+   "config": "alone",
+   "seed": 11,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 56.3,
+    "rateMass": 54,
+    "reached": false,
+    "reachS": null,
+    "collected": 90,
+    "total": 160,
+    "remaining": 58,
+    "spilled": 8,
+    "byRobot": {
+     "main": {
+      "n": 90,
+      "kg": 54.2
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 107.8,
+    "speedup": 5.56,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 15,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {},
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     13.75,
+     14.43
+    ],
+    [
+     60,
+     13.75,
+     14.43
+    ],
+    [
+     90,
+     25.63,
+     26.82
+    ],
+    [
+     120,
+     38.13,
+     38.35
+    ],
+    [
+     150,
+     38.13,
+     38.35
+    ],
+    [
+     180,
+     45,
+     43.73
+    ],
+    [
+     210,
+     49.38,
+     47.05
+    ],
+    [
+     240,
+     49.38,
+     47.05
+    ],
+    [
+     270,
+     54.38,
+     52.16
+    ],
+    [
+     300,
+     55,
+     53.34
+    ],
+    [
+     330,
+     56.25,
+     54
+    ],
+    [
+     360,
+     56.25,
+     54
+    ],
+    [
+     390,
+     56.25,
+     54
+    ],
+    [
+     420,
+     56.25,
+     54
+    ],
+    [
+     450,
+     56.25,
+     54
+    ],
+    [
+     480,
+     56.25,
+     54
+    ],
+    [
+     510,
+     56.25,
+     54
+    ],
+    [
+     540,
+     56.25,
+     54
+    ],
+    [
+     570,
+     56.25,
+     54
+    ],
+    [
+     600,
+     56.25,
+     54
+    ]
+   ]
+  },
+  {
+   "main": "kuka-kr210-r2700",
+   "config": "mode2",
+   "seed": 13,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 55.6,
+    "rateMass": 54.9,
+    "reached": false,
+    "reachS": null,
+    "collected": 89,
+    "total": 160,
+    "remaining": 56,
+    "spilled": 13,
+    "byRobot": {
+     "main": {
+      "n": 89,
+      "kg": 55.1
+     },
+     "left": {
+      "n": 0,
+      "kg": 0
+     },
+     "right": {
+      "n": 0,
+      "kg": 0
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 122.7,
+    "speedup": 4.89,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 11,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {
+    "left": {
+     "name": "UR10e",
+     "mode": 2,
+     "cycles": 9,
+     "lanes": 5,
+     "minOther": 89.83796749340956,
+     "status": "idle",
+     "label": "밀어 줄 드로스가 없음 — 대기"
+    },
+    "right": {
+     "name": "UR10e",
+     "mode": 2,
+     "cycles": 10,
+     "lanes": 5,
+     "minOther": 352.7481154486995,
+     "status": "idle",
+     "label": "밀어 줄 드로스가 없음 — 대기"
+    }
+   },
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     11.88,
+     12.62
+    ],
+    [
+     90,
+     11.88,
+     12.62
+    ],
+    [
+     120,
+     28.13,
+     27.7
+    ],
+    [
+     150,
+     28.13,
+     27.7
+    ],
+    [
+     180,
+     41.88,
+     41.53
+    ],
+    [
+     210,
+     41.88,
+     41.53
+    ],
+    [
+     240,
+     51.25,
+     50.95
+    ],
+    [
+     270,
+     51.88,
+     51.66
+    ],
+    [
+     300,
+     51.88,
+     51.66
+    ],
+    [
+     330,
+     52.5,
+     51.87
+    ],
+    [
+     360,
+     52.5,
+     51.87
+    ],
+    [
+     390,
+     53.13,
+     52.9
+    ],
+    [
+     420,
+     54.38,
+     54
+    ],
+    [
+     450,
+     54.38,
+     54
+    ],
+    [
+     480,
+     55.63,
+     54.91
+    ],
+    [
+     510,
+     55.63,
+     54.91
+    ],
+    [
+     540,
+     55.63,
+     54.91
+    ],
+    [
+     570,
+     55.63,
+     54.91
+    ],
+    [
+     600,
+     55.63,
+     54.91
+    ]
+   ]
+  },
+  {
+   "main": "fanuc-r2000ic-165f",
+   "config": "alone",
+   "seed": 12,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 56.3,
+    "rateMass": 58.9,
+    "reached": false,
+    "reachS": null,
+    "collected": 90,
+    "total": 160,
+    "remaining": 62,
+    "spilled": 8,
+    "byRobot": {
+     "main": {
+      "n": 90,
+      "kg": 53
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 122,
+    "speedup": 4.92,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 14,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {},
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     11.88,
+     11.9
+    ],
+    [
+     90,
+     26.25,
+     23.06
+    ],
+    [
+     120,
+     34.38,
+     31.87
+    ],
+    [
+     150,
+     34.38,
+     31.87
+    ],
+    [
+     180,
+     42.5,
+     39.86
+    ],
+    [
+     210,
+     48.75,
+     48.81
+    ],
+    [
+     240,
+     50,
+     50.97
+    ],
+    [
+     270,
+     50,
+     50.97
+    ],
+    [
+     300,
+     53.75,
+     54.05
+    ],
+    [
+     330,
+     55,
+     56.58
+    ],
+    [
+     360,
+     55,
+     56.58
+    ],
+    [
+     390,
+     55,
+     56.58
+    ],
+    [
+     420,
+     55.63,
+     57.57
+    ],
+    [
+     450,
+     55.63,
+     57.57
+    ],
+    [
+     480,
+     55.63,
+     57.57
+    ],
+    [
+     510,
+     55.63,
+     57.57
+    ],
+    [
+     540,
+     55.63,
+     57.57
+    ],
+    [
+     570,
+     55.63,
+     57.57
+    ],
+    [
+     600,
+     56.25,
+     58.87
+    ]
+   ]
+  },
+  {
+   "main": "kuka-kr210-r2700",
+   "config": "mode2",
+   "seed": 12,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 51.9,
+    "rateMass": 57.1,
+    "reached": false,
+    "reachS": null,
+    "collected": 83,
+    "total": 160,
+    "remaining": 66,
+    "spilled": 9,
+    "byRobot": {
+     "main": {
+      "n": 83,
+      "kg": 51.5
+     },
+     "left": {
+      "n": 0,
+      "kg": 0
+     },
+     "right": {
+      "n": 0,
+      "kg": 0
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 142.6,
+    "speedup": 4.21,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 11,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {
+    "left": {
+     "name": "UR10e",
+     "mode": 2,
+     "cycles": 10,
+     "lanes": 5,
+     "minOther": 352.7481154487002,
+     "status": "idle",
+     "label": "밀어 줄 드로스가 없음 — 대기"
+    },
+    "right": {
+     "name": "UR10e",
+     "mode": 2,
+     "cycles": 10,
+     "lanes": 5,
+     "minOther": 397.98321602606995,
+     "status": "running",
+     "label": "날 하강"
+    }
+   },
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     14.38,
+     15.39
+    ],
+    [
+     90,
+     14.38,
+     15.39
+    ],
+    [
+     120,
+     32.5,
+     32.15
+    ],
+    [
+     150,
+     32.5,
+     32.15
+    ],
+    [
+     180,
+     45,
+     49.65
+    ],
+    [
+     210,
+     45,
+     49.65
+    ],
+    [
+     240,
+     49.38,
+     55.96
+    ],
+    [
+     270,
+     51.25,
+     56.65
+    ],
+    [
+     300,
+     51.25,
+     56.65
+    ],
+    [
+     330,
+     51.25,
+     56.65
+    ],
+    [
+     360,
+     51.25,
+     56.65
+    ],
+    [
+     390,
+     51.88,
+     57.12
+    ],
+    [
+     420,
+     51.88,
+     57.12
+    ],
+    [
+     450,
+     51.88,
+     57.12
+    ],
+    [
+     480,
+     51.88,
+     57.12
+    ],
+    [
+     510,
+     51.88,
+     57.12
+    ],
+    [
+     540,
+     51.88,
+     57.12
+    ],
+    [
+     570,
+     51.88,
+     57.12
+    ],
+    [
+     600,
+     51.88,
+     57.12
+    ]
+   ]
+  },
+  {
+   "main": "fanuc-r2000ic-165f",
+   "config": "alone",
+   "seed": 13,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 66.9,
+    "rateMass": 64,
+    "reached": false,
+    "reachS": null,
+    "collected": 107,
+    "total": 160,
+    "remaining": 51,
+    "spilled": 1,
+    "byRobot": {
+     "main": {
+      "n": 107,
+      "kg": 64.2
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 117.4,
+    "speedup": 5.11,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 14,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {},
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     13.75,
+     14.68
+    ],
+    [
+     60,
+     13.75,
+     14.68
+    ],
+    [
+     90,
+     28.75,
+     27.41
+    ],
+    [
+     120,
+     28.75,
+     27.41
+    ],
+    [
+     150,
+     41.25,
+     38.12
+    ],
+    [
+     180,
+     51.25,
+     46.04
+    ],
+    [
+     210,
+     57.5,
+     52.6
+    ],
+    [
+     240,
+     57.5,
+     52.6
+    ],
+    [
+     270,
+     58.75,
+     53.87
+    ],
+    [
+     300,
+     62.5,
+     58.54
+    ],
+    [
+     330,
+     62.5,
+     58.54
+    ],
+    [
+     360,
+     63.13,
+     59.02
+    ],
+    [
+     390,
+     64.38,
+     60.9
+    ],
+    [
+     420,
+     64.38,
+     60.9
+    ],
+    [
+     450,
+     65,
+     61.97
+    ],
+    [
+     480,
+     65.63,
+     62.66
+    ],
+    [
+     510,
+     65.63,
+     62.66
+    ],
+    [
+     540,
+     66.25,
+     63
+    ],
+    [
+     570,
+     66.88,
+     63.95
+    ],
+    [
+     600,
+     66.88,
+     63.95
+    ]
+   ]
+  },
+  {
+   "main": "fanuc-r2000ic-165f",
+   "config": "mode2",
+   "seed": 13,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 56.9,
+    "rateMass": 54.8,
+    "reached": false,
+    "reachS": null,
+    "collected": 91,
+    "total": 160,
+    "remaining": 58,
+    "spilled": 9,
+    "byRobot": {
+     "main": {
+      "n": 91,
+      "kg": 55
+     },
+     "left": {
+      "n": 0,
+      "kg": 0
+     },
+     "right": {
+      "n": 0,
+      "kg": 0
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 88.7,
+    "speedup": 6.77,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 11,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {
+    "left": {
+     "name": "UR10e",
+     "mode": 2,
+     "cycles": 8,
+     "lanes": 5,
+     "minOther": 125.98873710533735,
+     "status": "idle",
+     "label": "밀어 줄 드로스가 없음 — 대기"
+    },
+    "right": {
+     "name": "UR10e",
+     "mode": 2,
+     "cycles": 9,
+     "lanes": 5,
+     "minOther": 90.54286065798405,
+     "status": "idle",
+     "label": "밀어 줄 드로스가 없음 — 대기"
+    }
+   },
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     10.63,
+     12.24
+    ],
+    [
+     90,
+     10.63,
+     12.24
+    ],
+    [
+     120,
+     23.75,
+     23.12
+    ],
+    [
+     150,
+     23.75,
+     23.12
+    ],
+    [
+     180,
+     37.5,
+     36.98
+    ],
+    [
+     210,
+     37.5,
+     36.98
+    ],
+    [
+     240,
+     50.63,
+     47.84
+    ],
+    [
+     270,
+     53.75,
+     51.4
+    ],
+    [
+     300,
+     53.75,
+     51.4
+    ],
+    [
+     330,
+     55,
+     52.63
+    ],
+    [
+     360,
+     55,
+     52.63
+    ],
+    [
+     390,
+     56.25,
+     53.75
+    ],
+    [
+     420,
+     56.25,
+     53.75
+    ],
+    [
+     450,
+     56.25,
+     53.75
+    ],
+    [
+     480,
+     56.25,
+     53.75
+    ],
+    [
+     510,
+     56.25,
+     53.75
+    ],
+    [
+     540,
+     56.88,
+     54.81
+    ],
+    [
+     570,
+     56.88,
+     54.81
+    ],
+    [
+     600,
+     56.88,
+     54.81
+    ]
+   ]
+  },
+  {
+   "main": "fanuc-r2000ic-165f",
+   "config": "mode2",
+   "seed": 11,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 55.6,
+    "rateMass": 56.1,
+    "reached": false,
+    "reachS": null,
+    "collected": 89,
+    "total": 160,
+    "remaining": 59,
+    "spilled": 12,
+    "byRobot": {
+     "main": {
+      "n": 89,
+      "kg": 56.3
+     },
+     "left": {
+      "n": 0,
+      "kg": 0
+     },
+     "right": {
+      "n": 0,
+      "kg": 0
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 95.6,
+    "speedup": 6.28,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 11,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {
+    "left": {
+     "name": "UR10e",
+     "mode": 2,
+     "cycles": 11,
+     "lanes": 5,
+     "minOther": 90.54286066399746,
+     "status": "idle",
+     "label": "밀어 줄 드로스가 없음 — 대기"
+    },
+    "right": {
+     "name": "UR10e",
+     "mode": 2,
+     "cycles": 9,
+     "lanes": 5,
+     "minOther": 90.54286065798405,
+     "status": "idle",
+     "label": "밀어 줄 드로스가 없음 — 대기"
+    }
+   },
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     10.63,
+     12.2
+    ],
+    [
+     90,
+     10.63,
+     12.2
+    ],
+    [
+     120,
+     28.75,
+     28.41
+    ],
+    [
+     150,
+     28.75,
+     28.41
+    ],
+    [
+     180,
+     43.13,
+     41.77
+    ],
+    [
+     210,
+     51.25,
+     50.42
+    ],
+    [
+     240,
+     51.25,
+     50.42
+    ],
+    [
+     270,
+     53.75,
+     53.35
+    ],
+    [
+     300,
+     53.75,
+     53.35
+    ],
+    [
+     330,
+     53.75,
+     53.35
+    ],
+    [
+     360,
+     53.75,
+     53.35
+    ],
+    [
+     390,
+     53.75,
+     53.35
+    ],
+    [
+     420,
+     54.38,
+     54.22
+    ],
+    [
+     450,
+     54.38,
+     54.22
+    ],
+    [
+     480,
+     54.38,
+     54.22
+    ],
+    [
+     510,
+     54.38,
+     54.22
+    ],
+    [
+     540,
+     54.38,
+     54.22
+    ],
+    [
+     570,
+     55.63,
+     56.15
+    ],
+    [
+     600,
+     55.63,
+     56.15
+    ]
+   ]
+  },
+  {
+   "main": "fanuc-r2000ic-165f",
+   "config": "mode2",
+   "seed": 12,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 55,
+    "rateMass": 58.8,
+    "reached": false,
+    "reachS": null,
+    "collected": 88,
+    "total": 160,
+    "remaining": 55,
+    "spilled": 5,
+    "byRobot": {
+     "main": {
+      "n": 88,
+      "kg": 53
+     },
+     "left": {
+      "n": 0,
+      "kg": 0
+     },
+     "right": {
+      "n": 0,
+      "kg": 0
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 98.8,
+    "speedup": 6.07,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 11,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {
+    "left": {
+     "name": "UR10e",
+     "mode": 2,
+     "cycles": 9,
+     "lanes": 5,
+     "minOther": 90.54286066399746,
+     "status": "idle",
+     "label": "대형 로봇이 포트 안 작업 중 — 대기"
+    },
+    "right": {
+     "name": "UR10e",
+     "mode": 2,
+     "cycles": 10,
+     "lanes": 5,
+     "minOther": 397.9832772885103,
+     "status": "idle",
+     "label": "대형 로봇이 포트 안 작업 중 — 대기"
+    }
+   },
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     0,
+     0
+    ],
+    [
+     90,
+     11.88,
+     12.84
+    ],
+    [
+     120,
+     30.63,
+     29.78
+    ],
+    [
+     150,
+     30.63,
+     29.78
+    ],
+    [
+     180,
+     30.63,
+     29.78
+    ],
+    [
+     210,
+     43.13,
+     45.93
+    ],
+    [
+     240,
+     51.25,
+     55.12
+    ],
+    [
+     270,
+     51.25,
+     55.12
+    ],
+    [
+     300,
+     52.5,
+     56.43
+    ],
+    [
+     330,
+     52.5,
+     56.43
+    ],
+    [
+     360,
+     53.13,
+     57.42
+    ],
+    [
+     390,
+     54.38,
+     57.9
+    ],
+    [
+     420,
+     54.38,
+     57.9
+    ],
+    [
+     450,
+     54.38,
+     57.9
+    ],
+    [
+     480,
+     54.38,
+     57.9
+    ],
+    [
+     510,
+     55,
+     58.8
+    ],
+    [
+     540,
+     55,
+     58.8
+    ],
+    [
+     570,
+     55,
+     58.8
+    ],
+    [
+     600,
+     55,
+     58.8
+    ]
+   ]
+  },
+  {
+   "main": "fanuc-r2000ic-165f",
+   "config": "mode1",
+   "seed": 11,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 38.8,
+    "rateMass": 36.5,
+    "reached": false,
+    "reachS": null,
+    "collected": 62,
+    "total": 160,
+    "remaining": 85,
+    "spilled": 13,
+    "byRobot": {
+     "main": {
+      "n": 49,
+      "kg": 29.5
+     },
+     "left": {
+      "n": 8,
+      "kg": 4
+     },
+     "right": {
+      "n": 5,
+      "kg": 3.2
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 79,
+    "simS": 600,
+    "wallS": 140.2,
+    "speedup": 4.28,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 11,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {
+    "left": {
+     "name": "UR10e",
+     "mode": 1,
+     "cycles": 17,
+     "lanes": 2,
+     "minOther": 176.0342912588273,
+     "status": "running",
+     "label": "레인 접근: 이동"
+    },
+    "right": {
+     "name": "IRB 1200-5/0.9",
+     "mode": 1,
+     "cycles": 17,
+     "lanes": 2,
+     "minOther": 239.99409434842943,
+     "status": "running",
+     "label": "스윕"
+    }
+   },
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     16.25,
+     14.98
+    ],
+    [
+     90,
+     20,
+     17.35
+    ],
+    [
+     120,
+     26.88,
+     24.73
+    ],
+    [
+     150,
+     35.63,
+     32.68
+    ],
+    [
+     180,
+     35.63,
+     32.68
+    ],
+    [
+     210,
+     37.5,
+     35.44
+    ],
+    [
+     240,
+     37.5,
+     35.44
+    ],
+    [
+     270,
+     38.13,
+     36.38
+    ],
+    [
+     300,
+     38.75,
+     36.53
+    ],
+    [
+     330,
+     38.75,
+     36.53
+    ],
+    [
+     360,
+     38.75,
+     36.53
+    ],
+    [
+     390,
+     38.75,
+     36.53
+    ],
+    [
+     420,
+     38.75,
+     36.53
+    ],
+    [
+     450,
+     38.75,
+     36.53
+    ],
+    [
+     480,
+     38.75,
+     36.53
+    ],
+    [
+     510,
+     38.75,
+     36.53
+    ],
+    [
+     540,
+     38.75,
+     36.53
+    ],
+    [
+     570,
+     38.75,
+     36.53
+    ],
+    [
+     600,
+     38.75,
+     36.53
+    ]
+   ]
+  },
+  {
+   "main": "fanuc-r2000ic-165f",
+   "config": "mode1",
+   "seed": 12,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 33.1,
+    "rateMass": 33.1,
+    "reached": false,
+    "reachS": null,
+    "collected": 53,
+    "total": 160,
+    "remaining": 93,
+    "spilled": 12,
+    "byRobot": {
+     "main": {
+      "n": 39,
+      "kg": 23.6
+     },
+     "left": {
+      "n": 10,
+      "kg": 4.2
+     },
+     "right": {
+      "n": 4,
+      "kg": 2
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 73.6,
+    "simS": 600,
+    "wallS": 141.1,
+    "speedup": 4.25,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 11,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {
+    "left": {
+     "name": "UR10e",
+     "mode": 1,
+     "cycles": 16,
+     "lanes": 2,
+     "minOther": 123.11736304760112,
+     "status": "running",
+     "label": "쏟는 중"
+    },
+    "right": {
+     "name": "IRB 1200-5/0.9",
+     "mode": 1,
+     "cycles": 17,
+     "lanes": 2,
+     "minOther": 125.10175900762664,
+     "status": "running",
+     "label": "레인 접근"
+    }
+   },
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0.63,
+     1.21
+    ],
+    [
+     60,
+     12.5,
+     12.26
+    ],
+    [
+     90,
+     16.88,
+     15.64
+    ],
+    [
+     120,
+     25.63,
+     25.26
+    ],
+    [
+     150,
+     28.13,
+     26.47
+    ],
+    [
+     180,
+     28.13,
+     26.47
+    ],
+    [
+     210,
+     30,
+     29.28
+    ],
+    [
+     240,
+     30,
+     29.28
+    ],
+    [
+     270,
+     30.63,
+     30.57
+    ],
+    [
+     300,
+     31.25,
+     31.77
+    ],
+    [
+     330,
+     31.25,
+     31.77
+    ],
+    [
+     360,
+     31.88,
+     31.93
+    ],
+    [
+     390,
+     31.88,
+     31.93
+    ],
+    [
+     420,
+     31.88,
+     31.93
+    ],
+    [
+     450,
+     31.88,
+     31.93
+    ],
+    [
+     480,
+     31.88,
+     31.93
+    ],
+    [
+     510,
+     31.88,
+     31.93
+    ],
+    [
+     540,
+     31.88,
+     31.93
+    ],
+    [
+     570,
+     33.13,
+     33.11
+    ],
+    [
+     600,
+     33.13,
+     33.11
+    ]
+   ]
+  },
+  {
+   "main": "fanuc-r2000ic-165f",
+   "config": "mode1",
+   "seed": 13,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 38.8,
+    "rateMass": 36.9,
+    "reached": false,
+    "reachS": null,
+    "collected": 62,
+    "total": 160,
+    "remaining": 84,
+    "spilled": 14,
+    "byRobot": {
+     "main": {
+      "n": 48,
+      "kg": 28.6
+     },
+     "left": {
+      "n": 7,
+      "kg": 3.6
+     },
+     "right": {
+      "n": 7,
+      "kg": 4.8
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 77.4,
+    "simS": 600,
+    "wallS": 144.7,
+    "speedup": 4.15,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 11,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {
+    "left": {
+     "name": "UR10e",
+     "mode": 1,
+     "cycles": 17,
+     "lanes": 2,
+     "minOther": 121.07744455664039,
+     "status": "running",
+     "label": "레인 접근: 이동"
+    },
+    "right": {
+     "name": "IRB 1200-5/0.9",
+     "mode": 1,
+     "cycles": 17,
+     "lanes": 2,
+     "minOther": 121.49253593155825,
+     "status": "running",
+     "label": "레인 접근: 이동"
+    }
+   },
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     1.25,
+     1.59
+    ],
+    [
+     60,
+     16.88,
+     16.04
+    ],
+    [
+     90,
+     20.63,
+     18.78
+    ],
+    [
+     120,
+     31.88,
+     29.37
+    ],
+    [
+     150,
+     33.13,
+     30.77
+    ],
+    [
+     180,
+     33.13,
+     30.77
+    ],
+    [
+     210,
+     35.63,
+     33.86
+    ],
+    [
+     240,
+     35.63,
+     33.86
+    ],
+    [
+     270,
+     36.25,
+     34.33
+    ],
+    [
+     300,
+     36.88,
+     34.71
+    ],
+    [
+     330,
+     37.5,
+     34.85
+    ],
+    [
+     360,
+     37.5,
+     34.85
+    ],
+    [
+     390,
+     37.5,
+     34.85
+    ],
+    [
+     420,
+     38.13,
+     36.05
+    ],
+    [
+     450,
+     38.13,
+     36.05
+    ],
+    [
+     480,
+     38.75,
+     36.89
+    ],
+    [
+     510,
+     38.75,
+     36.89
+    ],
+    [
+     540,
+     38.75,
+     36.89
+    ],
+    [
+     570,
+     38.75,
+     36.89
+    ],
+    [
+     600,
+     38.75,
+     36.89
+    ]
+   ]
+  },
+  {
+   "main": "nachi-sra166",
+   "config": "alone",
+   "seed": 11,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 61.3,
+    "rateMass": 60.8,
+    "reached": false,
+    "reachS": null,
+    "collected": 98,
+    "total": 160,
+    "remaining": 58,
+    "spilled": 3,
+    "byRobot": {
+     "main": {
+      "n": 98,
+      "kg": 61
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 52.9,
+    "speedup": 11.35,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 15,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {},
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     13.75,
+     14.52
+    ],
+    [
+     60,
+     13.75,
+     14.52
+    ],
+    [
+     90,
+     28.75,
+     30.95
+    ],
+    [
+     120,
+     40.63,
+     41.68
+    ],
+    [
+     150,
+     40.63,
+     41.68
+    ],
+    [
+     180,
+     47.5,
+     47.06
+    ],
+    [
+     210,
+     50,
+     50.07
+    ],
+    [
+     240,
+     54.38,
+     53.39
+    ],
+    [
+     270,
+     54.38,
+     53.39
+    ],
+    [
+     300,
+     59.38,
+     59.03
+    ],
+    [
+     330,
+     61.25,
+     60.8
+    ],
+    [
+     360,
+     61.25,
+     60.8
+    ],
+    [
+     390,
+     61.25,
+     60.8
+    ],
+    [
+     420,
+     61.25,
+     60.8
+    ],
+    [
+     450,
+     61.25,
+     60.8
+    ],
+    [
+     480,
+     61.25,
+     60.8
+    ],
+    [
+     510,
+     61.25,
+     60.8
+    ],
+    [
+     540,
+     61.25,
+     60.8
+    ],
+    [
+     570,
+     61.25,
+     60.8
+    ],
+    [
+     600,
+     61.25,
+     60.8
+    ]
+   ]
+  },
+  {
+   "main": "nachi-sra166",
+   "config": "alone",
+   "seed": 12,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 60,
+    "rateMass": 60.7,
+    "reached": false,
+    "reachS": null,
+    "collected": 96,
+    "total": 160,
+    "remaining": 60,
+    "spilled": 3,
+    "byRobot": {
+     "main": {
+      "n": 96,
+      "kg": 54.7
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 56.6,
+    "speedup": 10.59,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 14,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {},
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     15.63,
+     15.14
+    ],
+    [
+     90,
+     30.63,
+     27.57
+    ],
+    [
+     120,
+     38.13,
+     35.1
+    ],
+    [
+     150,
+     38.13,
+     35.1
+    ],
+    [
+     180,
+     46.25,
+     43.09
+    ],
+    [
+     210,
+     51.25,
+     49.6
+    ],
+    [
+     240,
+     53.13,
+     52.14
+    ],
+    [
+     270,
+     53.13,
+     52.14
+    ],
+    [
+     300,
+     54.38,
+     53.92
+    ],
+    [
+     330,
+     58.13,
+     57
+    ],
+    [
+     360,
+     58.13,
+     57
+    ],
+    [
+     390,
+     58.75,
+     58.4
+    ],
+    [
+     420,
+     58.75,
+     58.4
+    ],
+    [
+     450,
+     59.38,
+     59.39
+    ],
+    [
+     480,
+     59.38,
+     59.39
+    ],
+    [
+     510,
+     59.38,
+     59.39
+    ],
+    [
+     540,
+     59.38,
+     59.39
+    ],
+    [
+     570,
+     60,
+     60.69
+    ],
+    [
+     600,
+     60,
+     60.69
+    ]
+   ]
+  },
+  {
+   "main": "nachi-sra166",
+   "config": "alone",
+   "seed": 13,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 66.3,
+    "rateMass": 62.9,
+    "reached": false,
+    "reachS": null,
+    "collected": 106,
+    "total": 160,
+    "remaining": 50,
+    "spilled": 3,
+    "byRobot": {
+     "main": {
+      "n": 106,
+      "kg": 63.1
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 55.2,
+    "speedup": 10.87,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 14,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {},
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     13.75,
+     14.68
+    ],
+    [
+     60,
+     13.75,
+     14.68
+    ],
+    [
+     90,
+     29.38,
+     27.79
+    ],
+    [
+     120,
+     29.38,
+     27.79
+    ],
+    [
+     150,
+     41.25,
+     38.12
+    ],
+    [
+     180,
+     51.25,
+     46.04
+    ],
+    [
+     210,
+     57.5,
+     52.6
+    ],
+    [
+     240,
+     59.38,
+     55.18
+    ],
+    [
+     270,
+     59.38,
+     55.18
+    ],
+    [
+     300,
+     60,
+     55.38
+    ],
+    [
+     330,
+     63.75,
+     60.05
+    ],
+    [
+     360,
+     63.75,
+     60.05
+    ],
+    [
+     390,
+     65,
+     60.89
+    ],
+    [
+     420,
+     65,
+     60.89
+    ],
+    [
+     450,
+     65.63,
+     61.96
+    ],
+    [
+     480,
+     65.63,
+     61.96
+    ],
+    [
+     510,
+     66.25,
+     62.92
+    ],
+    [
+     540,
+     66.25,
+     62.92
+    ],
+    [
+     570,
+     66.25,
+     62.92
+    ],
+    [
+     600,
+     66.25,
+     62.92
+    ]
+   ]
+  },
+  {
+   "main": "nachi-sra166",
+   "config": "mode1",
+   "seed": 11,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 37.5,
+    "rateMass": 34.3,
+    "reached": false,
+    "reachS": null,
+    "collected": 60,
+    "total": 160,
+    "remaining": 85,
+    "spilled": 14,
+    "byRobot": {
+     "main": {
+      "n": 47,
+      "kg": 27.3
+     },
+     "left": {
+      "n": 8,
+      "kg": 4
+     },
+     "right": {
+      "n": 5,
+      "kg": 3.2
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 78.3,
+    "simS": 600,
+    "wallS": 101.6,
+    "speedup": 5.91,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 11,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {
+    "left": {
+     "name": "UR10e",
+     "mode": 1,
+     "cycles": 17,
+     "lanes": 2,
+     "minOther": 176.0342953281783,
+     "status": "running",
+     "label": "레인 접근: 이동"
+    },
+    "right": {
+     "name": "IRB 1200-5/0.9",
+     "mode": 1,
+     "cycles": 17,
+     "lanes": 2,
+     "minOther": 124.95088896110792,
+     "status": "running",
+     "label": "스윕"
+    }
+   },
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     16.25,
+     14.98
+    ],
+    [
+     90,
+     20,
+     17.35
+    ],
+    [
+     120,
+     26.88,
+     24.73
+    ],
+    [
+     150,
+     35.63,
+     32.68
+    ],
+    [
+     180,
+     35.63,
+     32.68
+    ],
+    [
+     210,
+     36.88,
+     34.17
+    ],
+    [
+     240,
+     36.88,
+     34.17
+    ],
+    [
+     270,
+     36.88,
+     34.17
+    ],
+    [
+     300,
+     37.5,
+     34.32
+    ],
+    [
+     330,
+     37.5,
+     34.32
+    ],
+    [
+     360,
+     37.5,
+     34.32
+    ],
+    [
+     390,
+     37.5,
+     34.32
+    ],
+    [
+     420,
+     37.5,
+     34.32
+    ],
+    [
+     450,
+     37.5,
+     34.32
+    ],
+    [
+     480,
+     37.5,
+     34.32
+    ],
+    [
+     510,
+     37.5,
+     34.32
+    ],
+    [
+     540,
+     37.5,
+     34.32
+    ],
+    [
+     570,
+     37.5,
+     34.32
+    ],
+    [
+     600,
+     37.5,
+     34.32
+    ]
+   ]
+  },
+  {
+   "main": "nachi-sra166",
+   "config": "mode2",
+   "seed": 11,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 55,
+    "rateMass": 54.6,
+    "reached": false,
+    "reachS": null,
+    "collected": 88,
+    "total": 160,
+    "remaining": 61,
+    "spilled": 11,
+    "byRobot": {
+     "main": {
+      "n": 88,
+      "kg": 54.8
+     },
+     "left": {
+      "n": 0,
+      "kg": 0
+     },
+     "right": {
+      "n": 0,
+      "kg": 0
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 88.2,
+    "speedup": 6.8,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 11,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {
+    "left": {
+     "name": "UR10e",
+     "mode": 2,
+     "cycles": 9,
+     "lanes": 5,
+     "minOther": 425.1195474679274,
+     "status": "idle",
+     "label": "밀어 줄 드로스가 없음 — 대기"
+    },
+    "right": {
+     "name": "UR10e",
+     "mode": 2,
+     "cycles": 10,
+     "lanes": 5,
+     "minOther": 353.68540302107056,
+     "status": "idle",
+     "label": "밀어 줄 드로스가 없음 — 대기"
+    }
+   },
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     13.13,
+     14.1
+    ],
+    [
+     90,
+     13.13,
+     14.1
+    ],
+    [
+     120,
+     30.63,
+     29.84
+    ],
+    [
+     150,
+     30.63,
+     29.84
+    ],
+    [
+     180,
+     47.5,
+     46.32
+    ],
+    [
+     210,
+     53.75,
+     53.67
+    ],
+    [
+     240,
+     53.75,
+     53.67
+    ],
+    [
+     270,
+     54.38,
+     54.31
+    ],
+    [
+     300,
+     54.38,
+     54.31
+    ],
+    [
+     330,
+     54.38,
+     54.31
+    ],
+    [
+     360,
+     54.38,
+     54.31
+    ],
+    [
+     390,
+     54.38,
+     54.31
+    ],
+    [
+     420,
+     54.38,
+     54.31
+    ],
+    [
+     450,
+     54.38,
+     54.31
+    ],
+    [
+     480,
+     54.38,
+     54.31
+    ],
+    [
+     510,
+     54.38,
+     54.31
+    ],
+    [
+     540,
+     54.38,
+     54.31
+    ],
+    [
+     570,
+     55,
+     54.59
+    ],
+    [
+     600,
+     55,
+     54.59
+    ]
+   ]
+  },
+  {
+   "main": "nachi-sra166",
+   "config": "mode2",
+   "seed": 13,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 59.4,
+    "rateMass": 59.1,
+    "reached": false,
+    "reachS": null,
+    "collected": 95,
+    "total": 160,
+    "remaining": 55,
+    "spilled": 9,
+    "byRobot": {
+     "main": {
+      "n": 95,
+      "kg": 59.3
+     },
+     "left": {
+      "n": 0,
+      "kg": 0
+     },
+     "right": {
+      "n": 0,
+      "kg": 0
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 82,
+    "speedup": 7.32,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 11,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {
+    "left": {
+     "name": "UR10e",
+     "mode": 2,
+     "cycles": 8,
+     "lanes": 5,
+     "minOther": 236.95132872674412,
+     "status": "idle",
+     "label": "밀어 줄 드로스가 없음 — 대기"
+    },
+    "right": {
+     "name": "UR10e",
+     "mode": 2,
+     "cycles": 9,
+     "lanes": 5,
+     "minOther": 353.68540302107056,
+     "status": "idle",
+     "label": "밀어 줄 드로스가 없음 — 대기"
+    }
+   },
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     13.75,
+     14.68
+    ],
+    [
+     90,
+     13.75,
+     14.68
+    ],
+    [
+     120,
+     25,
+     24.07
+    ],
+    [
+     150,
+     25,
+     24.07
+    ],
+    [
+     180,
+     37.5,
+     38.77
+    ],
+    [
+     210,
+     37.5,
+     38.77
+    ],
+    [
+     240,
+     51.25,
+     50.36
+    ],
+    [
+     270,
+     56.25,
+     55.32
+    ],
+    [
+     300,
+     56.25,
+     55.32
+    ],
+    [
+     330,
+     58.75,
+     58.88
+    ],
+    [
+     360,
+     58.75,
+     58.88
+    ],
+    [
+     390,
+     58.75,
+     58.88
+    ],
+    [
+     420,
+     59.38,
+     59.06
+    ],
+    [
+     450,
+     59.38,
+     59.06
+    ],
+    [
+     480,
+     59.38,
+     59.06
+    ],
+    [
+     510,
+     59.38,
+     59.06
+    ],
+    [
+     540,
+     59.38,
+     59.06
+    ],
+    [
+     570,
+     59.38,
+     59.06
+    ],
+    [
+     600,
+     59.38,
+     59.06
+    ]
+   ]
+  },
+  {
+   "main": "nachi-sra166",
+   "config": "mode2",
+   "seed": 12,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 56.9,
+    "rateMass": 58.5,
+    "reached": false,
+    "reachS": null,
+    "collected": 91,
+    "total": 160,
+    "remaining": 47,
+    "spilled": 9,
+    "byRobot": {
+     "main": {
+      "n": 91,
+      "kg": 52.7
+     },
+     "left": {
+      "n": 0,
+      "kg": 0
+     },
+     "right": {
+      "n": 0,
+      "kg": 0
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 91,
+    "speedup": 6.59,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 11,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {
+    "left": {
+     "name": "UR10e",
+     "mode": 2,
+     "cycles": 10,
+     "lanes": 5,
+     "minOther": 353.68540302107,
+     "status": "idle",
+     "label": "대형 로봇이 포트 안 작업 중 — 대기"
+    },
+    "right": {
+     "name": "UR10e",
+     "mode": 2,
+     "cycles": 10,
+     "lanes": 5,
+     "minOther": 78.05941125521775,
+     "status": "idle",
+     "label": "대형 로봇이 포트 안 작업 중 — 대기"
+    }
+   },
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     0,
+     0
+    ],
+    [
+     90,
+     12.5,
+     12.1
+    ],
+    [
+     120,
+     30,
+     28.16
+    ],
+    [
+     150,
+     31.25,
+     29.8
+    ],
+    [
+     180,
+     43.75,
+     47.32
+    ],
+    [
+     210,
+     43.75,
+     47.32
+    ],
+    [
+     240,
+     49.38,
+     51.16
+    ],
+    [
+     270,
+     49.38,
+     51.16
+    ],
+    [
+     300,
+     53.75,
+     56.01
+    ],
+    [
+     330,
+     55,
+     57.76
+    ],
+    [
+     360,
+     55,
+     57.76
+    ],
+    [
+     390,
+     56.25,
+     58.31
+    ],
+    [
+     420,
+     56.25,
+     58.31
+    ],
+    [
+     450,
+     56.25,
+     58.31
+    ],
+    [
+     480,
+     56.25,
+     58.31
+    ],
+    [
+     510,
+     56.25,
+     58.31
+    ],
+    [
+     540,
+     56.88,
+     58.49
+    ],
+    [
+     570,
+     56.88,
+     58.49
+    ],
+    [
+     600,
+     56.88,
+     58.49
+    ]
+   ]
+  },
+  {
+   "main": "nachi-sra166",
+   "config": "mode1",
+   "seed": 12,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 33.1,
+    "rateMass": 32.1,
+    "reached": false,
+    "reachS": null,
+    "collected": 53,
+    "total": 160,
+    "remaining": 92,
+    "spilled": 13,
+    "byRobot": {
+     "main": {
+      "n": 37,
+      "kg": 22.3
+     },
+     "left": {
+      "n": 11,
+      "kg": 4.3
+     },
+     "right": {
+      "n": 5,
+      "kg": 2.3
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 69.8,
+    "simS": 600,
+    "wallS": 123.8,
+    "speedup": 4.85,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 12,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {
+    "left": {
+     "name": "UR10e",
+     "mode": 1,
+     "cycles": 16,
+     "lanes": 2,
+     "minOther": 123.82340972588497,
+     "status": "running",
+     "label": "쏟는 중"
+    },
+    "right": {
+     "name": "IRB 1200-5/0.9",
+     "mode": 1,
+     "cycles": 17,
+     "lanes": 2,
+     "minOther": 143.08449159375692,
+     "status": "running",
+     "label": "레인 접근"
+    }
+   },
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0.63,
+     1.21
+    ],
+    [
+     60,
+     12.5,
+     12.26
+    ],
+    [
+     90,
+     17.5,
+     15.99
+    ],
+    [
+     120,
+     26.25,
+     26.49
+    ],
+    [
+     150,
+     28.13,
+     27.47
+    ],
+    [
+     180,
+     28.13,
+     27.47
+    ],
+    [
+     210,
+     28.75,
+     27.76
+    ],
+    [
+     240,
+     28.75,
+     27.76
+    ],
+    [
+     270,
+     29.38,
+     28.96
+    ],
+    [
+     300,
+     29.38,
+     28.96
+    ],
+    [
+     330,
+     30,
+     29.15
+    ],
+    [
+     360,
+     31.88,
+     29.95
+    ],
+    [
+     390,
+     31.88,
+     29.95
+    ],
+    [
+     420,
+     32.5,
+     31.12
+    ],
+    [
+     450,
+     32.5,
+     31.12
+    ],
+    [
+     480,
+     32.5,
+     31.12
+    ],
+    [
+     510,
+     32.5,
+     31.12
+    ],
+    [
+     540,
+     32.5,
+     31.12
+    ],
+    [
+     570,
+     32.5,
+     31.12
+    ],
+    [
+     600,
+     33.13,
+     32.12
+    ]
+   ]
+  },
+  {
+   "main": "nachi-sra166",
+   "config": "mode1",
+   "seed": 13,
+   "simS": 600,
+   "target": 80,
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 40.6,
+    "rateMass": 36.4,
+    "reached": false,
+    "reachS": null,
+    "collected": 65,
+    "total": 160,
+    "remaining": 86,
+    "spilled": 8,
+    "byRobot": {
+     "main": {
+      "n": 49,
+      "kg": 28.2
+     },
+     "left": {
+      "n": 8,
+      "kg": 3.2
+     },
+     "right": {
+      "n": 8,
+      "kg": 5.1
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 75.4,
+    "simS": 600,
+    "wallS": 120.1,
+    "speedup": 5,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 11,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {
+    "left": {
+     "name": "UR10e",
+     "mode": 1,
+     "cycles": 17,
+     "lanes": 2,
+     "minOther": 121.32821572992208,
+     "status": "running",
+     "label": "레인 접근: 이동"
+    },
+    "right": {
+     "name": "IRB 1200-5/0.9",
+     "mode": 1,
+     "cycles": 17,
+     "lanes": 2,
+     "minOther": 121.8429540626417,
+     "status": "running",
+     "label": "레인 접근: 이동"
+    }
+   },
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     1.25,
+     1.59
+    ],
+    [
+     60,
+     16.88,
+     16.04
+    ],
+    [
+     90,
+     21.25,
+     18.98
+    ],
+    [
+     120,
+     35,
+     30.74
+    ],
+    [
+     150,
+     36.88,
+     32.31
+    ],
+    [
+     180,
+     36.88,
+     32.31
+    ],
+    [
+     210,
+     39.38,
+     35.4
+    ],
+    [
+     240,
+     39.38,
+     35.4
+    ],
+    [
+     270,
+     40,
+     35.54
+    ],
+    [
+     300,
+     40,
+     35.54
+    ],
+    [
+     330,
+     40,
+     35.54
+    ],
+    [
+     360,
+     40,
+     35.54
+    ],
+    [
+     390,
+     40,
+     35.54
+    ],
+    [
+     420,
+     40,
+     35.54
+    ],
+    [
+     450,
+     40,
+     35.54
+    ],
+    [
+     480,
+     40.63,
+     36.37
+    ],
+    [
+     510,
+     40.63,
+     36.37
+    ],
+    [
+     540,
+     40.63,
+     36.37
+    ],
+    [
+     570,
+     40.63,
+     36.37
+    ],
+    [
+     600,
+     40.63,
+     36.37
+    ]
+   ]
+  }
+ ]
+}

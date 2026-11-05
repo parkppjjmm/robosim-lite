@@ -1031,3 +1031,55 @@ button.sim-badge.physics:hover { background: color-mix(in srgb, var(--path) 24%,
 :root[data-theme='light'] .telemetry-chart { background: rgb(255 255 255 / 0.92); border-color: rgb(0 0 0 / 0.12); }
 .tm-graph-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .tm-graph-row .field { flex: 1; min-width: 120px; }
+
+/* ---- 에피소드 재생 (v3.0.0) ---- */
+.replay-bar { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 6; display: flex; align-items: center; gap: 8px;
+  width: min(720px, calc(100% - 32px)); padding: 6px 10px; border-radius: 10px; background: rgb(14 18 23 / 0.86); color: #e6edf3; border: 1px solid rgb(255 255 255 / 0.12); }
+.replay-bar[hidden], .replay-info[hidden] { display: none; }
+.replay-bar .rp-btn { background: transparent; color: inherit; border: 1px solid rgb(255 255 255 / 0.2); border-radius: 6px; min-width: 34px; height: 30px; cursor: pointer; font-size: 14px; }
+.replay-bar .rp-btn:hover { background: rgb(255 255 255 / 0.08); }
+.replay-bar select { height: 30px; border-radius: 6px; background: #1c232c; color: inherit; border: 1px solid rgb(255 255 255 / 0.2); }
+.replay-bar input[type=range] { flex: 1; min-width: 80px; }
+.replay-bar .rp-time { font: 12px ui-monospace, monospace; white-space: nowrap; }
+.replay-info { position: absolute; right: 12px; top: 52px; z-index: 5; width: 250px; padding: 8px 10px; border-radius: 8px;
+  background: rgb(14 18 23 / 0.82); color: #e6edf3; border: 1px solid rgb(255 255 255 / 0.12); font: 12px system-ui, sans-serif; }
+.replay-info .rp-rate b { font-size: 20px; }
+.replay-info .rp-rate small { color: #9fb3c8; }
+.replay-info .rp-prog { position: relative; height: 8px; margin: 6px 0; border-radius: 4px; background: rgb(255 255 255 / 0.12); }
+.replay-info .rp-prog i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: #3d9be9; }
+.replay-info .rp-prog i.ok { background: #2fbf71; }
+.replay-info .rp-prog s { position: absolute; top: -3px; bottom: -3px; width: 2px; background: #f5a524; }
+.replay-info .rp-label { color: #c9d4df; margin-bottom: 4px; }
+.replay-info select { background: #1c232c; color: inherit; border: 1px solid rgb(255 255 255 / 0.2); border-radius: 4px; }
+.replay-info table { border-collapse: collapse; margin-top: 4px; font-family: ui-monospace, monospace; }
+.replay-info th { color: #9fb3c8; text-align: left; padding: 1px 10px 1px 0; font-weight: 500; }
+.replay-info td { text-align: right; }
+.rp-chart { width: 100%; height: 120px; margin-top: 6px; }
+:root[data-theme='light'] .replay-bar, :root[data-theme='light'] .replay-info { background: rgb(255 255 255 / 0.92); color: #1d2733; border-color: rgb(0 0 0 / 0.12); }
+:root[data-theme='light'] .replay-bar select, :root[data-theme='light'] .replay-info select { background: #fff; color: #1d2733; border-color: rgb(0 0 0 / 0.2); }
+:root[data-theme='light'] .replay-bar .rp-btn { border-color: rgb(0 0 0 / 0.2); }
+:root[data-theme='light'] .replay-info .rp-rate small, :root[data-theme='light'] .replay-info th { color: #5b6672; }
+:root[data-theme='light'] .replay-info .rp-label { color: #33404d; }
+
+/* ---- 학습 (Trial & Error) (v3.0.0) ---- */
+.lab-box { border: 1px solid var(--border, #333); border-radius: 6px; padding: 6px 8px; margin: 8px 0 0; }
+.lab-box legend { font-size: 12px; color: var(--muted); padding: 0 4px; }
+.lab-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; font-size: 12px; }
+.lab-grid label { display: flex; flex-direction: column; gap: 2px; color: var(--muted); }
+.lab-grid label span { display: flex; align-items: center; gap: 4px; color: var(--text, inherit); }
+.lab-grid input[type=number], .lab-grid select { width: 100%; min-width: 0; }
+.lab-grid .lab-check { flex-direction: row; align-items: center; gap: 6px; grid-column: span 2; }
+.lab-search { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+.lab-search th, .lab-search td { padding: 2px 3px; text-align: left; vertical-align: middle; }
+.lab-search thead th { color: var(--muted); font-weight: 500; }
+.lab-search tbody th { font-weight: 400; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lab-search tbody th small { color: var(--muted); }
+.lab-search input[type=number] { width: 56px; }
+.lab-progress .rp-prog { position: relative; height: 8px; margin: 6px 0; border-radius: 4px; background: rgb(127 127 127 / 0.25); }
+.lab-progress .rp-prog i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: #3d9be9; }
+.lab-progress .rp-prog i.ok { background: #2fbf71; }
+.lab-progress .rp-prog s { position: absolute; top: -3px; bottom: -3px; width: 2px; background: #f5a524; }
+.lab-chart { width: 100%; height: 110px; }
+.lab-decisions { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 4px; }
+.lab-decisions th { color: var(--muted); font-weight: 500; text-align: left; }
+.lab-decisions td, .lab-decisions th { padding: 1px 4px; white-space: nowrap; }

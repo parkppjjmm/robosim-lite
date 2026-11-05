@@ -75,124 +75,21 @@ if (!process.env.ONLY) {
 }
 
 // ---- 3. 동시 실행 재현 ----
-/**
- * main.js 루프와 같은 순서로 SIM_S초 실행.
- * 대형 로봇: 사이클을 반복(모드 1 측면이 있으면 레인 Y 제한, 모드 2 측면이 있으면 '포트 대기' 단계 + wantsPot)
- */
+// v3.0.0: 루프는 js/cell-sim.js runEpisode로 옮겼다(브라우저 main.js와 같은 순서: 측면 → 대형 안전 게이트(다른 로봇 포함) → 물리).
+const CS = await imp('cell-sim.js');
+const TE = await imp('task-eval.js');
 async function simulate(mainId, sidesIn, label) {
-  const main = byId(mainId);
-  const sides = {};
-  for (const [slot, cfg] of Object.entries(sidesIn)) {
-    sides[slot] = { ...cfg, binDist: cfg.mode === 1 ? D.sideBinDistFor(cfg.robotId) : undefined };
-  }
-  const fixtures = fixturesFor(sides);
-  const w = new P.PhysicsWorld(RAPIER);
-  w.setFixtures(fixtures);
-  w.load([]);
-  const field = new D.DrossField(w, { count: 160, seed: 11 });
-  field.init();
-  const spec = G.SKIMMER_SPEC;
-  const ctx = S.createSafetyContext(main, { features: { selfCollision: true, obstacleCollision: true, singularity: false }, thresholds: TH, obstacles: fixtures, floor: true, tool: { spec, opening: 0 }, physicsMode: true });
-  const physMain = (e) => [...e.segments.filter((s) => s.part !== 'plate'), ...G.skimmerBoxes(spec, e.frames[6])];
-  let cur = S.evaluatePose(ctx, K.homeJoints(main));
-  w.setRobot(physMain(cur));
-  const coord = new C.CellCoordinator();
-  for (const [slot, cfg] of Object.entries(sides)) {
-    const cr = new C.CellRobot(slot, byId(cfg.robotId), cfg.mode, { thresholds: TH, obstaclesWorld: fixtures, binDist: cfg.binDist });
-    coord.robots.set(slot, cr);
-    w.setExtraRobot(slot, cr.physicsShapes());
-  }
-  for (let i = 0; i < 90; i++) { w.step(); field.tick(DT); }
-  coord.start();
-  const anyMode2 = [...coord.robots.values()].some((r) => r.mode === 2);
-  const lanes = D.skimLanes(spec, TH.obstacleMarginMm, D.mainLaneRange(spec, sides));
-  const out = { mainBlocked: 0, sideBlocked: 0, mainCycles: 0, minMainSide: Infinity, lockViolations: 0, holdS: 0, planFail: [] };
-  let mainRun = null, lastLane = -1, mainPlanning = false, inPotPhase = false;
-  const prof = { side: 0, main: 0, phys: 0, physMax: 0 };
-  const _wall0 = performance.now();
-
-  const startMain = async () => {
-    mainPlanning = true;
-    if (anyMode2) coord.main.wantsPot = true;
-    const pick = D.chooseLane(lanes, w.particleState(), spec, lastLane);
-    if (!pick || pick.count < 1) { mainPlanning = false; coord.main.wantsPot = false; return; }
-    const res = await D.planSkimCycle({ robot: main, q0: cur.q.slice(), spec, lane: pick.lane, obstacles: fixtures, thresholds: TH, floor: true, cell: { corridor: coord.robots.size > 0 } },
-      { plan: (req) => PL.planPath({ robot: main, thresholds: TH, floor: true, features: {}, avoidSingularity: false, reference: cur.q, timeoutMs: 8000, ...req }) });
-    mainPlanning = false;
-    if (!res.ok) { out.planFail.push(res.message); coord.main.wantsPot = false; return; }
-    lastLane = pick.lane.index;
-    const steps = res.steps.slice();
-    const liftIdx = steps.findIndex((s) => s.label === '스쿱 상승');
-    if (anyMode2) steps.unshift({ kind: 'action', type: 'until', label: '측면 로봇 퇴피 대기' });
-    mainRun = { steps, i: 0, t: 0, liftIdx: liftIdx + (anyMode2 ? 1 : 0) };
-  };
-
-  for (let tick = 0; tick < SIM_S * 60; tick++) {
-    // 브라우저의 프레임마다 양보와 같게: 측면 로봇의 비동기 계획이 끝날 수 있도록 이벤트 루프에 양보
-    if (coord.planning.size) await new Promise((r) => setImmediate(r));
-    // 측면 로봇
-    const _t0 = performance.now();
-    coord.tick(DT, {
-      mainSegments: cur.segments, mainName: main.name, particles: () => w.particleState(), obstaclesWorld: () => fixtures, paused: false,
-      onBlocked: (r, res) => { out.sideBlocked++; out.lastSideBlock = `${r.slot}: ${res.reason ?? res.blocked?.map((v) => v.key).join(',')}`; },
-      onPlanFail: (r) => out.planFail.push(`${r.slot}: ${r.error}`),
-    });
-    const _t1 = performance.now();
-    prof.side += _t1 - _t0;
-    // 대형 로봇 (다른 로봇을 포함한 적용 전 검사)
-    ctx.others = [...coord.robots.values()].map((r) => ({ id: r.slot, segments: r.worldSegments() }));
-    if (!mainRun && !mainPlanning) await startMain();
-    if (mainRun) {
-      const st = mainRun.steps[mainRun.i];
-      inPotPhase = mainRun.i <= mainRun.liftIdx && !(st.kind === 'action');
-      if (!st) { mainRun = null; out.mainCycles++; }
-      else if (st.kind === 'action') {
-        if (st.type === 'until') { if (!coord.sideInPot()) mainRun.i++; }
-        else { mainRun.t += DT; if (mainRun.t >= st.sec) { mainRun.i++; mainRun.t = 0; } }
-      } else {
-        const tN = Math.min(st.trajectory.duration, mainRun.t + DT);
-        const r = S.sweepCheck(ctx, cur, TR.sampleTrajectory(st.trajectory, tN));
-        if (!r.ok) { out.mainBlocked++; out.lastMainBlock = `${st.label}: ${r.blocked.map((v) => v.key).join(',')}`; mainRun = null; coord.main.wantsPot = false; break; } // 앱에서는 알람 → 여기서 멈춤
-        else {
-          cur = r.last;
-          mainRun.t = tN;
-          if (tN >= st.trajectory.duration - 1e-9) {
-            if (mainRun.i === mainRun.liftIdx) coord.main.wantsPot = false; // 들어 올린 뒤엔 포트를 비워 줌
-            mainRun.i++; mainRun.t = 0;
-          }
-        }
-      }
-      if (mainRun && mainRun.i >= mainRun.steps.length) { mainRun = null; out.mainCycles++; }
-    }
-    if (anyMode2 && inPotPhase && mainRun && [...coord.robots.values()].some((r) => r.mode === 2 && r.inPot)) out.lockViolations++;
-    for (const r of coord.robots.values()) {
-      out.minMainSide = Math.min(out.minMainSide, S.capsuleSetDistance(cur.segments, r.worldSegments()).d);
-      if (r.status === 'holding') out.holdS += DT;
-    }
-    if (process.env.PROFILE && tick % 300 === 0) console.log('  t', tick / 60, 'wall', ((performance.now() - _wall0) / 1000).toFixed(1), 'prof', JSON.stringify(Object.fromEntries(Object.entries(prof).map(([k, v]) => [k, Math.round(v)]))), 'particles', w.particles.length);
-    if (process.env.DBG && tick % 1800 === 0) console.log('  t', tick / 60, 'inPot', coord.sideInPot(), [...coord.planning], [...coord.robots.values()].map((r) => r.status + ':' + r.mode), 'main', mainRun ? `${mainRun.i}/${mainRun.steps.length} ${mainRun.steps[mainRun.i]?.label}` : (mainPlanning ? 'planning' : 'idle'), 'wants', coord.main.wantsPot, [...coord.robots.values()].map((r) => `${r.slot}:${r.status}:${r.label}:${r.error ?? ''}`).join(' | '));
-    const _t2 = performance.now();
-    prof.main += _t2 - _t1;
-    // 물리
-    w.moveRobot(physMain(cur));
-    for (const r of coord.robots.values()) w.moveExtraRobot(r.slot, r.physicsShapes());
-    w.step();
-    field.tick(DT);
-    const _d = performance.now() - _t2;
-    prof.phys += _d;
-    prof.physMax = Math.max(prof.physMax, _d);
-    if (_d > 20) prof.over20 = (prof.over20 ?? 0) + 1;
-  }
-  if (process.env.PROFILE) console.log('  prof ms total: side', prof.side.toFixed(0), 'main', prof.main.toFixed(0), 'phys', prof.phys.toFixed(0), 'physMax', prof.physMax.toFixed(1), 'over20ms', prof.over20 ?? 0);
-  const st = field.stats(D.drossBins(sides));
-  out.stats = st;
-  out.side = Object.fromEntries([...coord.robots.values()].map((r) => [r.slot, { name: r.robot.name, mode: r.mode, cycles: r.cycles, lanes: r.lanes.length, minOther: r.minOtherMm }]));
-  w.dispose();
+  const cell = { main: mainId, left: sidesIn.left ?? { robotId: null, mode: 1 }, right: sidesIn.right ?? { robotId: null, mode: 1 } };
+  const { task, errors } = TE.sanitizeTask({ cell, timeLimitS: SIM_S, dross: { count: 160, seed: 11 } }, robots);
+  if (errors.length) throw new Error(errors.join(' / '));
+  const { summary, out } = await CS.runEpisode(task, { RAPIER, robots, thresholds: TH, simS: SIM_S, profile: !!process.env.PROFILE, debug: !!process.env.DBG });
+  const st = out.stats;
   const sideTxt = Object.entries(out.side).map(([k, v]) => `${k} ${v.name} 모드${v.mode} 작업 ${v.cycles}회(레인 ${v.lanes})`).join(' · ');
   console.log(`\n### ${label} — ${SIM_S} s`);
   console.log(`    대형 사이클 ${out.mainCycles}, 박스 ${JSON.stringify(st.bins)}, 작업 영역 남은 ${st.work}, 흘림 ${st.spilled}, ${sideTxt}`);
   console.log(`    대형↔측면 최소 거리 ${out.minMainSide.toFixed(0)} mm, 측면 간섭 대기 ${out.holdS.toFixed(1)} s, 계획 실패 ${out.planFail.length}${out.planFail.length ? ` (${out.planFail.slice(0, 2).join(' | ')})` : ''}`);
-  return out;
+  console.log(`    회수율(작업 영역 기준) ${summary.rateCount}% (질량 ${summary.rateMass}%), 배속 ${summary.speedup}× (${summary.wallS} s)`);
+  return { ...out, summary };
 }
 
 const base = process.env.ONLY && process.env.ONLY !== 'A' ? { mainBlocked: 0, stats: { bins: { main: 1 }, bin: 0, work: 0 }, mainCycles: 0 } : await simulate('kuka-kr210-r2700', {}, 'A. 대형 로봇 단독 (KR 210)');

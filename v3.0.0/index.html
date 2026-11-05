@@ -53,6 +53,8 @@
     <div class="safety-chips" id="safety-chips" aria-live="polite"></div>
     <div class="telemetry-overlay" id="telemetry-overlay" aria-live="off" hidden></div>
     <canvas class="telemetry-chart" id="telemetry-chart" aria-label="관절 시계열 그래프" hidden></canvas>
+    <div class="replay-info" id="replay-info" aria-live="off" hidden></div>
+    <div class="replay-bar" id="replay-bar" hidden></div>
     <div class="gizmo-tools" id="gizmo-tools" role="group" aria-label="장애물 편집 도구 (Gizmo)" hidden>
       <button type="button" class="btn btn-small active" data-gizmo="translate">이동</button>
       <button type="button" class="btn btn-small" data-gizmo="rotate">회전</button>
@@ -98,6 +100,14 @@
     <section class="sec" data-sec="telemetry">
       <h2 class="sec-head"><button type="button" class="sec-toggle" aria-controls="sec-telemetry">실시간 계측 · 데이터 <small>Telemetry</small></button></h2>
       <div class="sec-body" id="sec-telemetry"><div id="telemetry-panel"></div></div>
+    </section>
+    <section class="sec" data-sec="lab">
+      <h2 class="sec-head"><button type="button" class="sec-toggle" aria-controls="sec-lab">학습 <small>Trial &amp; Error</small></button></h2>
+      <div class="sec-body" id="sec-lab"><div id="lab-panel"></div></div>
+    </section>
+    <section class="sec" data-sec="replay">
+      <h2 class="sec-head"><button type="button" class="sec-toggle" aria-controls="sec-replay">에피소드 재생 <small>Replay</small></button></h2>
+      <div class="sec-body" id="sec-replay"><div id="replay-panel"></div></div>
     </section>
     <section class="sec" data-sec="dross">
       <h2 class="sec-head"><button type="button" class="sec-toggle" aria-controls="sec-dross">드로스 제거 셀 <small>Dross Cell</small></button></h2>
