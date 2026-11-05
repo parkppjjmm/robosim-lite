@@ -3,10 +3,12 @@
 // 병렬로 시도해 점수(보상 규칙)가 가장 높은 것만 실행한다. 측면 로봇은 기존 경로. 같은 과제의 규칙 경로 결과와 비교한다.
 // 실행: node tools/train.mjs [--lab 설정.json] [--main kuka-kr210-r2700] [--config alone|mode1|mode2] [--seed 11] [--count 160]
 //                           [--target 80] [--time 600] [--workers N] [--population 16] [--iterations 3] [--method cem|random]
-//                           [--no-compare] [--out results/lab/<이름>]
+//                           [--no-compare] [--out results/<방법>/<로봇>-<구성>-s<시드>]
 //   --lab: 앱 '학습' 패널의 [설정 내보내기]로 만든 파일 (robosim-lab/1). 명령행 값이 있으면 그것이 우선한다.
-// 결과: <out>/episode.rsim.json.gz(3D 재생), <out>/rule.rsim.json.gz(비교용 규칙 경로), <out>/log.json(모든 시도), <out>/report.md
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+// 결과(이름 규칙은 results/README.md): <out>/report.md, <out>/<방법>-<구성>-s<시드>.rsim.json.gz(학습 3D 재생),
+//   <out>/rule-<구성>-s<시드>.rsim.json.gz(같은 과제의 규칙 경로), <out>/log.json(모든 시도)
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { configName } from './lib/policy-eval.mjs';
 import { gzipSync } from 'node:zlib';
 import { Worker } from 'node:worker_threads';
 import { cpus } from 'node:os';
@@ -50,7 +52,13 @@ if (errors.length) {
 }
 const workers = Math.max(1, Number(arg('workers', Math.max(1, cpus().length - 2))));
 const stamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
-const outDir = `${root}/${arg('out', `results/lab/${stamp}-${task.cell.main.split('-')[1]}-s${task.dross.seed}`)}`;
+const cfgName = configName(task.cell);
+const runName = `${task.cell.main.split('-')[1]}-${cfgName}-s${task.dross.seed}`;
+let outDir = `${root}/${arg('out', `results/${lab.method}/${runName}`)}`;
+if (!arg('out')) for (let k = 2; existsSync(outDir); k++) outDir = `${root}/results/${lab.method}/${runName}-${k}`; // 같은 이름이 있으면 -2, -3 …
+const epName = `${lab.method}-${cfgName}-s${task.dross.seed}.rsim.json.gz`;
+const ruleName = `rule-${cfgName}-s${task.dross.seed}.rsim.json.gz`;
+void stamp;
 mkdirSync(outDir, { recursive: true });
 
 // ---- 작업자 풀 ----
@@ -120,7 +128,7 @@ const lab1 = await LAB.runLab({
 });
 pool.close();
 const trainS = (Date.now() - t0) / 1000;
-writeFileSync(`${outDir}/episode.rsim.json.gz`, gzipSync(JSON.stringify({ ...lab1.episode, lab: { method: lab.method, reward: lab.reward } })));
+writeFileSync(`${outDir}/${epName}`, gzipSync(JSON.stringify({ ...lab1.episode, lab: { method: lab.method, reward: lab.reward } })));
 writeFileSync(`${outDir}/log.json`, JSON.stringify(lab1.log, null, 1));
 
 // ---- 같은 과제의 규칙 경로 (비교) ----
@@ -128,7 +136,7 @@ let rule = null;
 if (!process.argv.includes('--no-compare')) {
   const rr = new RP.EpisodeRecorder({ everyS: 0.1 });
   rule = await CS.runEpisode(task, { RAPIER, robots, record: rr });
-  writeFileSync(`${outDir}/rule.rsim.json.gz`, gzipSync(JSON.stringify(rule.episode)));
+  writeFileSync(`${outDir}/${ruleName}`, gzipSync(JSON.stringify(rule.episode)));
 }
 
 // ---- 보고서 ----
@@ -152,7 +160,7 @@ for (const d of lab1.log.decisions) {
   const v = d.best.values;
   L.push(`| ${d.n} | ${d.t} | ${d.rate} | ${d.best.score} (${d.ruleScore ?? '—'})${d.best.rule ? ' 규칙' : ''} | ${d.best.collected} → ${d.actualCollected ?? '—'} | ${v.x0.toFixed(0)}, ${v.y0.toFixed(0)} | ${v.headingDeg.toFixed(0)} | ${v.lengthMm.toFixed(0)} | ${v.yaw0Deg.toFixed(0)}→${v.yaw1Deg.toFixed(0)} | ${v.tiltDeg.toFixed(0)} | ${v.depthMm.toFixed(0)} | ${v.speedMmS.toFixed(0)} |`);
 }
-L.push('', `3D로 보기: 앱 '에피소드 재생'에서 \`${outDir.replace(root + '/', '')}/episode.rsim.json.gz\`(학습)·\`rule.rsim.json.gz\`(규칙)를 불러온다.`);
+L.push('', `3D로 보기: 앱 '에피소드 재생'에서 \`${outDir.replace(root + '/', '')}/${epName}\`(학습)·\`${ruleName}\`(규칙)를 불러온다(용량 때문에 git에는 없음).`);
 writeFileSync(`${outDir}/report.md`, L.join('\n') + '\n');
 console.log('\n' + L.slice(0, 13).join('\n'));
-console.log(`\n저장: ${outDir}/ (episode.rsim.json.gz, rule.rsim.json.gz, log.json, report.md) — ${((Date.now() - t0) / 1000).toFixed(0)} s`);
+console.log(`\n저장: ${outDir}/ (${epName}, ${ruleName}, log.json, report.md) — ${((Date.now() - t0) / 1000).toFixed(0)} s`);

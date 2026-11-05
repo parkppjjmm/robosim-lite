@@ -29,7 +29,6 @@ desktop.ini
 
 # v3.0.0 헤드리스 에피소드 기록(3D 재생 파일, tools/episode.mjs로 다시 만듦)
 **/results/episodes/
-# v3.0.0 학습 결과의 큰 파일(3D 재생·전체 시도 로그) — report.md만 저장소에 남긴다
-**/results/lab/**/*.gz
-**/results/lab/**/log.json
-**/results/ppo/**/*.gz
+# v3.0.0 학습 결과의 큰 파일(3D 재생·전체 시도 로그) — 보고서(.md)·정책(.json)만 저장소에 남긴다 (results/README.md)
+**/results/**/*.rsim.json.gz
+**/results/**/log.json

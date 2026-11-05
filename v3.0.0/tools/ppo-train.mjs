@@ -4,13 +4,17 @@
 // 순서: ① 모방(BC) — 규칙 경로(v1.1.2)를 교사로 ② PPO — 병렬 롤아웃, GAE, 클립 목적함수 ③ 주기적 고정 시드 평가로 최고 체크포인트만 채택
 //       ④ 최고 정책으로 10분 과제(전체 셀 시뮬레이터) 실행·규칙 경로와 비교·3D 재생 파일
 // 실행: node tools/ppo-train.mjs [--iterations 40] [--bc 3] [--workers 14] [--episodes 14] [--main kuka-kr210-r2700] [--count 160]
-//                               [--time 600] [--eval-seeds 11,12,13] [--eval-every 5] [--lab 설정.json] [--resume policy.json] [--out results/ppo/<이름>]
-// 결과: <out>/policy.json(최고), <out>/policy-last.json, <out>/curve.json, <out>/report.md, <out>/eval-s<시드>.rsim.json.gz
+//                               [--time 600] [--eval-seeds 11,12,13] [--eval-every 5] [--lab 설정.json] [--resume policy-last.json] [--out results/ppo/<이름>]
+// 결과(이름 규칙은 results/README.md):
+//   <out>/policy-best.json   최고 체크포인트(앱 [정책 불러오기]로 쓰는 파일)   <out>/policy-last.json   마지막 반복
+//   <out>/checkpoints/iter-NNN.json   평가할 때마다(5회마다) 저장한 중간 정책     <out>/train-curve.json   반복별 학습 기록
+//   <out>/train-report.md   학습 보고서   <out>/cell-eval-alone.md + ppo-alone-s<시드>·rule-alone-s<시드>.rsim.json.gz   전체 셀 10분 평가
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import { Worker } from 'node:worker_threads';
 import { cpus } from 'node:os';
 import { pathToFileURL, fileURLToPath } from 'node:url';
+import { evalPolicyCell } from './lib/policy-eval.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url)).replace(/[\\/]$/, '');
 const imp = (m) => import(pathToFileURL(`${root}/${m}`));
@@ -37,8 +41,8 @@ const EVAL_SEEDS = arg('eval-seeds', '11,12,13').split(',').map(Number);
 const EVAL_EVERY = Number(arg('eval-every', 5));
 const { task } = TE.sanitizeTask({ timeLimitS: Number(arg('time', 600)), cell: { main: arg('main', 'kuka-kr210-r2700') }, dross: { count: Number(arg('count', 160)) } }, robots);
 const stamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
-const outDir = `${root}/${arg('out', `results/ppo/${stamp}-${task.cell.main.split('-')[1]}`)}`;
-mkdirSync(outDir, { recursive: true });
+const outDir = `${root}/${arg('out', `results/ppo/${task.cell.main.split('-')[1]}-${stamp}`)}`;
+mkdirSync(`${outDir}/checkpoints`, { recursive: true });
 const cfg = { robotId: task.cell.main, count: task.dross.count, timeLimitS: task.timeLimitS, maxSteps: 40, thresholds: TE.TASK_THRESHOLDS, lab, task };
 const actDim = LAB.searchKeys(lab).length;
 
@@ -107,9 +111,13 @@ async function evaluate(tag) {
   console.log(`  ▶ 평가(${tag}) 시드 ${EVAL_SEEDS.join('·')}: ${fmt(s)}`);
   return s;
 }
+// 정책 파일 = 신경망 가중치 + 점수 규칙 + 과제 정보 (robosim-policy/1)
+const policyFile = (p) => JSON.stringify({ ...p, lab, task: { main: task.cell.main, count: task.dross.count, timeLimitS: task.timeLimitS } });
+const saveCheckpoint = (it, e) => writeFileSync(`${outDir}/checkpoints/iter-${String(it).padStart(3, '0')}.json`, policyFile(PPO.exportPolicy(agent, { phase: it ? 'ppo' : 'bc', iter: it, eval: e })));
 let best = await evaluate('모방 후');
 let bestPolicy = PPO.exportPolicy(agent, { phase: 'bc', eval: best });
 curve.push({ phase: 'eval', iter: 0, ...best, s: (Date.now() - t0) / 1000 });
+saveCheckpoint(0, best);
 
 // ② PPO
 for (let it = 1; it <= ITER; it++) {
@@ -128,34 +136,27 @@ for (let it = 1; it <= ITER; it++) {
   if (it % EVAL_EVERY === 0 || it === ITER) {
     const e = await evaluate(`반복 ${it}`);
     curve.push({ phase: 'eval', iter: it, ...e, s: (Date.now() - t0) / 1000 });
+    saveCheckpoint(it, e);
     if (e.ret > best.ret) {
       best = e;
       bestPolicy = PPO.exportPolicy(agent, { phase: 'ppo', iter: it, eval: e });
       console.log('    ★ 최고 체크포인트 갱신 (평가 보상 기준)');
     }
-    writeFileSync(`${outDir}/policy.json`, JSON.stringify({ ...bestPolicy, lab, task: { main: task.cell.main, count: task.dross.count, timeLimitS: task.timeLimitS } }));
-    writeFileSync(`${outDir}/curve.json`, JSON.stringify(curve));
+    writeFileSync(`${outDir}/policy-best.json`, policyFile(bestPolicy));
+    writeFileSync(`${outDir}/train-curve.json`, JSON.stringify(curve));
   }
 }
-writeFileSync(`${outDir}/policy-last.json`, JSON.stringify({ ...PPO.exportPolicy(agent, { phase: 'ppo', iter: ITER }), lab }));
-writeFileSync(`${outDir}/policy.json`, JSON.stringify({ ...bestPolicy, lab, task: { main: task.cell.main, count: task.dross.count, timeLimitS: task.timeLimitS } }));
-writeFileSync(`${outDir}/curve.json`, JSON.stringify(curve));
+writeFileSync(`${outDir}/policy-last.json`, policyFile(PPO.exportPolicy(agent, { phase: 'ppo', iter: ITER })));
+writeFileSync(`${outDir}/policy-best.json`, policyFile(bestPolicy));
+writeFileSync(`${outDir}/train-curve.json`, JSON.stringify(curve));
 for (const w of pool.all) w.terminate();
 const trainS = (Date.now() - t0) / 1000;
 
 // ④ 최고 정책 → 10분 과제 (전체 셀 시뮬레이터) vs 규칙 경로
 const RAPIER = await loadRapier();
 const bestAgent = PPO.importPolicy(bestPolicy);
-const rows = [];
-for (const seed of EVAL_SEEDS) {
-  const tk = TE.sanitizeTask({ ...task, dross: { ...task.dross, seed } }, robots).task;
-  const rec = new RP.EpisodeRecorder({ everyS: 0.1 });
-  const pr = await LAB.runPolicy({ RAPIER, robots, task: tk, lab, agent: bestAgent, runEpisode: CS.runEpisode, record: rec });
-  writeFileSync(`${outDir}/eval-s${seed}.rsim.json.gz`, gzipSync(JSON.stringify({ ...pr.episode, lab: { method: 'ppo', reward: lab.reward } })));
-  const rr = await CS.runEpisode(tk, { RAPIER, robots });
-  rows.push({ seed, ppo: pr.summary, rule: rr.summary, strokes: pr.log.decisions.length, retries: pr.log.decisions.filter((d) => d.retry).length });
-  console.log(`  10분 과제 시드 ${seed}: PPO ${pr.summary.rateCount}% / 규칙 ${rr.summary.rateCount}% (스트로크 ${pr.log.decisions.length}, 재시도 ${rows.at(-1).retries})`);
-}
+const bestLabel = `\`policy-best.json\` (${bestPolicy.phase === 'bc' ? '모방 직후' : `PPO 반복 ${bestPolicy.iter}`}, 학습 평가 회수율 ${best.rate.toFixed(1)}%)`;
+const { rows } = await evalPolicyCell({ m: { TE, CS, RP, LAB }, RAPIER, robots, pol: JSON.parse(policyFile(bestPolicy)), agent: bestAgent, lab, config: 'alone', seeds: EVAL_SEEDS, outDir, policyLabel: bestLabel });
 
 // 보고서
 const L = [];
@@ -168,10 +169,10 @@ L.push('- 시뮬레이터 결과(구형 입자 근사)다. 정책은 대형 단�
 L.push('## 학습 곡선 (평가: 결정적 행동, 고정 시드)', '', '| 시점 | 회수율 | 보상 | 스트로크 | 헛질 | 보정 | 계획 불가 |', '|---|---|---|---|---|---|---|');
 if (teacherStat) L.push(`| 교사(규칙 경로, 무작위 시드) | ${teacherStat.rate.toFixed(1)}% | ${teacherStat.ret.toFixed(0)} | ${teacherStat.steps.toFixed(1)} | ${teacherStat.empties.toFixed(1)} | ${teacherStat.repaired.toFixed(1)} | ${teacherStat.infeasible.toFixed(1)} |`);
 for (const c of curve.filter((c) => c.phase === 'eval')) L.push(`| ${c.iter === 0 ? '모방 후' : `PPO ${c.iter}`} | ${c.rate.toFixed(1)}% | ${c.ret.toFixed(0)} | ${c.steps.toFixed(1)} | ${c.empties.toFixed(1)} | ${c.repaired.toFixed(1)} | ${c.infeasible.toFixed(1)} |`);
-L.push('', '## 최고 정책으로 10분 과제 (전체 셀 시뮬레이터, 대형 단독)', '', '| 시드 | PPO 정책 | 규칙 경로 | 차이 | PPO 스트로크 (재시도) | PPO 흘림 / 규칙 흘림 |', '|---|---|---|---|---|---|');
+L.push('', '## 최고 정책으로 10분 과제 (전체 셀 시뮬레이터, 대형 단독 — 자세히: cell-eval-alone.md)', '', '| 시드 | PPO 정책 | 규칙 경로 | 차이 | PPO 스트로크 (재시도) | PPO 흘림 / 규칙 흘림 |', '|---|---|---|---|---|---|');
 for (const r of rows) L.push(`| ${r.seed} | **${r.ppo.rateCount}%** | ${r.rule.rateCount}% | ${(r.ppo.rateCount - r.rule.rateCount).toFixed(1)}%p | ${r.strokes} (${r.retries}) | ${r.ppo.spilled} / ${r.rule.spilled} |`);
 L.push(`| 평균 | **${mean(rows.map((r) => r.ppo.rateCount)).toFixed(1)}%** | ${mean(rows.map((r) => r.rule.rateCount)).toFixed(1)}% | ${(mean(rows.map((r) => r.ppo.rateCount)) - mean(rows.map((r) => r.rule.rateCount))).toFixed(1)}%p | | |`);
-L.push('', `- 정책 파일: \`policy.json\` (robosim-policy/1) — 앱 '학습' 패널의 [정책 불러오기]로 실행·3D 재생. 3D 재생: \`eval-s<시드>.rsim.json.gz\`.`);
-writeFileSync(`${outDir}/report.md`, L.join('\n') + '\n');
+L.push('', `- 정책 파일: \`policy-best.json\` (robosim-policy/1) — 앱 '학습' 패널의 [정책 불러오기]로 실행·3D 재생. 중간 정책: \`checkpoints/iter-NNN.json\`. 3D 재생: \`ppo-alone-s<시드>.rsim.json.gz\`(정책) · \`rule-alone-s<시드>.rsim.json.gz\`(규칙).`);
+writeFileSync(`${outDir}/train-report.md`, L.join('\n') + '\n');
 console.log('\n' + L.join('\n'));
 console.log(`\n저장: ${outDir}/ — 전체 ${((Date.now() - t0) / 1000).toFixed(0)} s`);

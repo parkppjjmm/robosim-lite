@@ -2308,7 +2308,7 @@ function startLab(cfg) {
   }
   const lab = sanitizeLab(cfg.lab);
   if (lab.method === 'policy' && !labRun.policy) {
-    labRun.status = "방법 '학습된 정책 실행'은 [정책 불러오기]로 policy.json을 먼저 불러와야 합니다.";
+    labRun.status = "방법 '학습된 정책 실행'은 [정책 불러오기]로 policy-best.json을 먼저 불러와야 합니다.";
     return renderLabUI();
   }
   Object.assign(labRun, { running: true, status: '준비 중…', decisions: [], progress: { rate: 0, t: 0 }, result: null, task, startedAt: performance.now() });
@@ -2366,7 +2366,7 @@ function exportLab(cfg) {
   showNotice('학습 설정을 내보냈습니다. 헤드리스: v3.0.0 폴더에서 node tools/train.mjs --lab <파일>', 10000);
 }
 
-/** PPO 정책(policy.json, robosim-policy/1) 불러오기 → 방법 '학습된 정책 실행' */
+/** PPO 정책(policy-best.json 등, robosim-policy/1) 불러오기 → 방법 '학습된 정책 실행' */
 async function loadLabPolicy(file) {
   try {
     const obj = JSON.parse(await file.text());

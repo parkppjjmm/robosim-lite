@@ -18,7 +18,7 @@ const REWARD_LABELS = [
 export function mountLabPanel(root, h) {
   root.innerHTML = `
     <p class="hint">스쿱 열린 면 방향(J6)·쓸어 가는 방향·위치·기울임 등을 바꿔 가며 시도(Trial)하고, 점수 규칙으로 가장 좋은 것만 실행합니다(진화 탐색).
-    PPO로 학습한 정책(<code>node tools/ppo-train.mjs</code>의 policy.json)을 불러오면 방법 '학습된 정책 실행'으로 시도 없이 바로 실행합니다.
+    PPO로 학습한 정책(<code>node tools/ppo-train.mjs</code>가 만든 <code>policy-best.json</code>)을 불러오면 방법 '학습된 정책 실행'으로 시도 없이 바로 실행합니다.
     대형 로봇이 학습 대상이고, 측면 로봇은 '드로스 제거 셀'에서 고른 대로 기존 경로로 함께 일합니다.</p>
     <fieldset class="lab-box"><legend>과제</legend>
       <div class="lab-grid">
@@ -58,7 +58,7 @@ export function mountLabPanel(root, h) {
       <button type="button" class="btn btn-small" data-lab-act="export" title="node tools/train.mjs --lab 파일 로 헤드리스 실행">설정 내보내기</button>
       <button type="button" class="btn btn-small" data-lab-act="import">설정 가져오기</button>
       <button type="button" class="btn btn-small" data-lab-act="reset">기본값</button>
-      <button type="button" class="btn btn-small" data-lab-act="policy" title="node tools/ppo-train.mjs가 만든 policy.json">정책 불러오기 (PPO)</button>
+      <button type="button" class="btn btn-small" data-lab-act="policy" title="node tools/ppo-train.mjs가 만든 policy-best.json (results/ppo/<이름>/)">정책 불러오기 (PPO)</button>
       <input type="file" data-lab-act="file" accept=".json,application/json" hidden />
       <input type="file" data-lab-act="policy-file" accept=".json,application/json" hidden />
     </div>

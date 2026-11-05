@@ -1,7 +1,7 @@
 // v3.0.0 1단계: 규칙 경로(v1.1.2) 기준선 측정 (PRD_v.3.0.0 FR-55, AC-58)
 // 대형 로봇 × 셀 구성(단독 / 모드 1 / 모드 2) × 드로스 시드로 제한 시간(기본 600 s) 회수율·목표 도달 시각·흘림을 잰다.
 // 실행: node tools/baseline.mjs [--simS 600] [--seeds 11,12,13] [--mains kuka-kr210-r2700,...] [--configs alone,mode1,mode2]
-//                              [--workers 4] [--target 80] [--out results/baseline]
+//                              [--workers 4] [--target 80] [--out results/baseline]  → <out>/report.md(표)·<out>/data.json(전체 수치)
 // 결과: <out>.json(전체), <out>.md(표). 각 실행은 자식 프로세스(--job)로 병렬 처리한다. 외부 패키지 없음.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { spawn } from 'node:child_process';
@@ -49,7 +49,7 @@ const seeds = arg('seeds', '11,12,13').split(',').map(Number);
 const mains = arg('mains', LARGE.join(',')).split(',');
 const configs = arg('configs', 'alone,mode1,mode2').split(',');
 const workers = Math.max(1, Number(arg('workers', Math.max(1, Math.min(4, cpus().length - 1)))));
-const outBase = `${root}/${arg('out', 'results/baseline')}`;
+const outDir = `${root}/${arg('out', 'results/baseline')}`;
 const { robots } = JSON.parse(readFileSync(`${root}/js/robots.json`, 'utf8'));
 const nameOf = (id) => robots.find((r) => r.id === id)?.name ?? id;
 
@@ -111,8 +111,8 @@ lines.push('', '## 측면 로봇 끝 상태 (첫 시드)', '');
 for (const r of ok.filter((r) => r.config !== 'alone' && r.seed === seeds[0])) {
   lines.push(`- ${nameOf(r.main)} · ${r.config}: ${Object.entries(r.side).map(([k, v]) => `${k} ${v.name} 작업 ${v.cycles}회, 상태 '${v.status}' — ${v.label}`).join(' / ')}`);
 }
-mkdirSync(dirname(outBase), { recursive: true });
-writeFileSync(`${outBase}.json`, JSON.stringify({ simS, target, seeds, mains, configs, elapsedS: elapsed, results }, null, 1));
-writeFileSync(`${outBase}.md`, lines.join('\n') + '\n');
+mkdirSync(outDir, { recursive: true });
+writeFileSync(`${outDir}/data.json`, JSON.stringify({ simS, target, seeds, mains, configs, elapsedS: elapsed, results }, null, 1));
+writeFileSync(`${outDir}/report.md`, lines.join('\n') + '\n');
 console.log('\n' + lines.join('\n'));
-console.log(`\n저장: ${outBase}.md, ${outBase}.json (${elapsed.toFixed(0)} s)`);
+console.log(`\n저장: ${outDir}/report.md, ${outDir}/data.json (${elapsed.toFixed(0)} s)`);

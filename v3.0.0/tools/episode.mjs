@@ -47,7 +47,10 @@ if (errors.length) {
   process.exit(1);
 }
 const short = (id) => (id ? id.split('-').slice(1, 2).join('') || id : 'none');
-const out = `${root}/${arg('out', `results/episodes/${short(main)}-${short(left.robotId)}${left.robotId ? left.mode : ''}-${short(right.robotId)}${right.robotId ? right.mode : ''}-s${seed}-${simS}s${control === 'replay' ? '-replay' : ''}.rsim.json.gz`)}`;
+// 이름 규칙(results/README.md): <대형 제어>-<대형>-<구성>-s<시드>-<시간>s, 구성 = alone 또는 L-<왼쪽>-m<모드>_R-<오른쪽>-m<모드>
+const sideTag = (s) => (s.robotId ? `${short(s.robotId)}-m${s.mode}` : 'none');
+const cellTag = !left.robotId && !right.robotId ? 'alone' : `L-${sideTag(left)}_R-${sideTag(right)}`;
+const out = `${root}/${arg('out', `results/episodes/${control}-${short(main)}-${cellTag}-s${seed}-${simS}s.rsim.json.gz`)}`;
 
 const RAPIER = await loadRapier();
 const record = new RP.EpisodeRecorder({ everyS: Number(arg('every', 0.1)) });

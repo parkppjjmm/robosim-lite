@@ -31,7 +31,7 @@
     - 계획 실패 시 3 s 뒤 다시 시도, 2번 실패한 레인은 건너뜀
   - `tests/cell-robots.mjs`: 이 모듈을 쓰도록 바꿈
   - `js/planner.js`: `deterministic` 옵션 — Shortcut·최적화·블렌딩을 시간 대신 반복 횟수로 끝냄(기본 동작 불변)
-  - `tools/baseline.mjs`: 병렬 기준선 측정 → `results/baseline.md`·`.json`
+  - `tools/baseline.mjs`: 병렬 기준선 측정 → `results/baseline/report.md`·`data.json`
   - **에피소드 기록·3D 재생:**
     - `js/replay.js`: 기록기·형식 `robosim-episode/1`·재생기
     - `tools/episode.mjs`: 10분 기록 약 0.5 MB gzip
@@ -50,7 +50,7 @@
     - 진화 탐색(CEM, 규칙 레인 포함), `runLab`, `StrokeEnv`(강화학습 환경)
     - 행동 보정(repair), 정책 실행(`makePolicyChooser`·`runPolicy`)
   - 앱 '학습' 패널(`js/lab-panel.js`, Worker `js/lab.worker.js`·`js/lab-eval.worker.js`)
-  - 헤드리스 `tools/train.mjs`(worker_threads, `tools/lab-worker.mjs`) → `results/lab/<이름>/report.md`·3D 재생 파일
+  - 헤드리스 `tools/train.mjs`(worker_threads, `tools/lab-worker.mjs`) → `results/cem/<로봇>-<구성>-s<시드>/report.md`·3D 재생 파일
   - `runEpisode`의 `mainChooser`·`shouldStop`, 브라우저 Worker용 이벤트 루프 양보
 - **첫 결과 (10분 회수율, 진화 탐색 vs 규칙):** KR 210 단독 시드 11 **75.0%** vs 61.9%, 시드 12 **75.6%** vs 56.9%, 3대 모드 1 **52.5%** vs 38.8%.
 - **PPO 강화학습 (1차):**
@@ -66,6 +66,13 @@
   - 앱 '학습' 패널 [정책 불러오기] + 방법 '학습된 정책 실행 (PPO)' → 실행·3D 재생
 - **수정:** 정책 실행기가 덤프 뒤 같은 복귀 자세를 '계획 실패 재시도'로 잘못 판단해 무작위 행동 → 대형 로봇 정지(10분 33%로 잘못 측정). 실패 판정을 시뮬레이션 시간 기준으로 바꿈.
 - 스트로크 상자를 규칙 레인 여유(앞벽 1330 ~ 스나우트 앞 2070, ±670)로 맞춤.
+- **결과 이름 정리·기술 문서 (2026-11-06):**
+  - `docs/RoboSim_v3.0.0_AI학습_기술문서.docx`: 학습 구조 도식 기술 문서(그림 16개 — 계층형 B, 스트로크 9변수, 진화 탐색, PPO 절차·신경망·관측, 40회 반복의 뜻, 학습 곡선, 정책 실행기, 결과 비교, 파일 구조, 현장 적용). 생성 스크립트 `docs/build/figures.py`·`make_docx.py`
+  - 결과 폴더를 단계별로: `results/baseline/`, `results/cem/<로봇>-<구성>-s<시드>/`(이전 `results/lab/`), `results/ppo/<로봇>-<학습 이름>/`. 안내 `results/README.md`
+  - 3D 재생 파일 이름 = `<방법>-<구성>-s<시드>.rsim.json.gz`(방법 rule·cem·ppo). PPO 파일: `policy.json` → `policy-best.json`, `curve.json` → `train-curve.json`, `report.md` → `train-report.md`, `eval-<구성>.md` → `cell-eval-<구성>.md`
+  - `tools/ppo-train.mjs`: 시험할 때마다(5회마다) `checkpoints/iter-NNN.json` 저장(중간 정책 비교용)
+  - `tools/lib/policy-eval.mjs`: 학습 직후 평가와 `ppo-eval.mjs`가 같은 평가 코드를 씀
+  - 정정: 학습 직후 자동 평가 파일 `eval-s11~13.rsim.json.gz`는 버그 있던 정책 실행기로 만든 잘못된 결과라 삭제. 현재 코드로 단독·모드 1 평가를 다시 실행해 같은 값을 확인
 - 테스트 `tests/stroke-lab.mjs`(12항목, 빠른 목록에 추가).
 
 ### 변경

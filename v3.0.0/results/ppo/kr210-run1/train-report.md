@@ -30,4 +30,5 @@
   - 보정이 모두 실패하면 규칙 레인으로 대체
   - 측면 로봇 구역 제약
   - 길이 0 스트로크는 방향을 뒤집음
-- 정정 결과는 `eval-alone.md`(대형 단독)와 `eval-mode1.md`(측면 로봇 2대)를 본다.
+- 정정 결과는 `cell-eval-alone.md`(대형 단독)와 `cell-eval-mode1.md`(측면 로봇 2대)를 본다. 이 학습 직후 만든 3D 재생 파일 `eval-s11~13`도 같은 버그로 만든 것이라 삭제했다(2026-11-06).
+- 파일 이름(2026-11-06 정리): 이 학습 당시 `policy.json`·`curve.json`·`report.md`였던 파일이 지금의 `policy-best.json`·`train-curve.json`·`train-report.md`다. 중간 체크포인트(`checkpoints/`)는 이 학습 이후 추가한 기능이라 없다.
