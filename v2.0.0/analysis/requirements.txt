@@ -1,0 +1,9 @@
+# v2.0.0 분석 파이프라인 (Python 3.10+, analysis/.venv에 설치)
+# 버전은 6단계 시작 때 실제 설치·실행을 확인한 뒤 == 로 고정한다.
+numpy>=1.26
+pandas>=2.1
+pyarrow>=14
+scikit-learn>=1.4
+lightgbm>=4.1
+matplotlib>=3.8
+shap>=0.44

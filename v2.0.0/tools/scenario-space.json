@@ -1,0 +1,59 @@
+{
+  "schema": "robosim-scenario-space/1",
+  "note": "PRD_v.2.0.0.md FR-45 초안. 5단계(js/scenario.js)에서 이 형식을 읽는다. 범위는 1단계 배속 측정 후 조정한다.",
+  "episode": {
+    "simS": { "dist": "choice", "values": [180] },
+    "warmupS": 1.5
+  },
+  "cell": {
+    "mainId": {
+      "dist": "choice",
+      "values": ["abb-irb6700-200-260", "kuka-kr210-r2700", "fanuc-r2000ic-165f", "nachi-sra166"],
+      "holdout": ["nachi-sra166"]
+    },
+    "side": {
+      "dist": "choice",
+      "values": [
+        null,
+        { "robotId": "ur-ur5e", "mode": 1 }, { "robotId": "ur-ur5e", "mode": 2 },
+        { "robotId": "ur-ur10e", "mode": 1 }, { "robotId": "ur-ur10e", "mode": 2 },
+        { "robotId": "ur-ur20", "mode": 1 }, { "robotId": "ur-ur20", "mode": 2 },
+        { "robotId": "abb-irb1200-5-09", "mode": 1 }, { "robotId": "abb-irb1200-5-09", "mode": 2 },
+        { "robotId": "kuka-kr6-r900", "mode": 1 }, { "robotId": "kuka-kr6-r900", "mode": 2 },
+        { "robotId": "fanuc-lrmate200id", "mode": 1 }, { "robotId": "fanuc-lrmate200id", "mode": 2 },
+        { "robotId": "nachi-mz07", "mode": 1 }, { "robotId": "nachi-mz07", "mode": 2 }
+      ],
+      "weights": "null = 0.4, 나머지 균등",
+      "slots": ["left", "right"]
+    }
+  },
+  "dross": {
+    "count": { "dist": "uniform_int", "min": 60, "max": 300 },
+    "ratePerMin": { "dist": "uniform_int", "min": 0, "max": 60 },
+    "seed": { "dist": "uniform_int", "min": 1, "max": 99999 },
+    "immersionMm": { "dist": "uniform", "min": 20, "max": 75 },
+    "sweepMmS": { "dist": "uniform", "min": 30, "max": 250 }
+  },
+  "perturb": {
+    "laneTargetMm": { "dist": "uniform", "min": -60, "max": 60 },
+    "dumpOffsetMm": { "dist": "uniform", "min": -80, "max": 80 },
+    "toolTiltDeg": { "dist": "uniform", "min": -5, "max": 5 },
+    "disturbObjects": { "dist": "uniform_int", "min": 0, "max": 2, "priority": "P2" }
+  },
+  "faults": {
+    "noneProb": 0.5,
+    "maxPerEpisode": 2,
+    "types": {
+      "friction": { "joint": [1, 6], "level": { "min": 1.0, "max": 4.0, "unit": "마찰 배수" } },
+      "payload": { "level": { "min": 0.0, "max": 0.6, "unit": "가반하중 대비 추가 질량 비율" } },
+      "sensor_noise": { "joint": [1, 6], "level": { "min": 2, "max": 10, "unit": "잡음 표준편차 배수" } },
+      "sensor_drift": { "joint": [1, 6], "level": { "min": 0.5, "max": 5, "unit": "정격 %/min" } },
+      "sensor_bias": { "joint": [1, 6], "level": { "min": -15, "max": 15, "unit": "정격 %" } },
+      "backlash": { "joint": [1, 6], "level": { "min": 0.1, "max": 1.0, "unit": "deg" }, "priority": "P2" },
+      "velocity_limit": { "joint": [1, 6], "level": { "min": 0.3, "max": 0.8, "unit": "최대 속도 비율" }, "priority": "P2" }
+    },
+    "shape": { "dist": "choice", "values": ["step", "ramp", "intermittent"] },
+    "onsetS": { "dist": "uniform", "min": 20, "max": 120 },
+    "rampS": { "dist": "uniform", "min": 10, "max": 60 }
+  }
+}

@@ -18,7 +18,7 @@ robosim-lite/
 ├─ v1.1.0/          v1.1.0 고정본 — 물리엔진 통합 (태그 v1.1.0), 포트 8011
 ├─ v1.1.1/          v1.1.1 고정본 — 드로스 제거 셀·UR·측면 로봇 (태그 v1.1.1), 포트 8111
 ├─ v1.1.2/          v1.1.2 고정본 — 관절 실시간 계측·데이터 엑셀 추출·머신러닝 계획 (태그 v1.1.2), 포트 8112
-└─ v1.2.0/          v1.2.0 예정 폴더 (AI 경로 최적화, 아직 비어 있음)
+└─ v2.0.0/          v2.0.0 개발 폴더 — 이상·고장 데이터 생성, 상황 조건부 이상 경계 학습 (뼈대 v1.1.2), 포트 8200
 ```
 
 | 폴더 | 버전 | 상태 | 실행 주소 | 주요 문서 |
@@ -26,6 +26,7 @@ robosim-lite/
 | [`v1.0.0/`](v1.0.0/) | v1.0.0 | **고정본 (수정 금지)** | http://localhost:8000 | [README](v1.0.0/README.md) · [PRD](v1.0.0/PRD.md) · [REVIEW](v1.0.0/REVIEW.md) · [PROMPTS](v1.0.0/PROMPTS.md) · [CHANGELOG](v1.0.0/CHANGELOG.md) |
 | [`v1.1.0/`](v1.1.0/) | v1.1.0 | **릴리스** (태그 `v1.1.0`) | http://localhost:8011 | [README](v1.1.0/README.md) · [PRD](v1.1.0/PRD_v.1.1.0.md) · [REVIEW](v1.1.0/REVIEW_v1.1.0.md) · [PROMPTS](v1.1.0/PROMPTS.md) · [CHANGELOG](v1.1.0/CHANGELOG.md) |
 | [`v1.1.2/`](v1.1.2/) | v1.1.2 | **릴리스 · 최신** (태그 `v1.1.2`) | http://localhost:8112 | [README](v1.1.2/README.md) · [PRD](v1.1.2/PRD_v.1.1.2.md) · [REVIEW](v1.1.2/REVIEW_v1.1.2.md) · [PROMPTS](v1.1.2/PROMPTS.md) · [CHANGELOG](v1.1.2/CHANGELOG.md) |
+| [`v2.0.0/`](v2.0.0/) | v2.0.0 | **개발 중** | http://localhost:8200 | [README](v2.0.0/README.md) · [PRD](v2.0.0/PRD_v.2.0.0.md) · [PROMPTS](v2.0.0/PROMPTS.md) · [CHANGELOG](v2.0.0/CHANGELOG.md) |
 | [`v1.1.1/`](v1.1.1/) | v1.1.1 | **릴리스** (태그 `v1.1.1`) | http://localhost:8111 | [README](v1.1.1/README.md) · [PRD](v1.1.1/PRD_v.1.1.1.md) · [REVIEW](v1.1.1/REVIEW_v1.1.1.md) · [PROMPTS](v1.1.1/PROMPTS.md) · [CHANGELOG](v1.1.1/CHANGELOG.md) · [SETUP](v1.1.1/SETUP.md) |
 
 각 폴더는 **독립 실행본**입니다. 폴더마다 앱 코드, 실행 스크립트, 문서를 모두 갖고 있어서 그 폴더만으로 실행할 수 있습니다.
@@ -142,11 +143,24 @@ robosim-lite/
 
 ---
 
+## v2.0.0 — 이상·고장 데이터 생성과 상황 조건부 이상 경계 학습 (개발 중)
+
+### 역할
+- v1.1.2 코드를 그대로 복사해 뼈대로 삼은 개발 폴더입니다(`v1.1.2/`은 수정하지 않음). 요구사항 `v2.0.0/PRD_v.2.0.0.md`, 진행표 `v2.0.0/PROMPTS.md`.
+- 목표:
+  - 시뮬레이터에서 이상 상황을 만들고 라벨을 자동으로 붙입니다. 운전 이상(충돌 근접·관절 한계·특이점·게이트 차단·대기·흘림)과 고장(마찰·과부하·센서 잡음·드리프트)을 다룹니다.
+  - 몬테카를로 시나리오 생성기로 데이터를 대량으로 만듭니다.
+  - 자세·속도·부하·단계에 따라 달라지는 **조건부 정상 범위(threshold)** 를 학습하고 고정 threshold와 비교합니다.
+  - 결과를 앱의 그래프 밴드·경보로 보여 줍니다.
+- 상태: 0단계(폴더·문서 준비) 완료. 기능은 아직 v1.1.2와 같습니다.
+
+---
+
 ## 실행
 
 1. 실행할 버전 폴더로 들어갑니다.
 2. **Windows:** `start.bat`을 더블클릭합니다. **macOS/Linux:** `python3 serve.py`를 실행합니다(Python 필요).
-3. 브라우저가 열립니다. v1.0.0은 http://localhost:8000, v1.1.0은 http://localhost:8011, v1.1.1은 http://localhost:8111, v1.1.2는 http://localhost:8112입니다.
+3. 브라우저가 열립니다. v1.0.0은 http://localhost:8000, v1.1.0은 http://localhost:8011, v1.1.1은 http://localhost:8111, v1.1.2는 http://localhost:8112, v2.0.0은 http://localhost:8200입니다.
    - 포트가 달라서 여러 버전을 동시에 열어도 저장 데이터가 섞이지 않습니다.
    - 이전 버전에서 만든 장면은 데이터 관리의 내보내기 → 새 버전에서 가져오기로 옮길 수 있습니다(v1.0.0 장면은 고정 모드로 열림).
 

@@ -21,3 +21,8 @@ desktop.ini
 # 참고 영상 (용량이 커서 저장소에 넣지 않음, 프레임은 v1.1.1/docs/images에 있음)
 *.MOV
 *.mov
+
+# v2.0.0 데이터 생성·분석 산출물 (tools/generate.mjs 출력, Python 가상환경)
+**/out/
+**/.venv/
+*.parquet
