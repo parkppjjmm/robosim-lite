@@ -42,7 +42,7 @@ export function jointMove(robot, q0, q1) {
  * @param ease true면 시작·끝을 부드럽게(코사인 속도 프로파일, 최고 속도는 같음 → 시간 π/2배) — 스쿱에 담긴 드로스가 급출발·급정지로 미끄러지지 않도록 (v1.1.1)
  * @returns {{ ok: true, trajectory } | { ok: false, reason: 'ik'|'jump'|'config', at: number, message: string }}
  */
-export function linearMove(robot, q0, targetT, { qEnd, toolLengthMm = 0, tcpSpeedMmS = BASE_TCP_MM_S, ease = false } = {}) {
+export function linearMove(robot, q0, targetT, { qEnd, toolLengthMm = 0, tcpSpeedMmS = BASE_TCP_MM_S, tcpDegS = BASE_TCP_DEG_S, ease = false } = {}) {
   const v = baseSpeeds(robot);
   const tool = toolLengthMm ? toolMatrix(toolLengthMm) : null;
   const toFlange = toolLengthMm ? inverseToolMatrix(toolLengthMm) : null;
@@ -64,7 +64,7 @@ export function linearMove(robot, q0, targetT, { qEnd, toolLengthMm = 0, tcpSpee
     if (jump > MAX_JOINT_JUMP_DEG) {
       return { ok: false, reason: 'jump', at: k / n, message: '특이점 부근을 지나 관절이 급격히 회전해야 합니다' };
     }
-    t += Math.max(dp / tcpSpeedMmS, dr / BASE_TCP_DEG_S, ...res.joints.map((a, i) => Math.abs(a - q[i]) / v[i]));
+    t += Math.max(dp / tcpSpeedMmS, dr / tcpDegS, ...res.joints.map((a, i) => Math.abs(a - q[i]) / v[i]));
     q = res.joints;
     points.push(q);
     times.push(t);

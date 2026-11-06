@@ -26,6 +26,16 @@ export const ANGULAR_DAMPING = 0.3;
 export const ROLLING_RESISTANCE = 0.02;
 
 /** 회전행렬(row-major 3x3) → 쿼터니언 {x, y, z, w} */
+/**
+ * 운동학 바디의 다음 회전: 직전 회전과 같은 반구(내적 ≥ 0)로 맞춘다 (v3.0.0 수정, 2026-11-06).
+ * q와 −q는 같은 자세지만, 행렬 → 쿼터니언 변환의 분기가 바뀌어 부호가 뒤집히면 Rapier는 한 스텝에 360° 돈 것으로 보고
+ * 큰 각속도로 접촉 물체(스쿱 안 드로스)를 튕겨 낸다(스쿱을 돌릴 때 측정).
+ */
+export function continuousRot(body, q) {
+  const c = body.rotation();
+  return c.x * q.x + c.y * q.y + c.z * q.z + c.w * q.w < 0 ? { x: -q.x, y: -q.y, z: -q.z, w: -q.w } : q;
+}
+
 export function quatFromMatrix(R) {
   const [m00, m01, m02, m10, m11, m12, m20, m21, m22] = R;
   const tr = m00 + m11 + m22;
@@ -262,7 +272,7 @@ export class PhysicsWorld {
       o.body.setRotation(q, true);
     }
     o.body.setNextKinematicTranslation(tr);
-    o.body.setNextKinematicRotation(q);
+    o.body.setNextKinematicRotation(continuousRot(o.body, q));
   }
 
   /**
@@ -310,7 +320,7 @@ export class PhysicsWorld {
       const { center, rot } = segmentPose(seg);
       const body = this.robotBodies[i];
       body.setNextKinematicTranslation(center);
-      body.setNextKinematicRotation(rot);
+      body.setNextKinematicRotation(continuousRot(body, rot));
     });
   }
 
@@ -346,7 +356,7 @@ export class PhysicsWorld {
     segments.forEach((seg, i) => {
       const { center, rot } = segmentPose(seg);
       bodies[i].setNextKinematicTranslation(center);
-      bodies[i].setNextKinematicRotation(rot);
+      bodies[i].setNextKinematicRotation(continuousRot(bodies[i], rot));
     });
   }
 

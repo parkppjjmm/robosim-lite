@@ -9,13 +9,16 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 
+# 이 문서가 쓴 결과 (2026-11-06 날짜·시각별 폴더로 옮긴 경로)
+EVAL = {'alone': 'results/2026-11-06/0836_ppo-eval_kr210-run1-alone/cell-eval-alone.md', 'mode1': 'results/2026-11-06/0842_ppo-eval_kr210-run1-mode1/cell-eval-mode1.md'}
+CEM = {'kr210-alone-s11': 'results/2026-11-05/1552_cem_kr210-alone-s11/report.md', 'kr210-alone-s12': 'results/2026-11-05/1602_cem_kr210-alone-s12/report.md', 'kr210-mode1-s11': 'results/2026-11-05/1609_cem_kr210-mode1-s11/report.md'}
 ROOT, IMG, OUT = sys.argv[1], sys.argv[2], sys.argv[3]
 read = lambda p: open(f'{ROOT}/{p}', encoding='utf8').read()
 
 
 def eval_md(cfg):
     rows = []
-    for m in re.finditer(r'^\| (\d+) \| \*\*([\d.]+)%\*\* \| ([\d.]+)% \| [^|]+ \| (\d+) \| (\d+) \| (\d+) \|', read(f'results/ppo/kr210-run1/cell-eval-{cfg}.md'), re.M):
+    for m in re.finditer(r'^\| (\d+) \| \*\*([\d.]+)%\*\* \| ([\d.]+)% \| [^|]+ \| (\d+) \| (\d+) \| (\d+) \|', read(EVAL[cfg]), re.M):
         rows.append(dict(seed=int(m.group(1)), ppo=float(m.group(2)), rule=float(m.group(3)), strokes=int(m.group(4)), repaired=int(m.group(5)), fallback=int(m.group(6))))
     return rows
 
@@ -24,7 +27,7 @@ EA, EM = eval_md('alone'), eval_md('mode1')
 mean = lambda a: sum(a) / len(a)
 A_PPO, A_RULE = mean([r['ppo'] for r in EA]), mean([r['rule'] for r in EA])
 M_PPO, M_RULE = mean([r['ppo'] for r in EM]), mean([r['rule'] for r in EM])
-CURVE = json.loads(read('results/ppo/kr210-run1/train-curve.json'))
+CURVE = json.loads(read('results/2026-11-05/1814_ppo-train_kr210-run1/train-curve.json'))
 EV = [e for e in CURVE if e['phase'] == 'eval']
 BC = [e for e in CURVE if e['phase'] == 'bc']
 BEST = max(EV, key=lambda e: e['ret'])

@@ -4,20 +4,21 @@ import { writeFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 
 /** 셀 구성 (구성 이름 → [왼쪽, 오른쪽] 측면 로봇 '로봇id:모드') */
-export const CONFIGS = { alone: [null, null], mode1: ['ur-ur10e:1', 'abb-irb1200-5-09:1'], mode2: ['ur-ur10e:2', 'ur-ur10e:2'] };
+export const CONFIGS = { alone: [null, null], mode1: ['ur-ur10e:1', 'abb-irb1200-5-09:1'], mode2: ['ur-ur10e:2', 'ur-ur10e:2'], push: ['ur-ur10e:3', 'ur-ur10e:3'] };
 export const CONFIG_LABEL = {
   alone: '대형 단독',
   mode1: '대형 + 측면 2대 (모드 1: 측면 로봇이 각자 박스에 담음)',
-  mode2: '대형 + 측면 2대 (모드 2: 측면 로봇이 대형 레인으로 밀어 줌)',
+  mode2: '대형 + 측면 2대 (모드 2: 측면 로봇이 대형 레인으로 밀어 줌, 포트 점유 잠금)',
+  push: '대형 + 측면 2대 (모드 3: 동시 밀기 — 측면은 가운데로 밀기만, 대형만 회수)',
 };
-export const sideOf = (v) => (v ? { robotId: v.split(':')[0], mode: Number(v.split(':')[1]) === 2 ? 2 : 1 } : { robotId: null, mode: 1 });
+export const sideOf = (v) => (v ? { robotId: v.split(':')[0], mode: [2, 3].includes(Number(v.split(':')[1])) ? Number(v.split(':')[1]) : 1 } : { robotId: null, mode: 1 });
 
 /** 셀 설정(cell) → 구성 이름 (alone | mode1 | mode2 | custom) */
 export function configName(cell) {
   const l = cell.left?.robotId ? cell.left.mode : 0;
   const r = cell.right?.robotId ? cell.right.mode : 0;
   if (!l && !r) return 'alone';
-  if (l === r) return `mode${l}`;
+  if (l === r) return l === 3 ? 'push' : `mode${l}`;
   return 'custom';
 }
 

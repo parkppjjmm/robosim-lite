@@ -1,8 +1,10 @@
 // 학습된 PPO 정책 평가 — 10분 과제(전체 셀 시뮬레이터)에서 정책 vs 규칙 경로, 3D 재생 파일 저장
 // 실행: node tools/ppo-eval.mjs --policy results/ppo/<이름>/policy-best.json [--seeds 11,12,13] [--config alone|mode1|mode2] [--out <폴더>]
-// 결과(이름 규칙은 results/README.md): <out>/cell-eval-<구성>.md (표), <out>/ppo-<구성>-s<시드>.rsim.json.gz (정책), <out>/rule-<구성>-s<시드>.rsim.json.gz (규칙)
+// 결과: results/<날짜>/<시각>_ppo-eval_<정책 폴더>-<구성>/ — cell-eval-<구성>.md (표), ppo-·rule-<구성>-s<시드>.rsim.json.gz (3D 재생), run.json
+//   (이전 결과를 덮어쓰지 않는다. 이름 규칙은 results/README.md)
 import { readFileSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { dirname, basename } from 'node:path';
+import { makeRunDir, finishRun } from './lib/run-dir.mjs';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { evalPolicyCell, CONFIGS } from './lib/policy-eval.mjs';
 
@@ -34,9 +36,12 @@ const pol = JSON.parse(readFileSync(polPath, 'utf8'));
 const agent = PPO.importPolicy(pol);
 const lab = LAB.sanitizeLab(pol.lab);
 const seeds = arg('seeds', '11,12,13').split(',').map(Number);
-const outDir = arg('out', dirname(polPath));
+const polName = basename(dirname(polPath.replace(/\\/g, '/'))).replace(/^\d{4}_ppo-train_/, '');
+const run = makeRunDir(root, 'ppo-eval', `${polName}-${config}`, arg('out'));
+const outDir = run.dir;
 const RAPIER = await loadRapier();
 const policyLabel = `\`${polPath.replace(/\\/g, '/').split('/').slice(-3).join('/')}\` (${pol.phase === 'bc' ? '모방 직후' : `PPO 반복 ${pol.iter}`}, 학습 평가 회수율 ${pol.eval?.rate?.toFixed(1) ?? '—'}%)`;
-const { md, file } = await evalPolicyCell({ m: { TE, CS, RP, LAB }, RAPIER, robots, pol, agent, lab, config, seeds, outDir, policyLabel });
+const { md, file, meanPpo, meanRule } = await evalPolicyCell({ m: { TE, CS, RP, LAB }, RAPIER, robots, pol, agent, lab, config, seeds, outDir, policyLabel });
 console.log('\n' + md);
+finishRun(root, run, { summary: `${config}: PPO ${meanPpo.toFixed(1)}% vs 규칙 ${meanRule.toFixed(1)}% (시드 ${seeds.join('·')})`, detail: { policy: polPath.replace(/\\/g, '/'), config, seeds } });
 console.log(`저장: ${file}`);

@@ -42,6 +42,10 @@ export class RuleMainDriver {
     this.evaluator = null;
     this.anyMode2 = [...coord.robots.values()].some((r) => r.mode === 2);
     this.lanes = skimLanes(spec, thresholds.obstacleMarginMm, mainLaneRange(spec, sides));
+    // 쓸기 방향 (v3.0.0, 2026-11-06 사용자 제안): 'robot' = 스나우트 쪽에서 로봇 쪽으로(열린 면이 로봇을 봄, v1.1.2 기본)
+    //   'snout' = 로봇 쪽에서 스나우트 쪽으로(열린 면이 스나우트를 봄 → 스나우트 앞 드로스를 끝까지 밀어 담음), 'alternate' = 번갈아
+    this.laneDir = task.mainRule?.laneDir ?? 'robot';
+    this.dirFlip = false;
     this.run = null;
     this.lastLane = -1;
     this.cycles = 0;
@@ -82,7 +86,11 @@ export class RuleMainDriver {
       stroke = c.stroke ?? null;
       immersionMm = c.immersionMm ?? immersionMm;
       sweepMmS = c.sweepMmS ?? sweepMmS;
-    } else pick = chooseLane(lanes, this.world.particleState(), this.spec, this.lastLane);
+    } else {
+      pick = chooseLane(lanes, this.world.particleState(), this.spec, this.lastLane);
+      const toSnout = this.laneDir === 'snout' || (this.laneDir === 'alternate' && this.dirFlip);
+      if (pick && toSnout) pick = { ...pick, lane: { ...pick.lane, start: [pick.lane.xe, pick.lane.y], end: [pick.lane.xs, pick.lane.y] } };
+    }
     if (!pick || pick.count < 1) {
       this.coord.main.wantsPot = false;
       this.empty = true;
@@ -104,6 +112,7 @@ export class RuleMainDriver {
     }
     this.laneFails.delete(pick.lane.index);
     this.lastLane = pick.lane.index;
+    this.dirFlip = !this.dirFlip;
     const steps = res.steps.slice();
     const liftIdx = steps.findIndex((s) => s.label === '스쿱 상승');
     if (this.anyMode2) steps.unshift({ kind: 'action', type: 'until', label: '측면 로봇 퇴피 대기' });

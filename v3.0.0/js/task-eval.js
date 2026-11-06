@@ -36,9 +36,9 @@ export function sanitizeTask(raw = {}, robots = []) {
   else if (!drossRobotOk(main)) errors.push(`${main.name}은(는) 드로스 셀 대형 로봇으로 쓸 수 없습니다(도달거리 부족).`);
   const side = (slot) => {
     const s = { ...D.cell[slot], ...(cellIn[slot] ?? {}) };
-    if (!s.robotId) return { robotId: null, mode: s.mode === 2 ? 2 : 1 };
+    const mode = s.mode === 2 || s.mode === 3 ? s.mode : 1; // 3 = 동시 밀기 (v3.0.0)
+    if (!s.robotId) return { robotId: null, mode };
     const r = byId(s.robotId);
-    const mode = s.mode === 2 ? 2 : 1;
     if (!r) errors.push(`${slot} 측면 로봇 모델을 찾을 수 없습니다: ${s.robotId}`);
     else if (!sideRobotOk(r)) errors.push(`${r.name}은(는) 측면 로봇으로 쓸 수 없습니다(소형·협동 로봇만).`);
     else if (mode === 1 && sideBinDistFor(r.id) == null) errors.push(`${r.name}은(는) 모드 1(측면 박스 덤프)을 할 수 없습니다.`);
@@ -65,6 +65,8 @@ export function sanitizeTask(raw = {}, robots = []) {
     cell,
     dross,
     sensors,
+    // 대형 로봇 규칙 경로 옵션 (AI가 아닌 규칙 운전일 때): 쓸기 방향 robot | snout | alternate
+    mainRule: { laneDir: ['robot', 'snout', 'alternate'].includes(raw.mainRule?.laneDir) ? raw.mainRule.laneDir : 'robot' },
   };
   return { task, errors };
 }

@@ -3,12 +3,13 @@
 // 병렬로 시도해 점수(보상 규칙)가 가장 높은 것만 실행한다. 측면 로봇은 기존 경로. 같은 과제의 규칙 경로 결과와 비교한다.
 // 실행: node tools/train.mjs [--lab 설정.json] [--main kuka-kr210-r2700] [--config alone|mode1|mode2] [--seed 11] [--count 160]
 //                           [--target 80] [--time 600] [--workers N] [--population 16] [--iterations 3] [--method cem|random]
-//                           [--no-compare] [--out results/<방법>/<로봇>-<구성>-s<시드>]
+//                           [--lane-dir robot|snout|alternate(비교 규칙 경로)] [--no-compare] [--out 폴더]
 //   --lab: 앱 '학습' 패널의 [설정 내보내기]로 만든 파일 (robosim-lab/1). 명령행 값이 있으면 그것이 우선한다.
 // 결과(이름 규칙은 results/README.md): <out>/report.md, <out>/<방법>-<구성>-s<시드>.rsim.json.gz(학습 3D 재생),
 //   <out>/rule-<구성>-s<시드>.rsim.json.gz(같은 과제의 규칙 경로), <out>/log.json(모든 시도)
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
-import { configName } from './lib/policy-eval.mjs';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { configName, CONFIGS as CELLS, sideOf as cellSide } from './lib/policy-eval.mjs';
+import { makeRunDir, finishRun } from './lib/run-dir.mjs';
 import { gzipSync } from 'node:zlib';
 import { Worker } from 'node:worker_threads';
 import { cpus } from 'node:os';
@@ -32,8 +33,8 @@ const fileCfg = arg('lab') ? JSON.parse(readFileSync(arg('lab'), 'utf8')) : {};
 const labRaw = { ...fileCfg.lab ?? fileCfg };
 for (const k of ['population', 'iterations', 'method', 'seed']) if (arg(k) !== undefined) labRaw[k] = k === 'method' ? arg(k) : Number(arg(k));
 const lab = LAB.sanitizeLab(labRaw);
-const CONFIGS = { alone: [null, null], mode1: ['ur-ur10e:1', 'abb-irb1200-5-09:1'], mode2: ['ur-ur10e:2', 'ur-ur10e:2'] };
-const sideOf = (v) => (v ? { robotId: v.split(':')[0], mode: Number(v.split(':')[1]) === 2 ? 2 : 1 } : { robotId: null, mode: 1 });
+const CONFIGS = CELLS;
+const sideOf = cellSide;
 const conf = arg('config');
 const taskRaw = { ...(fileCfg.task ?? {}) };
 taskRaw.cell = { ...(taskRaw.cell ?? {}) };
@@ -44,6 +45,7 @@ if (arg('seed')) taskRaw.dross.seed = Number(arg('seed'));
 if (arg('count')) taskRaw.dross.count = Number(arg('count'));
 if (arg('target')) taskRaw.targetRatePct = Number(arg('target'));
 if (arg('time')) taskRaw.timeLimitS = Number(arg('time'));
+if (arg('lane-dir')) taskRaw.mainRule = { laneDir: arg('lane-dir') };
 taskRaw.aiRobot = { slot: 'main' }; // v3.0.0 1차: 학습 대상 = 대형 로봇 (측면 로봇 학습은 다음 단계)
 const { task, errors } = TE.sanitizeTask(taskRaw, robots);
 if (errors.length) {
@@ -54,12 +56,11 @@ const workers = Math.max(1, Number(arg('workers', Math.max(1, cpus().length - 2)
 const stamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
 const cfgName = configName(task.cell);
 const runName = `${task.cell.main.split('-')[1]}-${cfgName}-s${task.dross.seed}`;
-let outDir = `${root}/${arg('out', `results/${lab.method}/${runName}`)}`;
-if (!arg('out')) for (let k = 2; existsSync(outDir); k++) outDir = `${root}/results/${lab.method}/${runName}-${k}`; // 같은 이름이 있으면 -2, -3 …
+const run = makeRunDir(root, lab.method, runName, arg('out'));
+const outDir = run.dir;
 const epName = `${lab.method}-${cfgName}-s${task.dross.seed}.rsim.json.gz`;
 const ruleName = `rule-${cfgName}-s${task.dross.seed}.rsim.json.gz`;
 void stamp;
-mkdirSync(outDir, { recursive: true });
 
 // ---- 작업자 풀 ----
 class EvalPool {
@@ -163,4 +164,5 @@ for (const d of lab1.log.decisions) {
 L.push('', `3D로 보기: 앱 '에피소드 재생'에서 \`${outDir.replace(root + '/', '')}/${epName}\`(학습)·\`${ruleName}\`(규칙)를 불러온다(용량 때문에 git에는 없음).`);
 writeFileSync(`${outDir}/report.md`, L.join('\n') + '\n');
 console.log('\n' + L.slice(0, 13).join('\n'));
+finishRun(root, run, { summary: `${lab.method} ${S.rateCount}%${R ? ` vs 규칙 ${R.rateCount}%` : ''} (${runName})`, detail: { lab, task } });
 console.log(`\n저장: ${outDir}/ (${epName}, ${ruleName}, log.json, report.md) — ${((Date.now() - t0) / 1000).toFixed(0)} s`);

@@ -5,6 +5,8 @@
 //                             [--out results/episodes/<이름>.rsim.json.gz]
 //   --control replay: 대형 로봇을 정책 경로(20 Hz Δq, 규칙 재생 컨트롤러)로 움직인다 (정책 인터페이스 확인용)
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { makeRunDir, finishRun } from './lib/run-dir.mjs';
+import { CONFIGS as CELLS } from './lib/policy-eval.mjs';
 import { gzipSync } from 'node:zlib';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
@@ -21,16 +23,12 @@ const CS = await imp('js/cell-sim.js');
 const RP = await imp('js/replay.js');
 const { robots } = JSON.parse(readFileSync(`${root}/js/robots.json`, 'utf8'));
 
-const CONFIGS = {
-  alone: { left: null, right: null },
-  mode1: { left: 'ur-ur10e:1', right: 'abb-irb1200-5-09:1' },
-  mode2: { left: 'ur-ur10e:2', right: 'ur-ur10e:2' },
-};
+const CONFIGS = Object.fromEntries(Object.entries(CELLS).map(([k, [l, r]]) => [k, { left: l, right: r }]));
 const config = arg('config', 'mode1');
 const sideOf = (v) => {
   if (!v || v === 'none') return { robotId: null, mode: 1 };
   const [robotId, mode] = v.split(':');
-  return { robotId, mode: Number(mode) === 2 ? 2 : 1 };
+  return { robotId, mode: [2, 3].includes(Number(mode)) ? Number(mode) : 1 };
 };
 const main = arg('main', 'kuka-kr210-r2700');
 const left = sideOf(arg('left', CONFIGS[config]?.left));
@@ -40,7 +38,7 @@ const simS = Number(arg('simS', 600));
 const control = arg('control', 'rule');
 const { task, errors } = TE.sanitizeTask({
   targetRatePct: Number(arg('target', 80)), timeLimitS: simS,
-  cell: { main, left, right }, dross: { seed, count: Number(arg('count', 160)) },
+  cell: { main, left, right }, dross: { seed, count: Number(arg('count', 160)) }, mainRule: { laneDir: arg('lane-dir', 'robot') },
 }, robots);
 if (errors.length) {
   console.error('설정 오류: ' + errors.join(' / '));
@@ -50,7 +48,9 @@ const short = (id) => (id ? id.split('-').slice(1, 2).join('') || id : 'none');
 // 이름 규칙(results/README.md): <대형 제어>-<대형>-<구성>-s<시드>-<시간>s, 구성 = alone 또는 L-<왼쪽>-m<모드>_R-<오른쪽>-m<모드>
 const sideTag = (s) => (s.robotId ? `${short(s.robotId)}-m${s.mode}` : 'none');
 const cellTag = !left.robotId && !right.robotId ? 'alone' : `L-${sideTag(left)}_R-${sideTag(right)}`;
-const out = `${root}/${arg('out', `results/episodes/${control}-${short(main)}-${cellTag}-s${seed}-${simS}s.rsim.json.gz`)}`;
+const epName = `${control}${task.mainRule.laneDir === 'robot' ? '' : `-${task.mainRule.laneDir}`}-${short(main)}-${cellTag}-s${seed}-${simS}s`;
+const run = arg('out') ? null : makeRunDir(root, 'episode', epName);
+const out = arg('out') ? `${root}/${arg('out')}` : `${run.dir}/${epName}.rsim.json.gz`;
 
 const RAPIER = await loadRapier();
 const record = new RP.EpisodeRecorder({ everyS: Number(arg('every', 0.1)) });
@@ -64,4 +64,5 @@ const gz = gzipSync(json);
 mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, gz);
 console.log(`회수율 ${summary.rateCount}% (질량 ${summary.rateMass}%), 목표 ${summary.targetRatePct}% ${summary.reached ? `도달 ${summary.reachS} s` : '미도달'}, 로봇별 ${JSON.stringify(summary.byRobot)}, 흘림 ${summary.spilled}, 배속 ${summary.speedup}×`);
+if (run) finishRun(root, run, { summary: `${summary.rateCount}% (${epName})`, detail: { task } });
 console.log(`저장: ${out} (${(gz.length / 1e6).toFixed(2)} MB, 원본 ${(json.length / 1e6).toFixed(1)} MB, 프레임 ${episode.frames.length})`);

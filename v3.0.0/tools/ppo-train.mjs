@@ -15,6 +15,7 @@ import { Worker } from 'node:worker_threads';
 import { cpus } from 'node:os';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { evalPolicyCell } from './lib/policy-eval.mjs';
+import { makeRunDir, finishRun } from './lib/run-dir.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url)).replace(/[\\/]$/, '');
 const imp = (m) => import(pathToFileURL(`${root}/${m}`));
@@ -41,7 +42,9 @@ const EVAL_SEEDS = arg('eval-seeds', '11,12,13').split(',').map(Number);
 const EVAL_EVERY = Number(arg('eval-every', 5));
 const { task } = TE.sanitizeTask({ timeLimitS: Number(arg('time', 600)), cell: { main: arg('main', 'kuka-kr210-r2700') }, dross: { count: Number(arg('count', 160)) } }, robots);
 const stamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
-const outDir = `${root}/${arg('out', `results/ppo/${task.cell.main.split('-')[1]}-${stamp}`)}`;
+void stamp;
+const run = makeRunDir(root, 'ppo-train', `${task.cell.main.split('-')[1]}-${arg('name', 'run')}`, arg('out'));
+const outDir = run.dir;
 mkdirSync(`${outDir}/checkpoints`, { recursive: true });
 const cfg = { robotId: task.cell.main, count: task.dross.count, timeLimitS: task.timeLimitS, maxSteps: 40, thresholds: TE.TASK_THRESHOLDS, lab, task };
 const actDim = LAB.searchKeys(lab).length;
@@ -175,4 +178,5 @@ L.push(`| 평균 | **${mean(rows.map((r) => r.ppo.rateCount)).toFixed(1)}%** | $
 L.push('', `- 정책 파일: \`policy-best.json\` (robosim-policy/1) — 앱 '학습' 패널의 [정책 불러오기]로 실행·3D 재생. 중간 정책: \`checkpoints/iter-NNN.json\`. 3D 재생: \`ppo-alone-s<시드>.rsim.json.gz\`(정책) · \`rule-alone-s<시드>.rsim.json.gz\`(규칙).`);
 writeFileSync(`${outDir}/train-report.md`, L.join('\n') + '\n');
 console.log('\n' + L.join('\n'));
+finishRun(root, run, { summary: `최고 = ${bestPolicy.phase === 'bc' ? '모방 직후' : `반복 ${bestPolicy.iter}`} 학습 평가 ${best.rate.toFixed(1)}% · 셀 단독 PPO ${mean(rows.map((r) => r.ppo.rateCount)).toFixed(1)}% vs 규칙 ${mean(rows.map((r) => r.rule.rateCount)).toFixed(1)}%`, detail: { iterations: ITER, bc: BC, episodes: EPISODES, workers: WORKERS, lab } });
 console.log(`\n저장: ${outDir}/ — 전체 ${((Date.now() - t0) / 1000).toFixed(0)} s`);

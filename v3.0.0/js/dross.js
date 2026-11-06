@@ -264,6 +264,7 @@ export const SKIM = {
   approachAboveMm: 120, // 레인 시작점: 욕면 위 접근 높이 (TCP)
   liftZMm: 980, // 들어 올린 높이 (TCP): 포트 테두리 + 스쿱 캡슐 + 여유
   dumpTiltDeg: 105, // 덤프 기울기 (앞쪽(열린 쪽)이 아래로)
+  turnDegS: 30, // 담은 채 돌리기 속도 (v3.0.0: 102°/s에서는 원심력으로 드로스가 튕겨 나감)
   carryTiltDeg: 12, // 운반 중 뒤로 기울임 (앞쪽이 위로): 담은 드로스가 뒤 턱 쪽으로 굴러 열린 앞쪽으로 빠지지 않게
   dumpWaitS: 1.2,
   loadedMmS: 150, // 드로스를 담은 채 이동하는 속도 (흘림 감소)
@@ -318,14 +319,20 @@ export function skimLanes(spec, marginMm, { yLo = -Infinity, yHi = Infinity } = 
   return Array.from({ length: n }, (_, i) => ({ index: i, y: n === 1 ? (lo + hi) / 2 : lo + ((hi - lo) * i) / (n - 1), xs, xe }));
 }
 
-/** 대형 로봇 레인 Y 범위: 모드 1 측면 로봇이 있는 쪽은 구역 경계 안쪽만 (FR-33) */
+/**
+ * v3.0.0 모드 3 (동시 밀기, 2026-11-06 사용자 제안): 측면 로봇은 회수하지 않고 벽 쪽 드로스를 가운데로 밀기만 하고,
+ * 대형 로봇만 회수한다. 포트 점유 잠금 없이 동시에 일하도록 구역을 나눈다.
+ *   - 대형: 스쿱 중심 |Y| ≤ mainCenterMaxMm (모드 1과 같은 경계)
+ *   - 측면: 벽 → |Y| = pushToMm 까지 밀어서 대형 스쿱이 지나가는 띠 안으로 넣어 준다
+ */
+export const PUSH_ASSIST = { mainCenterMaxMm: SIDE_SPLIT_Y - SIDE_BUFFER_MM - 180, pushToMm: 440 };
+
+/** 대형 로봇 레인 Y 범위: 모드 1(제거)·모드 3(동시 밀기) 측면 로봇이 있는 쪽은 구역 경계 안쪽만 (FR-33) */
 export function mainLaneRange(spec, sides = {}) {
   const hy = spec.plateYMm / 2;
   const lim = SIDE_SPLIT_Y - SIDE_BUFFER_MM - hy;
-  return {
-    yHi: sides.left?.robotId && sides.left.mode === 1 ? lim : Infinity,
-    yLo: sides.right?.robotId && sides.right.mode === 1 ? -lim : -Infinity,
-  };
+  const limOf = (s) => (!s?.robotId ? Infinity : s.mode === 1 ? lim : s.mode === 3 ? PUSH_ASSIST.mainCenterMaxMm : Infinity);
+  return { yHi: limOf(sides.left), yLo: -limOf(sides.right) };
 }
 
 /**
@@ -380,8 +387,8 @@ function motionKit({ robot, spec, obstacles, thresholds, floor = true, avoidSing
   const ok = (e) => e.violations.length === 0;
   const tcpOf = (q) => multiply(forwardKinematics(robot, q).frames[6], toolMatrix(L));
   // ease: 드로스를 담고 움직이는 구간만 부드럽게 출발·정지 (빈 스쿱 이동은 빠르게)
-  const linear = (qa, T, speed, ease = false) => {
-    const res = linearMove(robot, qa, T, { toolLengthMm: L, tcpSpeedMmS: speed, ease });
+  const linear = (qa, T, speed, ease = false, degS = undefined) => {
+    const res = linearMove(robot, qa, T, { toolLengthMm: L, tcpSpeedMmS: speed, ease, tcpDegS: degS });
     if (!res.ok) return { error: res.message };
     const pts = res.trajectory.points;
     for (let k = 1; k < pts.length; k++) {
@@ -517,6 +524,40 @@ export async function planSkimCycle(input, { plan = null } = {}) {
   const s4 = linear(s4a.q, carry(levelPose([end[0], end[1], liftZ], endDir)), undefined, true);
   if (s4.error) return fail('스쿱 뒤로 기울임', s4.error);
   move('스쿱 뒤로 기울임', s4.tr, s4.q);
+  // ④-2 제자리 돌리기 (v3.0.0, 2026-11-06): 스나우트 쪽으로 쓸어 열린 면이 바깥(+X)을 보면, 담은 채 박스로 가는 동안
+  //   손목이 크게 돌아 드로스가 튕겨 나간다(측정: 2사이클에 26개 흘림). 들어 올린 자리에서 뒤로 기울인 채
+  //   30°씩 천천히 돌려 열린 면이 로봇 쪽을 보게 한 뒤 옮긴다.
+  let carryDir = endDir, qc = s4.q, turnAt = end;
+  if (endDir[0] / Math.hypot(endDir[0], endDir[1]) > 0.2) {
+    // 스나우트(높은 설비) 옆에서는 돌릴 공간이 없으므로 먼저 담은 채 로봇 쪽으로 물러난다
+    turnAt = [Math.max(POT.x0 + 450, end[0] - 450), end[1]];
+    const back = linear(qc, carry(levelPose([turnAt[0], turnAt[1], liftZ], endDir)), SKIM.loadedMmS, true);
+    if (back.error) return fail('담은 채 물러나기', back.error);
+    move('담은 채 물러나기', back.tr, back.q);
+    qc = back.q;
+    const total = Math.round((Math.acos(Math.max(-1, Math.min(1, -endDir[0] / Math.hypot(endDir[0], endDir[1])))) * 180) / Math.PI);
+    const n = Math.max(1, Math.ceil(total / 30));
+    // 두 방향(반시계·시계)을 모두 계산해 보고 J6가 덜 감기는 쪽을 쓴다 (사이클마다 같은 쪽으로 돌면 관절 한계에 걸림)
+    const tryTurn = (turn) => {
+      const trs = [];
+      let q = qc, d = endDir;
+      for (let k = 1; k <= n; k++) {
+        d = rotateDir(endDir, (turn * total * k) / n);
+        const m = linear(q, carry(levelPose([turnAt[0], turnAt[1], liftZ], d)), undefined, k === 1 || k === n, SKIM.turnDegS);
+        if (m.error) return { error: m.error };
+        trs.push(m.tr);
+        q = m.q;
+      }
+      return { trs, q, d };
+    };
+    const opts = [tryTurn(1), tryTurn(-1)].filter((o) => !o.error);
+    if (!opts.length) return fail('담은 채 돌리기', tryTurn(1).error);
+    const best = opts.sort((x, y) => Math.abs(x.q[5]) - Math.abs(y.q[5]))[0];
+    const trs = best.trs;
+    qc = best.q;
+    carryDir = best.d;
+    move('담은 채 돌리기', concatTrajectories(trs), qc);
+  }
 
   // ⑤~⑦ 드로스 박스 위에서 덤프: 방향 후보를 차례로 시도 (첫 번째로 모든 구간이 통과하는 방향)
   const center = [(bin.x0 + bin.x1) / 2, (bin.y0 + bin.y1) / 2];
@@ -530,10 +571,10 @@ export async function planSkimCycle(input, { plan = null } = {}) {
     let a;
     if (dumpVia) {
       const via = dumpVia === 'x' ? [center[0], end[1]] : [end[0], center[1]];
-      const v = linear(s4.q, carry(levelPose([via[0], via[1], liftZ], endDir)), SKIM.loadedMmS, true);
+      const v = linear(qc, carry(levelPose([via[0], via[1], liftZ], carryDir)), SKIM.loadedMmS, true);
       const w = v.error ? v : linear(v.q, Tover, SKIM.loadedMmS, true);
       a = w.error ? w : { tr: concatTrajectories([v.tr, w.tr]), q: w.q };
-    } else a = linear(s4.q, Tover, SKIM.loadedMmS, true);
+    } else a = linear(qc, Tover, SKIM.loadedMmS, true);
     if (a.error) { lastErr = a.error; continue; }
     for (const dz of [0, 80, 160]) {
       const Tlev = levelPose([center[0], center[1], Math.min(zDump + dz, liftZ)], d);

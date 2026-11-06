@@ -8,6 +8,9 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import FancyBboxPatch, FancyArrowPatch, Rectangle, Polygon, Circle, Wedge
 import numpy as np
 
+# 이 문서가 쓴 결과 (2026-11-06 날짜·시각별 폴더로 옮긴 경로)
+EVAL = {'alone': 'results/2026-11-06/0836_ppo-eval_kr210-run1-alone/cell-eval-alone.md', 'mode1': 'results/2026-11-06/0842_ppo-eval_kr210-run1-mode1/cell-eval-mode1.md'}
+CEM = {'kr210-alone-s11': 'results/2026-11-05/1552_cem_kr210-alone-s11/report.md', 'kr210-alone-s12': 'results/2026-11-05/1602_cem_kr210-alone-s12/report.md', 'kr210-mode1-s11': 'results/2026-11-05/1609_cem_kr210-mode1-s11/report.md'}
 ROOT, OUT = sys.argv[1], sys.argv[2]
 os.makedirs(OUT, exist_ok=True)
 plt.rcParams['font.family'] = ['Malgun Gothic', 'DejaVu Sans']  # DejaVu = 맑은 고딕에 없는 − ⋮ 등 보충
@@ -55,13 +58,13 @@ def read(p):
 def eval_md(cfg):
     """cell-eval-<cfg>.md → [(seed, ppo, rule)]"""
     rows = []
-    for m in re.finditer(r'^\| (\d+) \| \*\*([\d.]+)%\*\* \| ([\d.]+)% \|', read(f'results/ppo/kr210-run1/cell-eval-{cfg}.md'), re.M):
+    for m in re.finditer(r'^\| (\d+) \| \*\*([\d.]+)%\*\* \| ([\d.]+)% \|', read(EVAL[cfg]), re.M):
         rows.append((int(m.group(1)), float(m.group(2)), float(m.group(3))))
     return rows
 
 
 def cem_md(name):
-    s = read(f'results/cem/{name}/report.md')
+    s = read(CEM[name])
     m = re.search(r'회수율 \(개수 / 질량\) \| \*\*([\d.]+)%\*\* / [\d.]+% \| \*\*([\d.]+)%\*\*', s)
     return float(m.group(1)), float(m.group(2))
 
@@ -306,7 +309,7 @@ def fig_ppo_loop():
 
 # ---------------------------------------------------------------- 10. "40회"의 의미 (타임라인)
 def fig_iter():
-    c = json.loads(read('results/ppo/kr210-run1/train-curve.json'))
+    c = json.loads(read('results/2026-11-05/1814_ppo-train_kr210-run1/train-curve.json'))
     fig, ax = canvas(10, 3.6)
     ax.text(50, 33, '"40번 학습" = 같은 신경망 1개를 40번 고쳐 쓴 것 (파일이 40개 생기는 것이 아님)', ha='center', fontsize=10, weight='bold', color=C['ink'])
     x0, x1, y = 6, 94, 18
@@ -329,7 +332,7 @@ def fig_iter():
 
 # ---------------------------------------------------------------- 11. 학습 곡선
 def fig_curve():
-    c = json.loads(read('results/ppo/kr210-run1/train-curve.json'))
+    c = json.loads(read('results/2026-11-05/1814_ppo-train_kr210-run1/train-curve.json'))
     ppo = [e for e in c if e['phase'] == 'ppo']; ev = [e for e in c if e['phase'] == 'eval']; bc = [e for e in c if e['phase'] == 'bc']
     fig, axs = plt.subplots(1, 2, figsize=(10, 3.6), dpi=200)
     ax = axs[0]
@@ -377,7 +380,7 @@ def fig_runner():
 # ---------------------------------------------------------------- 13. 결과 비교
 def fig_results():
     a = eval_md('alone'); m = eval_md('mode1')
-    base = json.loads(read('results/baseline/data.json'))
+    base = json.loads(read('results/2026-11-05/1541_baseline_alone+mode1+mode2/data.json'))
     cem = {n: cem_md(n) for n in ['kr210-alone-s11', 'kr210-alone-s12', 'kr210-mode1-s11']}
     fig, axs = plt.subplots(1, 2, figsize=(10, 3.8), dpi=200, gridspec_kw=dict(width_ratios=[3, 2]))
     ax = axs[0]
@@ -408,7 +411,7 @@ def fig_results():
 
 # ---------------------------------------------------------------- 14. 기준선
 def fig_baseline():
-    d = json.loads(read('results/baseline/data.json'))
+    d = json.loads(read('results/2026-11-05/1541_baseline_alone+mode1+mode2/data.json'))
     rs = d['results']
     names = {'abb-irb6700-200-260': 'IRB 6700', 'kuka-kr210-r2700': 'KR 210', 'fanuc-r2000ic-165f': 'R-2000iC', 'nachi-sra166': 'SRA166'}
     cfgs = [('alone', '단독'), ('mode1', '3대 모드 1'), ('mode2', '3대 모드 2')]

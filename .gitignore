@@ -32,3 +32,8 @@ desktop.ini
 # v3.0.0 학습 결과의 큰 파일(3D 재생·전체 시도 로그) — 보고서(.md)·정책(.json)만 저장소에 남긴다 (results/README.md)
 **/results/**/*.rsim.json.gz
 **/results/**/log.json
+
+# Word 임시 잠금 파일
+~$*
+# 2026-11-06 문서를 날짜별 폴더로 옮김 — 이 자리에 남은 사본(Word로 열려 있던 파일)은 추적하지 않음
+v3.0.0/docs/RoboSim_v3.0.0_AI학습_기술문서.docx

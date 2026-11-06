@@ -3,16 +3,18 @@
 // 화면·물리·로봇 간 간섭 검사에는 월드 좌표로 바꿔서 쓴다.
 //   모드 1 (제거): 작은 스키머로 자기 쪽 바깥 띠(|y| ≥ 구역 경계)를 떠서 자기 드로스 박스에 버린다. 대형 로봇은 안쪽 레인만 맡는다(동시 작업).
 //   모드 2 (보조 밀기): 밀대로 벽 쪽 드로스를 포트 안쪽(대형 로봇 레인)으로 밀어 준다. 대형 로봇이 포트 밖(덤프)에 있을 때만 들어간다(포트 점유 잠금).
+//   모드 3 (동시 밀기, v3.0.0): 밀대로 벽 쪽 드로스를 대형 구역 경계(PUSH_ASSIST.pushToMm)까지 민다. 잠금 없이 대형 로봇과 동시에 일하고,
+//          대형 로봇은 가운데 구역만 맡는다(구역 분리). 서로 가까워지면 모드 1과 같이 측면 로봇이 먼저 멈춰 기다린다(양보).
 import { forwardKinematics, multiply, poseMatrix, origin, homeJoints, solveIK, solveIKMulti, DEG } from './kinematics.js';
 import { SKIMMER_SMALL_SPEC, RAKE_SPEC, toolBoxes, inverseToolMatrix } from './gripper.js';
 import { createSafetyContext, evaluatePose, sweepCheck, capsuleSetDistance, robotSegments } from './safety.js';
 import { sampleTrajectory } from './trajectory.js';
 import {
   SIDE_SLOTS, sideBin, BATH_Z_MM, POT, SNOUT, SKIM, SIDE_SPLIT_Y, SIDE_BUFFER_MM, PUSH, SIDE_BIN_DISTS, drossFixtures,
-  levelPose, planSkimCycle, planPushStroke, chooseLane,
+  levelPose, planSkimCycle, planPushStroke, chooseLane, PUSH_ASSIST,
 } from './dross.js';
 
-export const SIDE_MODES = { 1: '모드 1 · 드로스 제거 (자기 박스에 버림)', 2: '모드 2 · 보조 밀기 (대형 로봇 쪽으로)' };
+export const SIDE_MODES = { 1: '모드 1 · 드로스 제거 (자기 박스에 버림)', 2: '모드 2 · 보조 밀기 (대형 로봇 쪽으로)', 3: '모드 3 · 동시 밀기 (구역 분리, 대형만 회수)' };
 export const SIDE_IMMERSION_MM = 45; // 작은 스쿱 잠김 깊이 (턱 50 mm → 턱 끝이 욕면 위 5 mm)
 export const SIDE_SWEEP_MMS = 120;
 export const HOLD_PAD_MM = 30; // 로봇 간 간섭: 측면 로봇은 (여유거리 + 30 mm)에서 먼저 멈춰 기다린다(양보)
@@ -84,7 +86,7 @@ export class CellRobot {
   constructor(slotId, robot, mode, { thresholds, obstaclesWorld, binDist = SIDE_BIN_DISTS[0] }) {
     this.slot = slotId;
     this.robot = robot;
-    this.mode = mode === 2 ? 2 : 1;
+    this.mode = mode === 2 || mode === 3 ? mode : 1;
     this.binDist = binDist;
     this.spec = this.mode === 1 ? { ...SKIMMER_SMALL_SPEC } : { ...RAKE_SPEC };
     this.F = slotFrame(slotId);
@@ -197,7 +199,7 @@ export class CellRobot {
       const r = this.spec.bladeHMm / 2;
       const y0 = POT.y1 - m - r;
       for (const x of PUSH_X) {
-        const run = this.scan((yy) => this.F.levelLocal([x, s * yy, z], [0, -s]), y0, PUSH_Y_TARGET, -25, seed0);
+        const run = this.scan((yy) => this.F.levelLocal([x, s * yy, z], [0, -s]), y0, this.mode === 3 ? PUSH_ASSIST.pushToMm : PUSH_Y_TARGET, -25, seed0);
         if (!run || run.from - run.to < 150) continue;
         lanes.push(this.makeLane(lanes.length, [x, s * run.from], [x, s * run.to], this.spec.bladeWMm / 2));
       }
