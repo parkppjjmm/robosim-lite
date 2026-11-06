@@ -24,6 +24,7 @@ robosim-lite/
 - 변경 내용은 작업 중인 버전 폴더의 `CHANGELOG.md` `[Unreleased]`에 기록한다. 릴리스 시 같은 이름의 태그를 붙인다. 릴리스한 태그는 이후에도 수정하지 않는다.
 - 저장소는 public(2026-11-05 사용자가 private → public으로 변경): https://github.com/parkppjjmm/robosim-lite (계정 parkppjjmm). 공개 저장소이므로 토큰·개인 자료(예: `Document (현대제철 결과보고서)/`)를 커밋하지 않는다. 커밋 작성자는 `parkppjjmm <parkppjjmm@gmail.com>`이며, 저장소 로컬 git config로 설정한다(전역 설정 변경 금지).
 - 커밋·push·태그·GitHub 설정 변경은 사용자가 요청할 때만 한다.
+- **v3.0.0 개발 현황 `v3.0.0/STATUS.md`를 작업할 때마다 갱신한다**(완료·결정 대기·v3.0.1로 미룸·남은 개발, 맨 아래 갱신 기록 — 2026-11-06 사용자 요청). 측면 로봇 셀 학습·상부 가상 카메라는 v3.0.1 계획.
 
 ## 실행 / 검증 (v2.0.0 기준, `v2.0.0/` 폴더에서 — 이전 버전도 같은 방법, 포트만 다름)
 - 실행: `start.bat`(Windows) 또는 `python serve.py [port] [--no-browser]` (기본 8200). **Claude가 테스트용 서버를 띄웠다면 끝나고 반드시 끈다** — 같은 포트가 열려 있으면 사용자의 start.bat이 "포트 사용 중"으로 닫힌다(2026-11-05 사례). file:// 직접 실행은 지원하지 않는다(ES 모듈·Worker).
