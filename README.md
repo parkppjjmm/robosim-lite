@@ -19,7 +19,7 @@ robosim-lite/
 ├─ v1.1.1/          v1.1.1 고정본 — 드로스 제거 셀·UR·측면 로봇 (태그 v1.1.1), 포트 8111
 ├─ v1.1.2/          v1.1.2 고정본 — 관절 실시간 계측·데이터 엑셀 추출·머신러닝 계획 (태그 v1.1.2), 포트 8112
 ├─ v2.0.0/          v2.0.0 개발 폴더 — 이상·고장 데이터 생성, 상황 조건부 이상 경계 학습 (뼈대 v1.1.2), 포트 8200
-└─ v3.0.0/          v3.0.0 개발 폴더 — AI 기반 스키밍 경로 최적화 (툴 방향·J6 활용, 뼈대 v1.1.2), 포트 8300
+└─ v3.0.0/          v3.0.0 — AI 기반 스키밍 경로 최적화 (진화 탐색·PPO, 측면 밀어 주기, 뼈대 v1.1.2), 포트 8300 — 릴리스 준비
 ```
 
 | 폴더 | 버전 | 상태 | 실행 주소 | 주요 문서 |
@@ -27,7 +27,7 @@ robosim-lite/
 | [`v1.0.0/`](v1.0.0/) | v1.0.0 | **고정본 (수정 금지)** | http://localhost:8000 | [README](v1.0.0/README.md) · [PRD](v1.0.0/PRD.md) · [REVIEW](v1.0.0/REVIEW.md) · [PROMPTS](v1.0.0/PROMPTS.md) · [CHANGELOG](v1.0.0/CHANGELOG.md) |
 | [`v1.1.0/`](v1.1.0/) | v1.1.0 | **릴리스** (태그 `v1.1.0`) | http://localhost:8011 | [README](v1.1.0/README.md) · [PRD](v1.1.0/PRD_v.1.1.0.md) · [REVIEW](v1.1.0/REVIEW_v1.1.0.md) · [PROMPTS](v1.1.0/PROMPTS.md) · [CHANGELOG](v1.1.0/CHANGELOG.md) |
 | [`v1.1.2/`](v1.1.2/) | v1.1.2 | **릴리스 · 최신** (태그 `v1.1.2`) | http://localhost:8112 | [README](v1.1.2/README.md) · [PRD](v1.1.2/PRD_v.1.1.2.md) · [REVIEW](v1.1.2/REVIEW_v1.1.2.md) · [PROMPTS](v1.1.2/PROMPTS.md) · [CHANGELOG](v1.1.2/CHANGELOG.md) |
-| [`v3.0.0/`](v3.0.0/) | v3.0.0 | **개발 중** | http://localhost:8300 | [README](v3.0.0/README.md) · [PRD](v3.0.0/PRD_v.3.0.0.md) · [PROMPTS](v3.0.0/PROMPTS.md) · [CHANGELOG](v3.0.0/CHANGELOG.md) |
+| [`v3.0.0/`](v3.0.0/) | v3.0.0 | **릴리스 준비** (태그 `v3.0.0` 사용자 확인 후) | http://localhost:8300 | [README](v3.0.0/README.md) · [PRD](v3.0.0/PRD_v.3.0.0.md) · [REVIEW](v3.0.0/REVIEW_v3.0.0.md) · [STATUS](v3.0.0/STATUS.md) · [PROMPTS](v3.0.0/PROMPTS.md) · [CHANGELOG](v3.0.0/CHANGELOG.md) |
 | [`v2.0.0/`](v2.0.0/) | v2.0.0 | **개발 중** | http://localhost:8200 | [README](v2.0.0/README.md) · [PRD](v2.0.0/PRD_v.2.0.0.md) · [PROMPTS](v2.0.0/PROMPTS.md) · [CHANGELOG](v2.0.0/CHANGELOG.md) |
 | [`v1.1.1/`](v1.1.1/) | v1.1.1 | **릴리스** (태그 `v1.1.1`) | http://localhost:8111 | [README](v1.1.1/README.md) · [PRD](v1.1.1/PRD_v.1.1.1.md) · [REVIEW](v1.1.1/REVIEW_v1.1.1.md) · [PROMPTS](v1.1.1/PROMPTS.md) · [CHANGELOG](v1.1.1/CHANGELOG.md) · [SETUP](v1.1.1/SETUP.md) |
 
@@ -158,7 +158,9 @@ robosim-lite/
 
 ---
 
-## v3.0.0 — J1~J6 관절 학습 기반 드로스 제거 AI (개발 중)
+## v3.0.0 — J1~J6 관절 학습 기반 드로스 제거 AI (릴리스 준비, 2026-11-06)
+
+> 결과: 대형 로봇(KR 210) 단독 셀의 스트로크 학습 — 규칙 경로 쓸기 방향(번갈아) 72.9%, 진화 탐색 84.0%(교사), PPO 2차 71.5%(현장용, 10회까지만) / 측면 로봇 모드 3 타이밍 밀기 / 앱 학습·재생 패널 / 혼자 학습 `train.bat`. 자세한 것은 `v3.0.0/REVIEW_v3.0.0.md`·`v3.0.0/STATUS.md`, 기술 문서 `v3.0.0/docs/2026-11-06_1359_AI학습_기술문서/`.
 
 ### 역할
 - v1.1.2 코드를 그대로 복사해 뼈대로 삼은 개발 폴더입니다. 요구사항 `v3.0.0/PRD_v.3.0.0.md`(초안 2), 진행표 `v3.0.0/PROMPTS.md`.
@@ -167,7 +169,8 @@ robosim-lite/
   - 행동 방식은 B(계층형 + 관절 직접)로 먼저 개발합니다. A(순수 관절 직접)는 비교 실험 후보입니다.
   - 학습은 Python 오프라인이고, 앱은 순수 JS, 현장은 ONNX로 추론합니다.
   - 모든 관절 움직임은 안전 필터를 먼저 통과합니다.
-- 기준선(규칙 경로, 10분): KR 210 단독 61.9%, 로봇 3대 38.8%.
+- 기준선(규칙 경로, 10분): KR 210 단독 61.9%, 로봇 3대 38.8% (11-05 1차 측정).
+- v3.0.0에서 실제로 한 것: 상위(스트로크 설계값: 위치·방향·길이·J6 yaw·기울임·깊이·속도) 학습. 학습은 Python 대신 순수 JS PPO(결정 D13). 하위 Δq·안전 필터·ONNX는 이후 버전.
 
 ---
 
