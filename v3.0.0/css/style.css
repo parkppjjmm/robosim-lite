@@ -1083,3 +1083,8 @@ button.sim-badge.physics:hover { background: color-mix(in srgb, var(--path) 24%,
 .lab-decisions { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 4px; }
 .lab-decisions th { color: var(--muted); font-weight: 500; text-align: left; }
 .lab-decisions td, .lab-decisions th { padding: 1px 4px; white-space: nowrap; }
+/* 에피소드 재생 '실행 결과 목록': 이름 아래에 목록을 전체 폭으로 (긴 실행·파일 이름이 잘리지 않게, 2026-11-06) */
+.rp-list .field { flex-direction: column; align-items: stretch; gap: 2px; margin-top: 4px; }
+.rp-list .field select { width: 100%; max-width: none; text-align: left; }
+/* 학습 결정 표: 4·5번째 열(고른 것·스트로크)은 줄바꿈해 패널 밖으로 넘치지 않게 */
+.lab-decisions td:nth-child(n+4) { white-space: normal; }
