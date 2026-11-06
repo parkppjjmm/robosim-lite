@@ -4,10 +4,12 @@
 //   - 시드는 평가 시드(11·12·13)와 겹치지 않게 (기본 단독 101~110, 모드 3 201~206)
 //   - 비교 규칙 경로: 단독 = 번갈아(alternate, [A] 최고), 측면 셀 = 로봇 쪽
 //   - 시범 수집에서는 대형이 막혀도 멈추지 않는다(--no-stop): 막힌 사이클만 버림
-// 실행: node tools/cem-demos.mjs [--alone 101-110] [--push 201-206] [--population 32] [--iterations 4] [--workers 14] [--name 이름]
+//   --collect: 새로 실행하지 않고 이미 끝난 train.mjs 실행 폴더(같은 구성·시드의 최신)를 찾아 모으기만 한다
+//             (2026-11-06: 사용자가 측면 셀을 뒤로 미뤄 수집을 단독 10개에서 멈춘 뒤 사용)
+// 실행: node tools/cem-demos.mjs [--alone 101-110] [--push 201-206] [--collect] [--population 32] [--iterations 4] [--workers 14] [--name 이름]
 // 결과: results/<날짜>/<시각>_cem-demos_<이름>/demos.json(모든 시범) · report.md(에피소드별 CEM vs 규칙) · run.json
 //       에피소드마다 results/<날짜>/<시각>_cem_<로봇>-<구성>-s<시드>/ (train.mjs 결과, demos.json 포함)
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { makeRunDir, finishRun } from './lib/run-dir.mjs';
@@ -58,8 +60,19 @@ function runJob(job) {
   });
 }
 
+/** 이미 끝난 실행 폴더 찾기: results/<날짜>/<시각>_cem_kr210-<구성>-s<시드>/ 중 demos.json이 있는 최신 */
+function findJob(job) {
+  const hits = [];
+  for (const day of readdirSync(`${root}/results`).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort()) {
+    for (const d of readdirSync(`${root}/results/${day}`).sort()) {
+      if (d.endsWith(`_cem_kr210-${job.config}-s${job.seed}`) && existsSync(`${root}/results/${day}/${d}/demos.json`)) hits.push(`${root}/results/${day}/${d}`.replace(/\\/g, '/'));
+    }
+  }
+  return { ...job, code: hits.length ? 0 : 1, dir: hits.at(-1) ?? null, err: hits.length ? '' : '실행 폴더 없음' };
+}
+
 for (const job of jobs) {
-  const r = await runJob(job);
+  const r = process.argv.includes('--collect') ? findJob(job) : await runJob(job);
   let demos = null;
   try {
     demos = JSON.parse(readFileSync(`${r.dir}/demos.json`, 'utf8'));

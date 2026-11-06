@@ -1,0 +1,137 @@
+{
+ "kind": "cem",
+ "name": "kr210-alone-s110",
+ "folder": "results/2026-11-06/1148_cem_kr210-alone-s110",
+ "startedLocal": "2026-11-06 11:48",
+ "started": "2026-11-06T02:48:59.083Z",
+ "finished": "2026-11-06T02:54:22.688Z",
+ "command": "node tools/train.mjs --config alone --seed 110 --population 32 --iterations 4 --workers 14 --lane-dir alternate --no-stop",
+ "git": "9c8f70f (+수정)",
+ "node": "v26.13.0",
+ "summary": "cem 83% vs 규칙 73.6% (kr210-alone-s110)",
+ "lab": {
+  "schema": "robosim-lab/1",
+  "method": "cem",
+  "population": 32,
+  "iterations": 4,
+  "eliteFrac": 0.25,
+  "includeRule": true,
+  "seed": 110,
+  "search": {
+   "x0": {
+    "on": true,
+    "min": 1330,
+    "max": 2070,
+    "fixed": 2070
+   },
+   "y0": {
+    "on": true,
+    "min": -670,
+    "max": 670,
+    "fixed": 0
+   },
+   "headingDeg": {
+    "on": true,
+    "min": 0,
+    "max": 360,
+    "fixed": 180
+   },
+   "lengthMm": {
+    "on": true,
+    "min": 250,
+    "max": 1100,
+    "fixed": 740
+   },
+   "yaw0Deg": {
+    "on": true,
+    "min": -180,
+    "max": 180,
+    "fixed": 0
+   },
+   "yaw1Deg": {
+    "on": true,
+    "min": -180,
+    "max": 180,
+    "fixed": 0
+   },
+   "tiltDeg": {
+    "on": true,
+    "min": -15,
+    "max": 15,
+    "fixed": 0
+   },
+   "depthMm": {
+    "on": true,
+    "min": 20,
+    "max": 75,
+    "fixed": 60
+   },
+   "speedMmS": {
+    "on": true,
+    "min": 30,
+    "max": 250,
+    "fixed": 120
+   }
+  },
+  "reward": {
+   "perDross": 10,
+   "wallBonus": 5,
+   "emptyStroke": -20,
+   "spill": -5,
+   "perSecond": -0.2,
+   "infeasible": -10,
+   "goalBonus": 200
+  },
+  "keepTop": 10
+ },
+ "task": {
+  "targetRatePct": 80,
+  "zone": "work",
+  "timeLimitS": 600,
+  "aiRobot": {
+   "slot": "main",
+   "robotId": "kuka-kr210-r2700"
+  },
+  "cell": {
+   "main": "kuka-kr210-r2700",
+   "left": {
+    "robotId": null,
+    "mode": 1
+   },
+   "right": {
+    "robotId": null,
+    "mode": 1
+   }
+  },
+  "dross": {
+   "count": 160,
+   "seed": 110,
+   "ratePerMin": 0,
+   "immersionMm": 60,
+   "sweepMmS": 120
+  },
+  "sensors": [
+   {
+    "id": "top",
+    "pos": [
+     1700,
+     0,
+     4700
+    ],
+    "lookAt": [
+     1700,
+     0,
+     700
+    ],
+    "fovDeg": 70,
+    "res": [
+     640,
+     480
+    ]
+   }
+  ],
+  "mainRule": {
+   "laneDir": "alternate"
+  }
+ }
+}

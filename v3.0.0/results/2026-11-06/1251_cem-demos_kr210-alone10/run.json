@@ -1,0 +1,66 @@
+{
+ "kind": "cem-demos",
+ "name": "kr210-alone10",
+ "folder": "results/2026-11-06/1251_cem-demos_kr210-alone10",
+ "startedLocal": "2026-11-06 12:51",
+ "started": "2026-11-06T03:51:51.270Z",
+ "finished": "2026-11-06T03:51:51.282Z",
+ "command": "node tools/cem-demos.mjs --alone 101-110 --push none --collect --name alone10",
+ "git": "9c8f70f (+수정)",
+ "node": "v26.13.0",
+ "summary": "시범 138개 · alone CEM 84.9% vs 규칙 70.5% (10개)",
+ "jobs": [
+  {
+   "config": "alone",
+   "seed": 101,
+   "laneDir": "alternate"
+  },
+  {
+   "config": "alone",
+   "seed": 102,
+   "laneDir": "alternate"
+  },
+  {
+   "config": "alone",
+   "seed": 103,
+   "laneDir": "alternate"
+  },
+  {
+   "config": "alone",
+   "seed": 104,
+   "laneDir": "alternate"
+  },
+  {
+   "config": "alone",
+   "seed": 105,
+   "laneDir": "alternate"
+  },
+  {
+   "config": "alone",
+   "seed": 106,
+   "laneDir": "alternate"
+  },
+  {
+   "config": "alone",
+   "seed": 107,
+   "laneDir": "alternate"
+  },
+  {
+   "config": "alone",
+   "seed": 108,
+   "laneDir": "alternate"
+  },
+  {
+   "config": "alone",
+   "seed": 109,
+   "laneDir": "alternate"
+  },
+  {
+   "config": "alone",
+   "seed": 110,
+   "laneDir": "alternate"
+  }
+ ],
+ "population": "32",
+ "iterations": "4"
+}

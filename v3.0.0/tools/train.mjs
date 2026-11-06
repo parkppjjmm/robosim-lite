@@ -166,7 +166,7 @@ for (const d of lab1.log.decisions) {
   const v = d.best.values;
   L.push(`| ${d.n} | ${d.t} | ${d.rate} | ${d.best.score} (${d.ruleScore ?? '—'})${d.best.rule ? ' 규칙' : ''} | ${d.best.collected} → ${d.actualCollected ?? '—'} | ${v.x0.toFixed(0)}, ${v.y0.toFixed(0)} | ${v.headingDeg.toFixed(0)} | ${v.lengthMm.toFixed(0)} | ${v.yaw0Deg.toFixed(0)}→${v.yaw1Deg.toFixed(0)} | ${v.tiltDeg.toFixed(0)} | ${v.depthMm.toFixed(0)} | ${v.speedMmS.toFixed(0)} |`);
 }
-L.push('', `3D로 보기: 앱 '에피소드 재생'에서 \`${outDir.replace(root + '/', '')}/${epName}\`(학습)·\`${ruleName}\`(규칙)를 불러온다(용량 때문에 git에는 없음).`);
+L.push('', `3D로 보기: 앱 '에피소드 재생'에서 \`${outDir.replace(root + '/', '')}/${epName}\`(학습)·\`${ruleName}\`(규칙)를 불러온다.`);
 writeFileSync(`${outDir}/report.md`, L.join('\n') + '\n');
 console.log('\n' + L.slice(0, 13).join('\n'));
 finishRun(root, run, { summary: `${lab.method} ${S.rateCount}%${R ? ` vs 규칙 ${R.rateCount}%` : ''} (${runName})`, detail: { lab, task } });

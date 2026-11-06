@@ -28,12 +28,12 @@ const mean = (a) => a.reduce((s, v) => s + v, 0) / Math.max(1, a.length);
  * @param m { TE, CS, RP, LAB } 모듈 (호출하는 도구가 불러온 것)
  * @returns { rows, md, file } — rows: 시드별 { seed, ppo, rule, strokes, repaired, fallback, retries }
  */
-export async function evalPolicyCell({ m, RAPIER, robots, pol, agent, lab, config = 'alone', seeds = [11, 12, 13], outDir, policyLabel, log = console.log }) {
+export async function evalPolicyCell({ m, RAPIER, robots, pol, agent, lab, config = 'alone', seeds = [11, 12, 13], outDir, policyLabel, ruleLaneDir = 'robot', log = console.log }) {
   const { TE, CS, RP, LAB } = m;
   const rows = [];
   for (const seed of seeds) {
     const [left, right] = CONFIGS[config].map(sideOf);
-    const { task } = TE.sanitizeTask({ timeLimitS: pol.task?.timeLimitS ?? 600, cell: { main: pol.task?.main ?? 'kuka-kr210-r2700', left, right }, dross: { seed, count: pol.task?.count ?? 160 } }, robots);
+    const { task } = TE.sanitizeTask({ timeLimitS: pol.task?.timeLimitS ?? 600, cell: { main: pol.task?.main ?? 'kuka-kr210-r2700', left, right }, dross: { seed, count: pol.task?.count ?? 160 }, mainRule: { laneDir: ruleLaneDir } }, robots);
     const pr = await LAB.runPolicy({ RAPIER, robots, task, lab, agent, runEpisode: CS.runEpisode, record: new RP.EpisodeRecorder({ everyS: 0.1 }) });
     writeFileSync(`${outDir}/ppo-${config}-s${seed}.rsim.json.gz`, gzipSync(JSON.stringify({ ...pr.episode, lab: { method: 'ppo-policy', reward: lab.reward } })));
     const rr = await CS.runEpisode(task, { RAPIER, robots, record: new RP.EpisodeRecorder({ everyS: 0.1 }) });
@@ -49,7 +49,7 @@ export async function evalPolicyCell({ m, RAPIER, robots, pol, agent, lab, confi
   L.push(`# 전체 셀 10분 과제 평가 — ${CONFIG_LABEL[config]} (\`${config}\`)`, '');
   L.push(`- 측정: ${new Date().toISOString()} · \`node tools/ppo-eval.mjs\``);
   L.push(`- 정책: ${policyLabel}`);
-  L.push('- 비교: 같은 드로스 배치(시드)에서 대형 로봇만 **PPO 정책** ↔ **규칙 경로(v1.1.2)** 로 바꿔 실행. 측면 로봇은 둘 다 기존 경로.');
+  L.push(`- 비교: 같은 드로스 배치(시드)에서 대형 로봇만 **PPO 정책** ↔ **규칙 경로(쓸기 방향 ${ruleLaneDir})** 로 바꿔 실행. 측면 로봇은 둘 다 기존 경로.`);
   L.push('- 정책 실행: 결정적(평균) 행동 → 계획 불가면 보정(repair) → 그래도 안 되면 규칙 레인으로 대체. 측면 로봇 구역은 침범하지 않음.', '');
   L.push('| 시드 | PPO 정책 | 규칙 경로 | 차이 | 스트로크 | 보정 | 규칙 대체 | 흘림 (PPO / 규칙) |', '|---|---|---|---|---|---|---|---|');
   for (const r of rows) L.push(`| ${r.seed} | **${r.ppo.rateCount}%** | ${r.rule.rateCount}% | ${(r.ppo.rateCount - r.rule.rateCount).toFixed(1)}%p | ${r.strokes} | ${r.repaired} | ${r.fallback} | ${r.ppo.spilled} / ${r.rule.spilled} |`);
