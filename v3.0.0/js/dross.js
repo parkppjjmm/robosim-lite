@@ -320,18 +320,19 @@ export function skimLanes(spec, marginMm, { yLo = -Infinity, yHi = Infinity } = 
 }
 
 /**
- * v3.0.0 모드 3 (동시 밀기, 2026-11-06 사용자 제안): 측면 로봇은 회수하지 않고 벽 쪽 드로스를 가운데로 밀기만 하고,
- * 대형 로봇만 회수한다. 포트 점유 잠금 없이 동시에 일하도록 구역을 나눈다.
- *   - 대형: 스쿱 중심 |Y| ≤ mainCenterMaxMm (모드 1과 같은 경계)
- *   - 측면: 벽 → |Y| = pushToMm 까지 밀어서 대형 스쿱이 지나가는 띠 안으로 넣어 준다
+ * v3.0.0 모드 3 (타이밍 밀기, 2026-11-06 사용자 제안): 측면 로봇은 회수하지 않고 벽 쪽 드로스를 가운데로 밀기만 하고, 대형 로봇만 회수한다.
+ * 처음 시도한 '구역 분리 동시 작업'(대형 |Y| ≤ 230, 측면은 |Y| 440까지)은 대형 스쿱과 밀대 사이가 30 mm 안팎이라
+ * 안전 게이트가 대형을 세우고 측면도 기다리다 멈추는 교착이 3회 중 1회 생겼다(0952 기준선). 그래서 시간으로 나눈다:
+ *   - 측면은 대형 로봇이 포트 밖(운반·덤프·복귀)에 있고, 대형이 돌아오기 전(etaS)에 밀기 전체를 끝낼 수 있을 때만 시작한다.
+ *   - 대형은 포트 전체 폭을 쓰고, 드물게 측면이 아직 포트에 있으면 모드 2처럼 기다린다(안전).
  */
-export const PUSH_ASSIST = { mainCenterMaxMm: SIDE_SPLIT_Y - SIDE_BUFFER_MM - 180, pushToMm: 440 };
+export const PUSH_ASSIST = { marginS: 1.5, minWindowS: 6 };
 
 /** 대형 로봇 레인 Y 범위: 모드 1(제거)·모드 3(동시 밀기) 측면 로봇이 있는 쪽은 구역 경계 안쪽만 (FR-33) */
 export function mainLaneRange(spec, sides = {}) {
   const hy = spec.plateYMm / 2;
   const lim = SIDE_SPLIT_Y - SIDE_BUFFER_MM - hy;
-  const limOf = (s) => (!s?.robotId ? Infinity : s.mode === 1 ? lim : s.mode === 3 ? PUSH_ASSIST.mainCenterMaxMm : Infinity);
+  const limOf = (s) => (s?.robotId && s.mode === 1 ? lim : Infinity);
   return { yHi: limOf(sides.left), yLo: -limOf(sides.right) };
 }
 
@@ -530,7 +531,8 @@ export async function planSkimCycle(input, { plan = null } = {}) {
   let carryDir = endDir, qc = s4.q, turnAt = end;
   if (endDir[0] / Math.hypot(endDir[0], endDir[1]) > 0.2) {
     // 스나우트(높은 설비) 옆에서는 돌릴 공간이 없으므로 먼저 담은 채 로봇 쪽으로 물러난다
-    turnAt = [Math.max(POT.x0 + 450, end[0] - 450), end[1]];
+    // 벽 쪽 레인에서 돌리면 스쿱이 벽 위 측면 로봇(대기 자세)에 닿으므로 가운데 쪽(|Y| ≤ 400)으로 옮겨서 돌린다
+    turnAt = [Math.max(POT.x0 + 450, end[0] - 450), Math.max(-400, Math.min(400, end[1]))];
     const back = linear(qc, carry(levelPose([turnAt[0], turnAt[1], liftZ], endDir)), SKIM.loadedMmS, true);
     if (back.error) return fail('담은 채 물러나기', back.error);
     move('담은 채 물러나기', back.tr, back.q);

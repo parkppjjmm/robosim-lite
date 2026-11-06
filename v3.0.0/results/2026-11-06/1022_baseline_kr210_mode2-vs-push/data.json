@@ -1,0 +1,1066 @@
+{
+ "simS": 600,
+ "target": 80,
+ "seeds": [
+  11,
+  12,
+  13
+ ],
+ "mains": [
+  "kuka-kr210-r2700"
+ ],
+ "configs": [
+  "mode2",
+  "push"
+ ],
+ "laneDirs": [
+  "robot"
+ ],
+ "elapsedS": 124.186,
+ "results": [
+  {
+   "main": "kuka-kr210-r2700",
+   "config": "push",
+   "seed": 13,
+   "simS": 600,
+   "target": 80,
+   "laneDir": "robot",
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 61.9,
+    "rateMass": 61.7,
+    "reached": false,
+    "reachS": null,
+    "collected": 99,
+    "total": 160,
+    "remaining": 56,
+    "spilled": 4,
+    "byRobot": {
+     "main": {
+      "n": 99,
+      "kg": 61.9
+     },
+     "left": {
+      "n": 0,
+      "kg": 0
+     },
+     "right": {
+      "n": 0,
+      "kg": 0
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 112.9,
+    "speedup": 5.31,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 11,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {
+    "left": {
+     "name": "UR10e",
+     "mode": 3,
+     "cycles": 5,
+     "lanes": 5,
+     "minOther": 587.3132880227434,
+     "status": "idle",
+     "label": "대형 로봇 곧 복귀 — 대기"
+    },
+    "right": {
+     "name": "UR10e",
+     "mode": 3,
+     "cycles": 8,
+     "lanes": 5,
+     "minOther": 354.5646221688301,
+     "status": "idle",
+     "label": "대형 로봇 곧 복귀 — 대기"
+    }
+   },
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     11.88,
+     12.62
+    ],
+    [
+     90,
+     27.5,
+     26.52
+    ],
+    [
+     120,
+     27.5,
+     26.52
+    ],
+    [
+     150,
+     43.75,
+     40.73
+    ],
+    [
+     180,
+     43.75,
+     40.73
+    ],
+    [
+     210,
+     56.88,
+     54.97
+    ],
+    [
+     240,
+     58.75,
+     57.78
+    ],
+    [
+     270,
+     58.75,
+     57.78
+    ],
+    [
+     300,
+     60,
+     59.31
+    ],
+    [
+     330,
+     60,
+     59.31
+    ],
+    [
+     360,
+     61.25,
+     61.53
+    ],
+    [
+     390,
+     61.88,
+     61.7
+    ],
+    [
+     420,
+     61.88,
+     61.7
+    ],
+    [
+     450,
+     61.88,
+     61.7
+    ],
+    [
+     480,
+     61.88,
+     61.7
+    ],
+    [
+     510,
+     61.88,
+     61.7
+    ],
+    [
+     540,
+     61.88,
+     61.7
+    ],
+    [
+     570,
+     61.88,
+     61.7
+    ],
+    [
+     600,
+     61.88,
+     61.7
+    ]
+   ]
+  },
+  {
+   "main": "kuka-kr210-r2700",
+   "config": "mode2",
+   "seed": 13,
+   "simS": 600,
+   "target": 80,
+   "laneDir": "robot",
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 55.6,
+    "rateMass": 54.9,
+    "reached": false,
+    "reachS": null,
+    "collected": 89,
+    "total": 160,
+    "remaining": 56,
+    "spilled": 13,
+    "byRobot": {
+     "main": {
+      "n": 89,
+      "kg": 55.1
+     },
+     "left": {
+      "n": 0,
+      "kg": 0
+     },
+     "right": {
+      "n": 0,
+      "kg": 0
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 116.2,
+    "speedup": 5.16,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 11,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {
+    "left": {
+     "name": "UR10e",
+     "mode": 2,
+     "cycles": 9,
+     "lanes": 5,
+     "minOther": 89.83796749340956,
+     "status": "idle",
+     "label": "밀어 줄 드로스가 없음 — 대기"
+    },
+    "right": {
+     "name": "UR10e",
+     "mode": 2,
+     "cycles": 10,
+     "lanes": 5,
+     "minOther": 352.7481154486995,
+     "status": "idle",
+     "label": "밀어 줄 드로스가 없음 — 대기"
+    }
+   },
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     11.88,
+     12.62
+    ],
+    [
+     90,
+     11.88,
+     12.62
+    ],
+    [
+     120,
+     28.13,
+     27.7
+    ],
+    [
+     150,
+     28.13,
+     27.7
+    ],
+    [
+     180,
+     41.88,
+     41.53
+    ],
+    [
+     210,
+     41.88,
+     41.53
+    ],
+    [
+     240,
+     51.25,
+     50.95
+    ],
+    [
+     270,
+     51.88,
+     51.66
+    ],
+    [
+     300,
+     51.88,
+     51.66
+    ],
+    [
+     330,
+     52.5,
+     51.87
+    ],
+    [
+     360,
+     52.5,
+     51.87
+    ],
+    [
+     390,
+     53.13,
+     52.9
+    ],
+    [
+     420,
+     54.38,
+     54
+    ],
+    [
+     450,
+     54.38,
+     54
+    ],
+    [
+     480,
+     55.63,
+     54.91
+    ],
+    [
+     510,
+     55.63,
+     54.91
+    ],
+    [
+     540,
+     55.63,
+     54.91
+    ],
+    [
+     570,
+     55.63,
+     54.91
+    ],
+    [
+     600,
+     55.63,
+     54.91
+    ]
+   ]
+  },
+  {
+   "main": "kuka-kr210-r2700",
+   "config": "mode2",
+   "seed": 11,
+   "simS": 600,
+   "target": 80,
+   "laneDir": "robot",
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 52.5,
+    "rateMass": 50.2,
+    "reached": false,
+    "reachS": null,
+    "collected": 84,
+    "total": 160,
+    "remaining": 61,
+    "spilled": 12,
+    "byRobot": {
+     "main": {
+      "n": 84,
+      "kg": 50.3
+     },
+     "left": {
+      "n": 0,
+      "kg": 0
+     },
+     "right": {
+      "n": 0,
+      "kg": 0
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 118,
+    "speedup": 5.08,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 11,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {
+    "left": {
+     "name": "UR10e",
+     "mode": 2,
+     "cycles": 8,
+     "lanes": 5,
+     "minOther": 411.8815738823288,
+     "status": "idle",
+     "label": "밀어 줄 드로스가 없음 — 대기"
+    },
+    "right": {
+     "name": "UR10e",
+     "mode": 2,
+     "cycles": 9,
+     "lanes": 5,
+     "minOther": 352.7481154486995,
+     "status": "idle",
+     "label": "밀어 줄 드로스가 없음 — 대기"
+    }
+   },
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     11.88,
+     12.55
+    ],
+    [
+     90,
+     11.88,
+     12.55
+    ],
+    [
+     120,
+     28.75,
+     28.25
+    ],
+    [
+     150,
+     44.38,
+     41.54
+    ],
+    [
+     180,
+     44.38,
+     41.54
+    ],
+    [
+     210,
+     50.63,
+     47.48
+    ],
+    [
+     240,
+     50.63,
+     47.48
+    ],
+    [
+     270,
+     52.5,
+     50.18
+    ],
+    [
+     300,
+     52.5,
+     50.18
+    ],
+    [
+     330,
+     52.5,
+     50.18
+    ],
+    [
+     360,
+     52.5,
+     50.18
+    ],
+    [
+     390,
+     52.5,
+     50.18
+    ],
+    [
+     420,
+     52.5,
+     50.18
+    ],
+    [
+     450,
+     52.5,
+     50.18
+    ],
+    [
+     480,
+     52.5,
+     50.18
+    ],
+    [
+     510,
+     52.5,
+     50.18
+    ],
+    [
+     540,
+     52.5,
+     50.18
+    ],
+    [
+     570,
+     52.5,
+     50.18
+    ],
+    [
+     600,
+     52.5,
+     50.18
+    ]
+   ]
+  },
+  {
+   "main": "kuka-kr210-r2700",
+   "config": "push",
+   "seed": 11,
+   "simS": 600,
+   "target": 80,
+   "laneDir": "robot",
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 57.5,
+    "rateMass": 56.2,
+    "reached": false,
+    "reachS": null,
+    "collected": 92,
+    "total": 160,
+    "remaining": 58,
+    "spilled": 10,
+    "byRobot": {
+     "main": {
+      "n": 92,
+      "kg": 56.3
+     },
+     "left": {
+      "n": 0,
+      "kg": 0
+     },
+     "right": {
+      "n": 0,
+      "kg": 0
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 120.7,
+    "speedup": 4.97,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 12,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {
+    "left": {
+     "name": "UR10e",
+     "mode": 3,
+     "cycles": 8,
+     "lanes": 5,
+     "minOther": 441.46026421028955,
+     "status": "idle",
+     "label": "대형 로봇이 포트 안 작업 중 — 대기"
+    },
+    "right": {
+     "name": "UR10e",
+     "mode": 3,
+     "cycles": 8,
+     "lanes": 5,
+     "minOther": 148.80552155948914,
+     "status": "idle",
+     "label": "대형 로봇이 포트 안 작업 중 — 대기"
+    }
+   },
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     12.5,
+     12.91
+    ],
+    [
+     90,
+     28.13,
+     27.45
+    ],
+    [
+     120,
+     28.13,
+     27.45
+    ],
+    [
+     150,
+     41.25,
+     40.48
+    ],
+    [
+     180,
+     41.25,
+     40.48
+    ],
+    [
+     210,
+     49.38,
+     48.17
+    ],
+    [
+     240,
+     56.25,
+     54.85
+    ],
+    [
+     270,
+     56.25,
+     54.85
+    ],
+    [
+     300,
+     56.25,
+     54.85
+    ],
+    [
+     330,
+     56.25,
+     54.85
+    ],
+    [
+     360,
+     56.88,
+     55.49
+    ],
+    [
+     390,
+     56.88,
+     55.49
+    ],
+    [
+     420,
+     56.88,
+     55.49
+    ],
+    [
+     450,
+     56.88,
+     55.49
+    ],
+    [
+     480,
+     56.88,
+     55.49
+    ],
+    [
+     510,
+     57.5,
+     56.17
+    ],
+    [
+     540,
+     57.5,
+     56.17
+    ],
+    [
+     570,
+     57.5,
+     56.17
+    ],
+    [
+     600,
+     57.5,
+     56.17
+    ]
+   ]
+  },
+  {
+   "main": "kuka-kr210-r2700",
+   "config": "mode2",
+   "seed": 12,
+   "simS": 600,
+   "target": 80,
+   "laneDir": "robot",
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 51.9,
+    "rateMass": 57.1,
+    "reached": false,
+    "reachS": null,
+    "collected": 83,
+    "total": 160,
+    "remaining": 66,
+    "spilled": 9,
+    "byRobot": {
+     "main": {
+      "n": 83,
+      "kg": 51.5
+     },
+     "left": {
+      "n": 0,
+      "kg": 0
+     },
+     "right": {
+      "n": 0,
+      "kg": 0
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 121.7,
+    "speedup": 4.93,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 11,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {
+    "left": {
+     "name": "UR10e",
+     "mode": 2,
+     "cycles": 10,
+     "lanes": 5,
+     "minOther": 352.7481154487002,
+     "status": "idle",
+     "label": "밀어 줄 드로스가 없음 — 대기"
+    },
+    "right": {
+     "name": "UR10e",
+     "mode": 2,
+     "cycles": 10,
+     "lanes": 5,
+     "minOther": 397.98321602606995,
+     "status": "running",
+     "label": "날 하강"
+    }
+   },
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     14.38,
+     15.39
+    ],
+    [
+     90,
+     14.38,
+     15.39
+    ],
+    [
+     120,
+     32.5,
+     32.15
+    ],
+    [
+     150,
+     32.5,
+     32.15
+    ],
+    [
+     180,
+     45,
+     49.65
+    ],
+    [
+     210,
+     45,
+     49.65
+    ],
+    [
+     240,
+     49.38,
+     55.96
+    ],
+    [
+     270,
+     51.25,
+     56.65
+    ],
+    [
+     300,
+     51.25,
+     56.65
+    ],
+    [
+     330,
+     51.25,
+     56.65
+    ],
+    [
+     360,
+     51.25,
+     56.65
+    ],
+    [
+     390,
+     51.88,
+     57.12
+    ],
+    [
+     420,
+     51.88,
+     57.12
+    ],
+    [
+     450,
+     51.88,
+     57.12
+    ],
+    [
+     480,
+     51.88,
+     57.12
+    ],
+    [
+     510,
+     51.88,
+     57.12
+    ],
+    [
+     540,
+     51.88,
+     57.12
+    ],
+    [
+     570,
+     51.88,
+     57.12
+    ],
+    [
+     600,
+     51.88,
+     57.12
+    ]
+   ]
+  },
+  {
+   "main": "kuka-kr210-r2700",
+   "config": "push",
+   "seed": 12,
+   "simS": 600,
+   "target": 80,
+   "laneDir": "robot",
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 53.1,
+    "rateMass": 55.8,
+    "reached": false,
+    "reachS": null,
+    "collected": 85,
+    "total": 160,
+    "remaining": 65,
+    "spilled": 10,
+    "byRobot": {
+     "main": {
+      "n": 85,
+      "kg": 50.3
+     },
+     "left": {
+      "n": 0,
+      "kg": 0
+     },
+     "right": {
+      "n": 0,
+      "kg": 0
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 122.1,
+    "speedup": 4.92,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 11,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {
+    "left": {
+     "name": "UR10e",
+     "mode": 3,
+     "cycles": 7,
+     "lanes": 5,
+     "minOther": 148.80552155987425,
+     "status": "idle",
+     "label": "대형 로봇 곧 복귀 — 대기"
+    },
+    "right": {
+     "name": "UR10e",
+     "mode": 3,
+     "cycles": 10,
+     "lanes": 5,
+     "minOther": 369.85498734651526,
+     "status": "idle",
+     "label": "대형 로봇 곧 복귀 — 대기"
+    }
+   },
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     13.13,
+     13.83
+    ],
+    [
+     90,
+     13.13,
+     13.83
+    ],
+    [
+     120,
+     30,
+     28.59
+    ],
+    [
+     150,
+     30,
+     28.59
+    ],
+    [
+     180,
+     43.13,
+     45.43
+    ],
+    [
+     210,
+     50,
+     53.67
+    ],
+    [
+     240,
+     50,
+     53.67
+    ],
+    [
+     270,
+     52.5,
+     54.91
+    ],
+    [
+     300,
+     52.5,
+     54.91
+    ],
+    [
+     330,
+     52.5,
+     54.91
+    ],
+    [
+     360,
+     52.5,
+     54.91
+    ],
+    [
+     390,
+     52.5,
+     54.91
+    ],
+    [
+     420,
+     52.5,
+     54.91
+    ],
+    [
+     450,
+     52.5,
+     54.91
+    ],
+    [
+     480,
+     52.5,
+     54.91
+    ],
+    [
+     510,
+     52.5,
+     54.91
+    ],
+    [
+     540,
+     52.5,
+     54.91
+    ],
+    [
+     570,
+     53.13,
+     55.8
+    ],
+    [
+     600,
+     53.13,
+     55.8
+    ]
+   ]
+  }
+ ]
+}

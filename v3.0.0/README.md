@@ -100,16 +100,18 @@ Three.js(`three@0.160.0`)와 물리엔진 Rapier(`@dimforge/rapier3d-compat@0.21
    node tools/episode.mjs --config alone --seed 12  # 대형 단독
    # 옵션: --main <로봇 id> --left ur-ur10e:2 --right none --seed --count --simS --every 0.1 --out <파일>
    ```
-   결과는 `results/episodes/*.rsim.json.gz`(10분에 약 0.5 MB)입니다.
+   결과는 `results/<날짜>/<시각>_episode_<이름>/*.rsim.json.gz`(10분에 약 0.5 MB)입니다. 옵션 `--config push`(측면 모드 3), `--lane-dir robot|snout|alternate`(대형 쓸기 방향).
 2. 앱 오른쪽 패널 **에피소드 재생 → 에피소드 불러오기**에서 그 파일을 고릅니다.
 3. 3D 화면 아래 막대로 조작합니다: ⏮ 처음으로, ▶/⏸ 재생·일시정지(**Space**), 배속 0.25~20×, 시간 막대(앞뒤 이동).
    - 오른쪽 위에는 회수율(목표선), 대형 로봇 단계, 고른 로봇의 J1~J6 관절각이 나옵니다.
    - 패널에는 에피소드 정보·최종 결과·회수율 곡선이 나옵니다.
 4. **재생 종료**를 누르면 원래 장면으로 돌아옵니다. 재생 중에는 앱 시뮬레이션이 멈추고, 저장된 설정은 바뀌지 않습니다.
 
-기준선 표(규칙 경로 10분 회수율, 대형 4종 × 단독·모드 1·모드 2 × 시드 3개)는 `node tools/baseline.mjs` → `results/baseline/report.md`.
+기준선 표(규칙 경로 10분 회수율, 대형 4종 × 단독·모드 1·모드 2 × 시드 3개)는 `node tools/baseline.mjs` → `results/<날짜>/<시각>_baseline_<이름>/report.md`.
 
-> **AI 학습 구조를 그림으로 보려면** `docs/RoboSim_v3.0.0_AI학습_기술문서.docx`(계층형 B, 진화 탐색, PPO 절차, 결과, 파일 이름 규칙)를 엽니다. 결과 폴더 안내는 `results/README.md`.
+**결과·문서는 덮어쓰지 않습니다.** 실행할 때마다 `results/<날짜>/<시각>_<종류>_<이름>/` 폴더가 새로 생기고 `results/INDEX.md`에 한 줄씩 쌓입니다(`results/README.md`). 기술 문서도 `docs/<날짜>_<시각>_<제목>/`에 새로 만듭니다(`docs/README.md`).
+
+> **AI 학습 구조를 그림으로 보려면** `docs/2026-11-06_0845_AI학습_기술문서/RoboSim_v3.0.0_AI학습_기술문서.docx`(계층형 B, 진화 탐색, PPO 절차, 결과, 파일 이름 규칙)를 엽니다. 결과 폴더 안내는 `results/README.md`.
 
 ### 학습 (Trial & Error) (v3.0.0)
 스쿱의 열린 면 방향(J6), 쓸어 가는 방향, 시작 위치, 스윕 중 회전, 기울임, 깊이, 속도를 바꿔 가며 시도합니다. 내가 정한 점수 규칙으로 가장 좋은 스트로크만 실행합니다(진화 탐색. 강화학습 PPO는 다음 단계).
@@ -126,17 +128,26 @@ Three.js(`three@0.160.0`)와 물리엔진 Rapier(`@dimforge/rapier3d-compat@0.21
    node tools/train.mjs --lab robosim-lab-*.json          # 또는
    node tools/train.mjs --config alone --seed 11 --population 32 --iterations 4 --workers 14
    ```
-   결과는 `results/cem/<로봇>-<구성>-s<시드>/`(예: `results/cem/kr210-alone-s11/`)에 `report.md`(규칙 경로와 비교), `cem-alone-s11.rsim.json.gz`·`rule-alone-s11.rsim.json.gz`(3D 재생 파일), `log.json`(모든 시도)으로 남습니다.
+   결과는 `results/<날짜>/<시각>_cem_<로봇>-<구성>-s<시드>/`(예: `results/2026-11-05/1552_cem_kr210-alone-s11/`)에 `report.md`(규칙 경로와 비교), `cem-alone-s11.rsim.json.gz`·`rule-alone-s11.rsim.json.gz`(3D 재생 파일), `log.json`(모든 시도)으로 남습니다.
 
 ### PPO 강화학습 (v3.0.0)
 진화 탐색은 매번 시뮬레이터로 시도해야 해서 실제 로봇에 그대로 쓸 수 없습니다. PPO는 미리 연습해 **드로스 분포만 보고 바로 스트로크를 고르는 정책(신경망)**을 만듭니다.
 ```bash
-node tools/ppo-train.mjs --iterations 40 --bc 3 --workers 14 --out results/ppo/kr210-run2   # 학습 (이 PC 약 2시간)
-node tools/ppo-eval.mjs --policy results/ppo/kr210-run2/policy-best.json --config mode1    # 10분 과제 정책 vs 규칙 + 3D 재생 파일
+node tools/ppo-train.mjs --iterations 40 --bc 3 --workers 14 --name run2    # 학습 (이 PC 약 2시간) → results/<날짜>/<시각>_ppo-train_kr210-run2/
+node tools/ppo-eval.mjs --policy results/2026-11-05/1814_ppo-train_kr210-run1/policy-best.json --config push   # 10분 과제 정책 vs 규칙 + 3D 재생 파일 (새 폴더)
 ```
 결과 폴더: `policy-best.json`(최종 채택 정책), `policy-last.json`(마지막 반복), `checkpoints/iter-NNN.json`(5회마다 중간 정책), `train-report.md`·`train-curve.json`(학습 기록), `cell-eval-<구성>.md`(전체 셀 평가).
 앱에서는 **학습 (Trial & Error) → 정책 불러오기 (PPO)** 로 `policy-best.json`을 고르고 방법 '학습된 정책 실행'으로 ▶ 학습 시작 → 결과 3D 재생.
-첫 결과(KR 210 단독 10분): 정책 평균 65.6%, 규칙 경로 61.3% (`results/ppo/kr210-run1/cell-eval-alone.md`).
+첫 결과(KR 210 단독 10분): 정책 평균 65.6%, 규칙 경로 61.3% (`results/2026-11-06/0836_ppo-eval_kr210-run1-alone/cell-eval-alone.md`).
+
+### 측면 로봇 밀어 주기·대형 쓸기 방향 (v3.0.0, 2026-11-06 [A] 단계)
+- **측면 모드 3 '타이밍 밀기'**: 측면 로봇은 회수하지 않고 벽 쪽 드로스를 가운데로 밀기만 합니다. 대형 로봇이 박스에 다녀오는 동안, 돌아오기 전에 끝낼 수 있을 때만 밉니다. 셀 구성 이름 `push`.
+- **대형 쓸기 방향**: `robot`(기존, 열린 면이 로봇을 봄) · `snout`(열린 면이 스나우트를 봄, 들어 올린 뒤 물러나 천천히 돌려 운반) · `alternate`(번갈아). 측면 로봇이 없는 셀에서만 적용됩니다.
+- 10분 결과(KR 210, 시드 3개): 단독 기존 61.3% → **번갈아 72.9%**, 측면 2대 잠금 밀기 53.3% → **타이밍 밀기 57.5%**. 보고서 `docs/2026-11-06_1040_A단계_밀어주기_쓸기방향/`.
+```bash
+node tools/baseline.mjs --mains kuka-kr210-r2700 --configs alone --lane-dir robot,snout,alternate
+node tools/baseline.mjs --mains kuka-kr210-r2700 --configs mode2,push
+```
 
 ### 단축키
 - `Space`: 재생/일시정지 (계획 경로 시작 자세면 경로 실행, 아니면 Waypoint 재생)
@@ -216,16 +227,17 @@ js/telemetry-panel.js  실시간 계측 패널(각도·속도·전류·토크 �
 js/cell-robot.js       측면 로봇(CellRobot: 슬롯 좌표·대기 자세·레인·계획·실행·양보)·조정기(CellCoordinator: 모드 2 잠금) (DOM 비의존, v1.1.1)
 js/task-eval.js        (v3.0.0) 작업 설정(목표 회수율·제한 시간·AI 로봇·셀) 검증과 회수율 평가기 (DOM 비의존)
 js/cell-sim.js         (v3.0.0) 헤드리스 셀 시뮬레이터 runEpisode: 측면 → 대형(규칙 | 정책 Δq 20 Hz) → 물리, 규칙 재생 컨트롤러 (DOM 비의존)
-tools/baseline.mjs     (v3.0.0) 규칙 경로 기준선 측정(대형 × 셀 구성 × 시드, 병렬) → results/baseline/
+tools/baseline.mjs     (v3.0.0) 규칙 경로 기준선 측정(대형 × 셀 구성 × 쓸기 방향 × 시드, 병렬) → results/<날짜>/<시각>_baseline_<이름>/
 js/replay.js           (v3.0.0) 에피소드 기록·형식(robosim-episode/1)·재생기 (DOM 비의존), js/replay-panel.js = 재생 패널·3D 재생 막대
 tools/episode.mjs      (v3.0.0) 헤드리스 1회 실행 → 3D 재생 파일(.rsim.json.gz)
 js/stroke-lab.js       (v3.0.0) 학습(Trial & Error): 스트로크 변수·점수 규칙·후보 평가(evaluateStroke)·진화 탐색(CEM)·runLab (DOM 비의존)
 js/lab-panel.js        (v3.0.0) 학습 설정 창, js/lab.worker.js(학습 실행 Worker)·js/lab-eval.worker.js(후보 평가 Worker)
-tools/train.mjs        (v3.0.0) 헤드리스 학습(worker_threads 병렬, tools/lab-worker.mjs) → results/cem/<로봇>-<구성>-s<시드>/
+tools/train.mjs        (v3.0.0) 헤드리스 학습(worker_threads 병렬, tools/lab-worker.mjs) → results/<날짜>/<시각>_cem_<로봇>-<구성>-s<시드>/
 js/ppo.js              (v3.0.0) PPO 강화학습 코어(순수 JS MLP·Adam·PPO·GAE·모방·정책 저장) (DOM 비의존)
 tools/ppo-train.mjs    (v3.0.0) PPO 학습(tools/ppo-worker.mjs 병렬 롤아웃), tools/ppo-eval.mjs = 정책 10분 과제 평가
 tools/lib/policy-eval.mjs (v3.0.0) 정책 vs 규칙 전체 셀 평가 공용(ppo-train·ppo-eval)
-docs/                  (v3.0.0) AI 학습 구조 기술 문서(.docx)·그림, docs/build/ = 그림·문서 생성 스크립트(Python)
+tools/lib/run-dir.mjs  (v3.0.0) 실행 기록 폴더(날짜·시각) + run.json + results/INDEX.md
+docs/                  (v3.0.0) 기술 문서(.docx), docs/<날짜>_<시각>_<제목>/{docx, images/, build/}, 목록 docs/README.md
 tests/                 Node 검증 스크립트 (run-all.mjs로 일괄 실행, physics.mjs는 첫 실행 시 Rapier를 tests/.cache/에 받음)
 ```
 

@@ -1,5 +1,5 @@
 // 학습된 PPO 정책 평가 — 10분 과제(전체 셀 시뮬레이터)에서 정책 vs 규칙 경로, 3D 재생 파일 저장
-// 실행: node tools/ppo-eval.mjs --policy results/ppo/<이름>/policy-best.json [--seeds 11,12,13] [--config alone|mode1|mode2] [--out <폴더>]
+// 실행: node tools/ppo-eval.mjs --policy results/<날짜>/<시각>_ppo-train_<이름>/policy-best.json [--seeds 11,12,13] [--config alone|mode1|mode2|push] [--out <폴더>]
 // 결과: results/<날짜>/<시각>_ppo-eval_<정책 폴더>-<구성>/ — cell-eval-<구성>.md (표), ppo-·rule-<구성>-s<시드>.rsim.json.gz (3D 재생), run.json
 //   (이전 결과를 덮어쓰지 않는다. 이름 규칙은 results/README.md)
 import { readFileSync } from 'node:fs';

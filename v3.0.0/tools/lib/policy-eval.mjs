@@ -9,7 +9,7 @@ export const CONFIG_LABEL = {
   alone: '대형 단독',
   mode1: '대형 + 측면 2대 (모드 1: 측면 로봇이 각자 박스에 담음)',
   mode2: '대형 + 측면 2대 (모드 2: 측면 로봇이 대형 레인으로 밀어 줌, 포트 점유 잠금)',
-  push: '대형 + 측면 2대 (모드 3: 동시 밀기 — 측면은 가운데로 밀기만, 대형만 회수)',
+  push: '대형 + 측면 2대 (모드 3: 타이밍 밀기 — 대형이 나가 있는 동안만 밀기, 대형만 회수)',
 };
 export const sideOf = (v) => (v ? { robotId: v.split(':')[0], mode: [2, 3].includes(Number(v.split(':')[1])) ? Number(v.split(':')[1]) : 1 } : { robotId: null, mode: 1 });
 

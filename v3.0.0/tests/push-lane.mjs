@@ -32,17 +32,20 @@ const check = (name, ok, detail = '') => {
 // ---- 2. 모드 3 구역 분리 ----
 {
   const sides = { left: { robotId: 'ur-ur10e', mode: 3 }, right: { robotId: 'ur-ur10e', mode: 3 } };
-  const r = D.mainLaneRange(G.SKIMMER_SPEC, sides);
-  check('모드 3: 대형 스쿱 중심 |Y| ≤ PUSH_ASSIST.mainCenterMaxMm', r.yHi === D.PUSH_ASSIST.mainCenterMaxMm && r.yLo === -D.PUSH_ASSIST.mainCenterMaxMm, JSON.stringify(r));
-  check('모드 2: 대형 구역 제한 없음(기존과 같음)', D.mainLaneRange(G.SKIMMER_SPEC, { left: { robotId: 'ur-ur10e', mode: 2 } }).yHi === Infinity);
+  check('모드 3: 대형 레인 전체 폭 (시간으로 나눔)', D.mainLaneRange(G.SKIMMER_SPEC, sides).yHi === Infinity);
   const fx = D.drossFixtures(sides);
   const cr = new CR.CellRobot('left', robots.find((x) => x.id === 'ur-ur10e'), 3, { thresholds: TE.TASK_THRESHOLDS, obstaclesWorld: fx });
-  const ends = cr.lanes.map((l) => Math.abs(l.endW[1]));
-  check('모드 3: 측면 밀기 레인이 대형 구역 경계 근처(pushToMm)까지', cr.lanes.length > 0 && ends.every((y) => y >= D.PUSH_ASSIST.pushToMm - 1 && y < 520), `레인 ${cr.lanes.length}, 끝 |y| ${ends.join(',')}`);
+  check('모드 3: 측면 밀기 레인 있음 (밀대)', cr.lanes.length > 0 && cr.spec.bladeWMm > 0, `레인 ${cr.lanes.length}`);
   const co = new CR.CellCoordinator();
   co.robots.set('left', cr);
   cr.status = 'running';
-  check('모드 3: 포트 점유 잠금 없음 (sideInPot = false)', co.sideInPot() === false);
+  check('모드 3: 측면이 포트 안이면 대형은 기다림 (sideInPot)', co.sideInPot() === true);
+  cr.status = 'idle';
+  co.main = { wantsPot: false, etaS: 3 };
+  co.active = true;
+  cr.budget = 1;
+  co.tick(1 / 60, { mainSegments: [], particles: () => ({ n: 0, buf: new Float64Array(0) }), obstaclesWorld: () => fx });
+  check('모드 3: 대형 복귀까지 6 s 미만이면 밀기 시작 안 함', !co.planning.size && /곧 복귀/.test(cr.label), cr.label);
 }
 
 // ---- 3. 스나우트 쪽 쓸기 사이클 ----

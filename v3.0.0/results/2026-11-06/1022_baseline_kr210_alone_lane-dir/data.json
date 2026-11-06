@@ -1,0 +1,1346 @@
+{
+ "simS": 600,
+ "target": 80,
+ "seeds": [
+  11,
+  12,
+  13
+ ],
+ "mains": [
+  "kuka-kr210-r2700"
+ ],
+ "configs": [
+  "alone"
+ ],
+ "laneDirs": [
+  "robot",
+  "snout",
+  "alternate"
+ ],
+ "elapsedS": 125.606,
+ "results": [
+  {
+   "main": "kuka-kr210-r2700",
+   "config": "alone",
+   "seed": 13,
+   "simS": 600,
+   "target": 80,
+   "laneDir": "robot",
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 65,
+    "rateMass": 63.2,
+    "reached": false,
+    "reachS": null,
+    "collected": 104,
+    "total": 160,
+    "remaining": 51,
+    "spilled": 3,
+    "byRobot": {
+     "main": {
+      "n": 104,
+      "kg": 63.4
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 97.2,
+    "speedup": 6.17,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 13,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {},
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     11.88,
+     13.41
+    ],
+    [
+     60,
+     11.88,
+     13.41
+    ],
+    [
+     90,
+     28.13,
+     27.58
+    ],
+    [
+     120,
+     28.13,
+     27.58
+    ],
+    [
+     150,
+     40,
+     37.91
+    ],
+    [
+     180,
+     50,
+     45.83
+    ],
+    [
+     210,
+     56.25,
+     52.39
+    ],
+    [
+     240,
+     56.25,
+     52.39
+    ],
+    [
+     270,
+     60,
+     57.06
+    ],
+    [
+     300,
+     60.63,
+     57.26
+    ],
+    [
+     330,
+     60.63,
+     57.26
+    ],
+    [
+     360,
+     61.88,
+     58.94
+    ],
+    [
+     390,
+     63.13,
+     60.83
+    ],
+    [
+     420,
+     63.13,
+     60.83
+    ],
+    [
+     450,
+     64.38,
+     62.23
+    ],
+    [
+     480,
+     65,
+     63.19
+    ],
+    [
+     510,
+     65,
+     63.19
+    ],
+    [
+     540,
+     65,
+     63.19
+    ],
+    [
+     570,
+     65,
+     63.19
+    ],
+    [
+     600,
+     65,
+     63.19
+    ]
+   ]
+  },
+  {
+   "main": "kuka-kr210-r2700",
+   "config": "alone",
+   "seed": 11,
+   "simS": 600,
+   "target": 80,
+   "laneDir": "robot",
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 61.9,
+    "rateMass": 61.4,
+    "reached": false,
+    "reachS": null,
+    "collected": 99,
+    "total": 160,
+    "remaining": 59,
+    "spilled": 2,
+    "byRobot": {
+     "main": {
+      "n": 99,
+      "kg": 61.6
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 103,
+    "speedup": 5.83,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 15,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {},
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     13.13,
+     13.31
+    ],
+    [
+     60,
+     13.13,
+     13.31
+    ],
+    [
+     90,
+     27.5,
+     28.75
+    ],
+    [
+     120,
+     40,
+     40.28
+    ],
+    [
+     150,
+     40,
+     40.28
+    ],
+    [
+     180,
+     46.88,
+     45.66
+    ],
+    [
+     210,
+     51.88,
+     49.24
+    ],
+    [
+     240,
+     53.75,
+     51.94
+    ],
+    [
+     270,
+     53.75,
+     51.94
+    ],
+    [
+     300,
+     55.63,
+     54.18
+    ],
+    [
+     330,
+     60,
+     58.86
+    ],
+    [
+     360,
+     60,
+     58.86
+    ],
+    [
+     390,
+     60,
+     58.86
+    ],
+    [
+     420,
+     60,
+     58.86
+    ],
+    [
+     450,
+     60,
+     58.86
+    ],
+    [
+     480,
+     60,
+     58.86
+    ],
+    [
+     510,
+     60.63,
+     59.5
+    ],
+    [
+     540,
+     60.63,
+     59.5
+    ],
+    [
+     570,
+     61.88,
+     61.41
+    ],
+    [
+     600,
+     61.88,
+     61.41
+    ]
+   ]
+  },
+  {
+   "main": "kuka-kr210-r2700",
+   "config": "alone",
+   "seed": 13,
+   "simS": 600,
+   "target": 80,
+   "laneDir": "alternate",
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 74.4,
+    "rateMass": 73.9,
+    "reached": false,
+    "reachS": null,
+    "collected": 119,
+    "total": 160,
+    "remaining": 36,
+    "spilled": 4,
+    "byRobot": {
+     "main": {
+      "n": 119,
+      "kg": 74.1
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 103.5,
+    "speedup": 5.8,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 12,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {},
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     11.88,
+     13.41
+    ],
+    [
+     60,
+     11.88,
+     13.41
+    ],
+    [
+     90,
+     26.88,
+     29.47
+    ],
+    [
+     120,
+     26.88,
+     29.47
+    ],
+    [
+     150,
+     38.75,
+     39.81
+    ],
+    [
+     180,
+     45,
+     45.16
+    ],
+    [
+     210,
+     45,
+     45.16
+    ],
+    [
+     240,
+     52.5,
+     52.08
+    ],
+    [
+     270,
+     52.5,
+     52.08
+    ],
+    [
+     300,
+     53.13,
+     52.41
+    ],
+    [
+     330,
+     59.38,
+     58.14
+    ],
+    [
+     360,
+     59.38,
+     58.14
+    ],
+    [
+     390,
+     63.75,
+     62.82
+    ],
+    [
+     420,
+     67.5,
+     65.36
+    ],
+    [
+     450,
+     67.5,
+     65.36
+    ],
+    [
+     480,
+     70.63,
+     69.08
+    ],
+    [
+     510,
+     70.63,
+     69.08
+    ],
+    [
+     540,
+     71.25,
+     70.28
+    ],
+    [
+     570,
+     74.38,
+     73.87
+    ],
+    [
+     600,
+     74.38,
+     73.87
+    ]
+   ]
+  },
+  {
+   "main": "kuka-kr210-r2700",
+   "config": "alone",
+   "seed": 12,
+   "simS": 600,
+   "target": 80,
+   "laneDir": "robot",
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 56.9,
+    "rateMass": 58.3,
+    "reached": false,
+    "reachS": null,
+    "collected": 91,
+    "total": 160,
+    "remaining": 63,
+    "spilled": 5,
+    "byRobot": {
+     "main": {
+      "n": 91,
+      "kg": 52.5
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 105.5,
+    "speedup": 5.69,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 14,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {},
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     12.5,
+     13.14
+    ],
+    [
+     90,
+     27.5,
+     25.57
+    ],
+    [
+     120,
+     35,
+     33.11
+    ],
+    [
+     150,
+     35,
+     33.11
+    ],
+    [
+     180,
+     43.13,
+     41.1
+    ],
+    [
+     210,
+     48.75,
+     48.01
+    ],
+    [
+     240,
+     50.63,
+     51.52
+    ],
+    [
+     270,
+     50.63,
+     51.52
+    ],
+    [
+     300,
+     54.38,
+     54.6
+    ],
+    [
+     330,
+     55,
+     55.73
+    ],
+    [
+     360,
+     55.63,
+     56.11
+    ],
+    [
+     390,
+     55.63,
+     56.11
+    ],
+    [
+     420,
+     56.88,
+     58.3
+    ],
+    [
+     450,
+     56.88,
+     58.3
+    ],
+    [
+     480,
+     56.88,
+     58.3
+    ],
+    [
+     510,
+     56.88,
+     58.3
+    ],
+    [
+     540,
+     56.88,
+     58.3
+    ],
+    [
+     570,
+     56.88,
+     58.3
+    ],
+    [
+     600,
+     56.88,
+     58.3
+    ]
+   ]
+  },
+  {
+   "main": "kuka-kr210-r2700",
+   "config": "alone",
+   "seed": 12,
+   "simS": 600,
+   "target": 80,
+   "laneDir": "alternate",
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 66.3,
+    "rateMass": 69.8,
+    "reached": false,
+    "reachS": null,
+    "collected": 106,
+    "total": 160,
+    "remaining": 42,
+    "spilled": 6,
+    "byRobot": {
+     "main": {
+      "n": 106,
+      "kg": 62.9
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 107.8,
+    "speedup": 5.56,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 12,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {},
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     12.5,
+     13.14
+    ],
+    [
+     90,
+     25.63,
+     26.38
+    ],
+    [
+     120,
+     27.5,
+     27.46
+    ],
+    [
+     150,
+     35.63,
+     36.15
+    ],
+    [
+     180,
+     35.63,
+     36.15
+    ],
+    [
+     210,
+     45,
+     45.03
+    ],
+    [
+     240,
+     51.25,
+     54.48
+    ],
+    [
+     270,
+     51.25,
+     54.48
+    ],
+    [
+     300,
+     54.38,
+     57.84
+    ],
+    [
+     330,
+     55,
+     58.97
+    ],
+    [
+     360,
+     55,
+     58.97
+    ],
+    [
+     390,
+     60,
+     63.47
+    ],
+    [
+     420,
+     60.63,
+     64.47
+    ],
+    [
+     450,
+     65.63,
+     68.79
+    ],
+    [
+     480,
+     65.63,
+     68.79
+    ],
+    [
+     510,
+     65.63,
+     68.79
+    ],
+    [
+     540,
+     66.25,
+     69.78
+    ],
+    [
+     570,
+     66.25,
+     69.78
+    ],
+    [
+     600,
+     66.25,
+     69.78
+    ]
+   ]
+  },
+  {
+   "main": "kuka-kr210-r2700",
+   "config": "alone",
+   "seed": 11,
+   "simS": 600,
+   "target": 80,
+   "laneDir": "alternate",
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 78.1,
+    "rateMass": 78.5,
+    "reached": false,
+    "reachS": null,
+    "collected": 125,
+    "total": 160,
+    "remaining": 27,
+    "spilled": 2,
+    "byRobot": {
+     "main": {
+      "n": 125,
+      "kg": 78.7
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 113.4,
+    "speedup": 5.29,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 12,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {},
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     13.13,
+     13.31
+    ],
+    [
+     60,
+     13.13,
+     13.31
+    ],
+    [
+     90,
+     26.25,
+     26.76
+    ],
+    [
+     120,
+     26.25,
+     26.76
+    ],
+    [
+     150,
+     38.75,
+     38.28
+    ],
+    [
+     180,
+     45.63,
+     45.37
+    ],
+    [
+     210,
+     45.63,
+     45.37
+    ],
+    [
+     240,
+     50.63,
+     48.95
+    ],
+    [
+     270,
+     50.63,
+     48.95
+    ],
+    [
+     300,
+     53.75,
+     52.31
+    ],
+    [
+     330,
+     55.63,
+     55
+    ],
+    [
+     360,
+     55.63,
+     55
+    ],
+    [
+     390,
+     56.25,
+     56.18
+    ],
+    [
+     420,
+     56.25,
+     56.18
+    ],
+    [
+     450,
+     63.75,
+     66.36
+    ],
+    [
+     480,
+     70.63,
+     73.02
+    ],
+    [
+     510,
+     70.63,
+     73.02
+    ],
+    [
+     540,
+     75,
+     75.52
+    ],
+    [
+     570,
+     78.13,
+     78.5
+    ],
+    [
+     600,
+     78.13,
+     78.5
+    ]
+   ]
+  },
+  {
+   "main": "kuka-kr210-r2700",
+   "config": "alone",
+   "seed": 12,
+   "simS": 600,
+   "target": 80,
+   "laneDir": "snout",
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 52.5,
+    "rateMass": 51.8,
+    "reached": false,
+    "reachS": null,
+    "collected": 84,
+    "total": 160,
+    "remaining": 76,
+    "spilled": 0,
+    "byRobot": {
+     "main": {
+      "n": 84,
+      "kg": 46.7
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 120.3,
+    "speedup": 4.99,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 10,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {},
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     13.75,
+     13.57
+    ],
+    [
+     90,
+     13.75,
+     13.57
+    ],
+    [
+     120,
+     28.75,
+     27.88
+    ],
+    [
+     150,
+     36.25,
+     35.92
+    ],
+    [
+     180,
+     36.25,
+     35.92
+    ],
+    [
+     210,
+     45.63,
+     44.79
+    ],
+    [
+     240,
+     45.63,
+     44.79
+    ],
+    [
+     270,
+     45.63,
+     44.79
+    ],
+    [
+     300,
+     45.63,
+     44.79
+    ],
+    [
+     330,
+     49.38,
+     48.67
+    ],
+    [
+     360,
+     49.38,
+     48.67
+    ],
+    [
+     390,
+     50,
+     49.21
+    ],
+    [
+     420,
+     50,
+     49.21
+    ],
+    [
+     450,
+     52.5,
+     51.83
+    ],
+    [
+     480,
+     52.5,
+     51.83
+    ],
+    [
+     510,
+     52.5,
+     51.83
+    ],
+    [
+     540,
+     52.5,
+     51.83
+    ],
+    [
+     570,
+     52.5,
+     51.83
+    ],
+    [
+     600,
+     52.5,
+     51.83
+    ]
+   ]
+  },
+  {
+   "main": "kuka-kr210-r2700",
+   "config": "alone",
+   "seed": 11,
+   "simS": 600,
+   "target": 80,
+   "laneDir": "snout",
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 52.5,
+    "rateMass": 50.8,
+    "reached": false,
+    "reachS": null,
+    "collected": 84,
+    "total": 160,
+    "remaining": 75,
+    "spilled": 1,
+    "byRobot": {
+     "main": {
+      "n": 84,
+      "kg": 51
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 123.6,
+    "speedup": 4.85,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 10,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {},
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     14.38,
+     14.77
+    ],
+    [
+     90,
+     14.38,
+     14.77
+    ],
+    [
+     120,
+     27.5,
+     28.23
+    ],
+    [
+     150,
+     27.5,
+     28.23
+    ],
+    [
+     180,
+     36.88,
+     35.8
+    ],
+    [
+     210,
+     36.88,
+     35.8
+    ],
+    [
+     240,
+     43.13,
+     41.87
+    ],
+    [
+     270,
+     45.63,
+     44.15
+    ],
+    [
+     300,
+     46.25,
+     45.23
+    ],
+    [
+     330,
+     46.25,
+     45.23
+    ],
+    [
+     360,
+     46.25,
+     45.23
+    ],
+    [
+     390,
+     50.63,
+     48.65
+    ],
+    [
+     420,
+     50.63,
+     48.65
+    ],
+    [
+     450,
+     50.63,
+     48.65
+    ],
+    [
+     480,
+     50.63,
+     48.65
+    ],
+    [
+     510,
+     50.63,
+     48.65
+    ],
+    [
+     540,
+     50.63,
+     48.65
+    ],
+    [
+     570,
+     52.5,
+     50.8
+    ],
+    [
+     600,
+     52.5,
+     50.8
+    ]
+   ]
+  },
+  {
+   "main": "kuka-kr210-r2700",
+   "config": "alone",
+   "seed": 13,
+   "simS": 600,
+   "target": 80,
+   "laneDir": "snout",
+   "summary": {
+    "targetRatePct": 80,
+    "timeLimitS": 600,
+    "rateCount": 48.1,
+    "rateMass": 50.1,
+    "reached": false,
+    "reachS": null,
+    "collected": 77,
+    "total": 160,
+    "remaining": 83,
+    "spilled": 0,
+    "byRobot": {
+     "main": {
+      "n": 77,
+      "kg": 50.3
+     }
+    },
+    "aiSlot": "main",
+    "aiShareCount": 100,
+    "simS": 600,
+    "wallS": 124.4,
+    "speedup": 4.82,
+    "mainControl": "rule",
+    "mainGaveUp": false,
+    "mainCycles": 11,
+    "mainBlocked": 0,
+    "sideBlocked": 0,
+    "lockViolations": 0,
+    "planFail": 0
+   },
+   "side": {},
+   "firstFail": null,
+   "history": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     30,
+     0,
+     0
+    ],
+    [
+     60,
+     13.13,
+     14.81
+    ],
+    [
+     90,
+     13.13,
+     14.81
+    ],
+    [
+     120,
+     28.13,
+     30.88
+    ],
+    [
+     150,
+     28.13,
+     30.88
+    ],
+    [
+     180,
+     35,
+     37.46
+    ],
+    [
+     210,
+     40.63,
+     43.32
+    ],
+    [
+     240,
+     40.63,
+     43.32
+    ],
+    [
+     270,
+     46.88,
+     48.38
+    ],
+    [
+     300,
+     46.88,
+     48.38
+    ],
+    [
+     330,
+     47.5,
+     48.71
+    ],
+    [
+     360,
+     47.5,
+     48.71
+    ],
+    [
+     390,
+     47.5,
+     48.71
+    ],
+    [
+     420,
+     47.5,
+     48.71
+    ],
+    [
+     450,
+     48.13,
+     50.09
+    ],
+    [
+     480,
+     48.13,
+     50.09
+    ],
+    [
+     510,
+     48.13,
+     50.09
+    ],
+    [
+     540,
+     48.13,
+     50.09
+    ],
+    [
+     570,
+     48.13,
+     50.09
+    ],
+    [
+     600,
+     48.13,
+     50.09
+    ]
+   ]
+  }
+ ]
+}

@@ -13,3 +13,6 @@
 | 2026-11-06 | 08:36 | ppo-eval | `2026-11-06/0836_ppo-eval_kr210-run1-alone` | alone: PPO 65.6% vs 규칙 61.3% |
 | 2026-11-06 | 08:42 | ppo-eval | `2026-11-06/0842_ppo-eval_kr210-run1-mode1` | mode1: PPO 34.6% vs 규칙 37.1% |
 | 2026-11-06 | 09:36 | ppo-eval | `2026-11-06/0936_ppo-eval_kr210-run1-mode2` | mode2: PPO 56.7% vs 규칙 53.3% |
+| 2026-11-06 | 09:52 | baseline | `2026-11-06/0952_baseline_kr210_push-test_lane-dir` | KR alone robot 61.3% · KR alone snout 51.5% · KR alone alternate 72.5% · KR mode2 robot 53.3% · KR mode2 snout 0.0% · KR mode2 alternate 48.1% · KR push robot 33.8% · KR push snout 15.8% · KR push alternate 36.1% ※ 모드 3 첫 설계(구역 분리 동시 작업) — 교착으로 폐기, 1022에서 다시 잼 |
+| 2026-11-06 | 10:22 | baseline | `2026-11-06/1022_baseline_kr210_mode2-vs-push` | KR mode2 robot 53.3% · KR push robot 57.5% |
+| 2026-11-06 | 10:22 | baseline | `2026-11-06/1022_baseline_kr210_alone_lane-dir` | KR alone robot 61.3% · KR alone snout 51.0% · KR alone alternate 72.9% |

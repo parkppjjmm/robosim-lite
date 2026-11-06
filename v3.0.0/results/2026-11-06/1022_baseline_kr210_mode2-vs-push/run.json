@@ -1,0 +1,28 @@
+{
+ "kind": "baseline",
+ "name": "kr210_mode2-vs-push",
+ "folder": "results/2026-11-06/1022_baseline_kr210_mode2-vs-push",
+ "startedLocal": "2026-11-06 10:22",
+ "started": "2026-11-06T01:22:24.047Z",
+ "finished": "2026-11-06T01:24:28.273Z",
+ "command": "node tools/baseline.mjs --mains kuka-kr210-r2700 --configs mode2,push --workers 6 --name kr210_mode2-vs-push",
+ "git": "d1708ee (+수정)",
+ "node": "v26.13.0",
+ "summary": "KR mode2 robot 53.3% · KR push robot 57.5%",
+ "simS": 600,
+ "seeds": [
+  11,
+  12,
+  13
+ ],
+ "mains": [
+  "kuka-kr210-r2700"
+ ],
+ "configs": [
+  "mode2",
+  "push"
+ ],
+ "laneDirs": [
+  "robot"
+ ]
+}

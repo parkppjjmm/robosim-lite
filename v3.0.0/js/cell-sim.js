@@ -40,7 +40,7 @@ export class RuleMainDriver {
     Object.assign(this, { robot, spec, fixtures, world, coord, thresholds, task, deterministic, chooser });
     this.sim = null; // runEpisode가 채움 (chooser에 넘김)
     this.evaluator = null;
-    this.anyMode2 = [...coord.robots.values()].some((r) => r.mode === 2);
+    this.anyMode2 = [...coord.robots.values()].some((r) => r.mode >= 2); // 모드 2·3: 포트 점유 잠금
     this.lanes = skimLanes(spec, thresholds.obstacleMarginMm, mainLaneRange(spec, sides));
     // 쓸기 방향 (v3.0.0, 2026-11-06 사용자 제안): 'robot' = 스나우트 쪽에서 로봇 쪽으로(열린 면이 로봇을 봄, v1.1.2 기본)
     //   'snout' = 로봇 쪽에서 스나우트 쪽으로(열린 면이 스나우트를 봄 → 스나우트 앞 드로스를 끝까지 밀어 담음), 'alternate' = 번갈아
@@ -72,6 +72,13 @@ export class RuleMainDriver {
       return;
     }
     if (this.anyMode2) this.coord.main.wantsPot = true;
+    this.coord.main.etaS = 0;
+    // 모드 2·3: 측면 로봇이 아직 포트에 있으면 나간 뒤(대기 자세)에 계획한다 — 그래야 대기 자세를 장애물로 넣은 경로가 된다
+    if (this.anyMode2 && this.coord.sideInPot()) {
+      this.waitingSide = true;
+      return;
+    }
+    this.waitingSide = false;
     let pick, stroke = null, immersionMm = this.task.dross.immersionMm, sweepMmS = this.task.dross.sweepMmS;
     if (this.chooser) {
       // v3.0.0 학습: 외부 선택기(탐색·정책)가 다음 스트로크를 정한다 (기다리는 동안 시뮬레이션 시간은 멈춰 있음)
@@ -88,7 +95,9 @@ export class RuleMainDriver {
       sweepMmS = c.sweepMmS ?? sweepMmS;
     } else {
       pick = chooseLane(lanes, this.world.particleState(), this.spec, this.lastLane);
-      const toSnout = this.laneDir === 'snout' || (this.laneDir === 'alternate' && this.dirFlip);
+      // 측면 로봇이 있는 셀에서는 규칙 경로의 스나우트 쪽 쓸기가 측면 로봇과 19 mm까지 가까워져 안전 게이트에 막힌다(2026-11-06 측정,
+      // 가운데 레인만 써도 같음) → 규칙 경로는 대형 단독 셀에서만 적용. 측면 로봇 셀의 반대 방향 운반은 학습 단계(충돌 검사된 후보만 채택)에서 다룬다.
+      const toSnout = (this.laneDir === 'snout' || (this.laneDir === 'alternate' && this.dirFlip)) && !this.coord.robots.size;
       if (pick && toSnout) pick = { ...pick, lane: { ...pick.lane, start: [pick.lane.xe, pick.lane.y], end: [pick.lane.xs, pick.lane.y] } };
     }
     if (!pick || pick.count < 1) {
@@ -98,8 +107,30 @@ export class RuleMainDriver {
     }
     this.empty = false;
     const { robot, thresholds, fixtures } = this;
+    // 대기 중인 측면 로봇 팔(현재 자세)을 상자 장애물로 계획에 넣는다 (v3.0.0: 스나우트 쪽 쓸기의 레인 접근 경로가
+    // 대기 자세의 측면 로봇과 19 mm까지 가까워져 안전 게이트에 막힌 문제). 움직이는 중인 측면 로봇은 넣지 않는다(실행 중 양보 규칙).
+    const sideObs = [];
+    for (const r of this.coord.robots.values()) {
+      if (r.run) continue;
+      // 링크 캡슐 + 툴(밀대·스쿱) 상자 — 툴을 빼면 대형 스쿱이 아래로 매달린 밀대에 닿는다
+      [...r.worldSegments(), ...r.physicsShapes().filter((sg) => sg.box)].forEach((sg, k) => {
+        let lo, hi;
+        if (sg.box) {
+          const { center: c, R, half: h } = sg.box;
+          const ext = [0, 1, 2].map((i) => Math.abs(R[i * 3]) * h[0] + Math.abs(R[i * 3 + 1]) * h[1] + Math.abs(R[i * 3 + 2]) * h[2]);
+          lo = c.map((v, i) => v - ext[i]);
+          hi = c.map((v, i) => v + ext[i]);
+        } else if (sg.a && sg.b) {
+          const rad = sg.r ?? 0;
+          lo = [0, 1, 2].map((i) => Math.min(sg.a[i], sg.b[i]) - rad);
+          hi = [0, 1, 2].map((i) => Math.max(sg.a[i], sg.b[i]) + rad);
+        } else return;
+        sideObs.push({ id: `side:${r.slot}:${k}`, name: `${r.F.S.label} 측면 로봇(대기)`, type: 'box', pos: lo.map((v, i) => (v + hi[i]) / 2), size: lo.map((v, i) => hi[i] - v), rot: [0, 0, 0], visible: false, fixture: true });
+      });
+    }
+    const obstacles = sideObs.length ? [...fixtures, ...sideObs] : fixtures;
     const res = await planSkimCycle(
-      { robot, q0: q.slice(), spec: this.spec, lane: pick.lane, obstacles: fixtures, thresholds, floor: true, stroke,
+      { robot, q0: q.slice(), spec: this.spec, lane: pick.lane, obstacles, thresholds, floor: true, stroke,
         immersionMm, sweepMmS, cell: { corridor: this.coord.robots.size > 0 } },
       { plan: (req) => planPath({ robot, thresholds, floor: true, features: {}, avoidSingularity: false, reference: q, timeoutMs: 8000, deterministic: this.deterministic, ...req }) },
     );
@@ -114,13 +145,15 @@ export class RuleMainDriver {
     this.lastLane = pick.lane.index;
     this.dirFlip = !this.dirFlip;
     const steps = res.steps.slice();
-    const liftIdx = steps.findIndex((s) => s.label === '스쿱 상승');
+    // 포트를 비워 주는 시점: 스쿱 상승 뒤. 스나우트 쪽 쓸기는 담은 채 물러나기·돌리기까지 포트 위에 있으므로 그 뒤 (v3.0.0)
+    const turnIdx = steps.findIndex((s) => s.label === '담은 채 돌리기');
+    const liftIdx = turnIdx >= 0 ? turnIdx : steps.findIndex((s) => s.label === '스쿱 상승');
     if (this.anyMode2) steps.unshift({ kind: 'action', type: 'until', label: '측면 로봇 퇴피 대기' });
     this.run = { steps, i: 0, t: 0, liftIdx: liftIdx + (this.anyMode2 ? 1 : 0), lane: pick.lane.index };
   }
 
   get label() {
-    return this.run?.steps[this.run.i]?.label ?? (this.gaveUp ? '모든 레인 계획 실패 — 작업 중단' : this.retryS > 0 ? '계획 실패 — 다시 시도 대기' : this.empty ? '떠낼 드로스 없음' : '대기');
+    return this.run?.steps[this.run.i]?.label ?? (this.waitingSide ? '측면 로봇 퇴피 대기' : this.gaveUp ? '모든 레인 계획 실패 — 작업 중단' : this.retryS > 0 ? '계획 실패 — 다시 시도 대기' : this.empty ? '떠낼 드로스 없음' : '대기');
   }
 
   /** @returns 다음 1/60 s 목표 관절값 또는 null */
@@ -136,6 +169,15 @@ export class RuleMainDriver {
       return null;
     }
     this.inPotPhase = run.i <= run.liftIdx && st.kind !== 'action';
+    // 모드 3 측면 로봇용: 들어 올린 뒤(운반·덤프·복귀) 다음 사이클까지 남은 시간
+    if (this.anyMode2) {
+      let eta = 0;
+      if (run.i > run.liftIdx) {
+        eta = st.kind === 'move' ? st.trajectory.duration - run.t : Math.max(0, (st.sec ?? 0) - run.t);
+        for (let j = run.i + 1; j < run.steps.length; j++) eta += run.steps[j].kind === 'move' ? run.steps[j].trajectory.duration : run.steps[j].sec ?? 0;
+      }
+      this.coord.main.etaS = eta;
+    }
     if (st.kind === 'action') {
       if (st.type === 'until') {
         if (!this.coord.sideInPot()) run.i++;
@@ -283,7 +325,7 @@ export async function runEpisode(task, opts) {
     record.frame(0, recQ(), w, evaluator.last, '시작');
   }
 
-  const anyMode2 = [...coord.robots.values()].some((r) => r.mode === 2);
+  const anyMode2 = [...coord.robots.values()].some((r) => r.mode >= 2);
   const driverArgs = { robot: main, spec, fixtures, world: w, coord, sides, thresholds, task, deterministic, chooser: opts.mainChooser ?? null };
   const sim = { task, robot: main, spec, fixtures, world: w, field, coord, driverArgs, ctx, sides, thresholds, evaluator };
   const driver = mainControl === 'rule' ? new RuleMainDriver(driverArgs) : null;
@@ -351,7 +393,7 @@ export async function runEpisode(task, opts) {
         }
       }
     }
-    if (anyMode2 && inPotPhase && [...coord.robots.values()].some((r) => r.mode === 2 && r.inPot)) out.lockViolations++;
+    if (anyMode2 && inPotPhase && [...coord.robots.values()].some((r) => r.mode >= 2 && r.inPot)) out.lockViolations++;
     for (const r of coord.robots.values()) {
       out.minMainSide = Math.min(out.minMainSide, capsuleSetDistance(cur.segments, r.worldSegments()).d);
       if (r.status === 'holding') out.holdS += SIM_DT;

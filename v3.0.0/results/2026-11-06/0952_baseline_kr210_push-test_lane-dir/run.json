@@ -1,0 +1,31 @@
+{
+ "kind": "baseline",
+ "name": "kr210_push-test_lane-dir",
+ "folder": "results/2026-11-06/0952_baseline_kr210_push-test_lane-dir",
+ "startedLocal": "2026-11-06 09:52",
+ "started": "2026-11-06T00:52:02.271Z",
+ "finished": "2026-11-06T01:11:33.980Z",
+ "command": "node tools/baseline.mjs --mains kuka-kr210-r2700 --configs alone,mode2,push --lane-dir robot,snout,alternate --workers 9 --name kr210_push-test_lane-dir",
+ "git": "d1708ee (+수정)",
+ "node": "v26.13.0",
+ "summary": "KR alone robot 61.3% · KR alone snout 51.5% · KR alone alternate 72.5% · KR mode2 robot 53.3% · KR mode2 snout 0.0% · KR mode2 alternate 48.1% · KR push robot 33.8% · KR push snout 15.8% · KR push alternate 36.1%",
+ "simS": 600,
+ "seeds": [
+  11,
+  12,
+  13
+ ],
+ "mains": [
+  "kuka-kr210-r2700"
+ ],
+ "configs": [
+  "alone",
+  "mode2",
+  "push"
+ ],
+ "laneDirs": [
+  "robot",
+  "snout",
+  "alternate"
+ ]
+}

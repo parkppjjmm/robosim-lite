@@ -1,0 +1,29 @@
+{
+ "kind": "baseline",
+ "name": "kr210_alone_lane-dir",
+ "folder": "results/2026-11-06/1022_baseline_kr210_alone_lane-dir",
+ "startedLocal": "2026-11-06 10:22",
+ "started": "2026-11-06T01:22:24.039Z",
+ "finished": "2026-11-06T01:24:29.650Z",
+ "command": "node tools/baseline.mjs --mains kuka-kr210-r2700 --configs alone --lane-dir robot,snout,alternate --workers 9 --name kr210_alone_lane-dir",
+ "git": "d1708ee (+수정)",
+ "node": "v26.13.0",
+ "summary": "KR alone robot 61.3% · KR alone snout 51.0% · KR alone alternate 72.9%",
+ "simS": 600,
+ "seeds": [
+  11,
+  12,
+  13
+ ],
+ "mains": [
+  "kuka-kr210-r2700"
+ ],
+ "configs": [
+  "alone"
+ ],
+ "laneDirs": [
+  "robot",
+  "snout",
+  "alternate"
+ ]
+}

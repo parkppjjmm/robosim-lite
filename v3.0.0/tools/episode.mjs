@@ -2,7 +2,7 @@
 // 앱의 '에피소드 재생' 패널에서 이 파일을 불러오면 같은 실행을 3D로 다시 볼 수 있다(재생·일시정지·배속·시간 이동).
 // 실행: node tools/episode.mjs [--main kuka-kr210-r2700] [--config alone|mode1|mode2] [--left ur-ur10e:1] [--right abb-irb1200-5-09:1]
 //                             [--seed 11] [--count 160] [--simS 600] [--target 80] [--every 0.1] [--control rule|replay]
-//                             [--out results/episodes/<이름>.rsim.json.gz]
+//                             [--lane-dir robot|snout|alternate] [--out 파일]  → results/<날짜>/<시각>_episode_<이름>/
 //   --control replay: 대형 로봇을 정책 경로(20 Hz Δq, 규칙 재생 컨트롤러)로 움직인다 (정책 인터페이스 확인용)
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { makeRunDir, finishRun } from './lib/run-dir.mjs';

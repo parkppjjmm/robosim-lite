@@ -4,7 +4,7 @@
 // 순서: ① 모방(BC) — 규칙 경로(v1.1.2)를 교사로 ② PPO — 병렬 롤아웃, GAE, 클립 목적함수 ③ 주기적 고정 시드 평가로 최고 체크포인트만 채택
 //       ④ 최고 정책으로 10분 과제(전체 셀 시뮬레이터) 실행·규칙 경로와 비교·3D 재생 파일
 // 실행: node tools/ppo-train.mjs [--iterations 40] [--bc 3] [--workers 14] [--episodes 14] [--main kuka-kr210-r2700] [--count 160]
-//                               [--time 600] [--eval-seeds 11,12,13] [--eval-every 5] [--lab 설정.json] [--resume policy-last.json] [--out results/ppo/<이름>]
+//                               [--time 600] [--eval-seeds 11,12,13] [--eval-every 5] [--lab 설정.json] [--resume policy-last.json] [--name run2] [--out 폴더(기본 results/<날짜>/<시각>_ppo-train_<로봇>-<이름>)]
 // 결과(이름 규칙은 results/README.md):
 //   <out>/policy-best.json   최고 체크포인트(앱 [정책 불러오기]로 쓰는 파일)   <out>/policy-last.json   마지막 반복
 //   <out>/checkpoints/iter-NNN.json   평가할 때마다(5회마다) 저장한 중간 정책     <out>/train-curve.json   반복별 학습 기록

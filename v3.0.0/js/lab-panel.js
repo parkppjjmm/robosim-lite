@@ -58,7 +58,7 @@ export function mountLabPanel(root, h) {
       <button type="button" class="btn btn-small" data-lab-act="export" title="node tools/train.mjs --lab 파일 로 헤드리스 실행">설정 내보내기</button>
       <button type="button" class="btn btn-small" data-lab-act="import">설정 가져오기</button>
       <button type="button" class="btn btn-small" data-lab-act="reset">기본값</button>
-      <button type="button" class="btn btn-small" data-lab-act="policy" title="node tools/ppo-train.mjs가 만든 policy-best.json (results/ppo/<이름>/)">정책 불러오기 (PPO)</button>
+      <button type="button" class="btn btn-small" data-lab-act="policy" title="node tools/ppo-train.mjs가 만든 policy-best.json (results/<날짜>/<시각>_ppo-train_<이름>/)">정책 불러오기 (PPO)</button>
       <input type="file" data-lab-act="file" accept=".json,application/json" hidden />
       <input type="file" data-lab-act="policy-file" accept=".json,application/json" hidden />
     </div>

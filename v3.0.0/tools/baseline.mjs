@@ -22,7 +22,7 @@ const CONFIGS = {
   alone: { label: '단독', left: { robotId: null, mode: 1 }, right: { robotId: null, mode: 1 } },
   mode1: { label: '3대 모드 1 (좌 UR10e · 우 IRB 1200)', left: { robotId: 'ur-ur10e', mode: 1 }, right: { robotId: 'abb-irb1200-5-09', mode: 1 } },
   mode2: { label: '3대 모드 2 (좌·우 UR10e 밀기, 잠금)', left: { robotId: 'ur-ur10e', mode: 2 }, right: { robotId: 'ur-ur10e', mode: 2 } },
-  push: { label: '3대 모드 3 동시 밀기 (좌·우 UR10e, 대형만 회수)', left: { robotId: 'ur-ur10e', mode: 3 }, right: { robotId: 'ur-ur10e', mode: 3 } },
+  push: { label: '3대 모드 3 타이밍 밀기 (좌·우 UR10e, 대형만 회수)', left: { robotId: 'ur-ur10e', mode: 3 }, right: { robotId: 'ur-ur10e', mode: 3 } },
 };
 const LANE_DIR = { robot: '로봇 쪽으로 쓸기(열린 면 → 로봇)', snout: '스나우트 쪽으로 쓸기(열린 면 → 스나우트, 들어 올린 뒤 돌려서 운반)', alternate: '번갈아' };
 const LARGE = ['abb-irb6700-200-260', 'kuka-kr210-r2700', 'fanuc-r2000ic-165f', 'nachi-sra166'];
