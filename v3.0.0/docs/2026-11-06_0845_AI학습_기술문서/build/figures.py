@@ -97,9 +97,7 @@ def fig_cell():
     ax.text(2400, 0, '스\n나\n우\n트', ha='center', va='center', fontsize=8, color='white', weight='bold')
     WB = dict(fc='white', ec='none', alpha=0.9, pad=1.5)
     ax.text(3100, 0, 'FAR_ZONE\n(스나우트 너머,\n회수율에서 제외)', ha='center', va='center', fontsize=8, color=C['sub'], bbox=WB)
-    ax.text(3050, -1500, '초록 점선 = 스트로크 상자
-(스쿱 중심이 갈 수 있는 범위)
-X 1330~2070, Y ±670', ha='center', va='center', fontsize=7, color=C['green'])
+    ax.text(3050, -1500, '초록 점선 = 스트로크 상자\n(스쿱 중심이 갈 수 있는 범위)\nX 1330~2070, Y ±670', ha='center', va='center', fontsize=7, color=C['green'])
     ax.text(1700, 0, '측면 로봇 모드 1일 때\n대형 구역 |Y| ≤ 230', ha='center', va='center', fontsize=7, color=C['orange'], bbox=WB, zorder=5)
     ax.set_xlim(-400, 3900); ax.set_ylim(-1800, 1700)
     ax.set_xlabel('X (mm) — 로봇 쪽 → 스나우트 쪽', fontsize=8); ax.set_ylabel('Y (mm)', fontsize=8)
