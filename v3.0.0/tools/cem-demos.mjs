@@ -90,7 +90,8 @@ for (const job of jobs) {
 }
 
 const all = done.flatMap((r) => r.demos.filter((d) => d.obs && d.u).map((d) => ({ config: r.config, seed: r.seed, ...d })));
-writeFileSync(`${run.dir}/demos.json`, JSON.stringify({ schema: 'robosim-demos/1', createdLocal: run.t.local, robot: 'kuka-kr210-r2700', count: all.length, episodes: done.map(({ demos, err, ...r }) => r), demos: all }));
+// 실행 폴더 경로는 v3.0.0 기준 상대 경로로 저장한다 (다른 PC에서 그대로 학습, 2026-11-07)
+writeFileSync(`${run.dir}/demos.json`, JSON.stringify({ schema: 'robosim-demos/1', createdLocal: run.t.local, robot: 'kuka-kr210-r2700', count: all.length, episodes: done.map(({ demos, err, ...r }) => ({ ...r, dir: r.dir && r.dir.replace(/\\/g, '/').replace(`${root.replace(/\\/g, '/')}/`, '') })), demos: all }));
 const mean = (a) => (a.length ? a.reduce((s, v) => s + v, 0) / a.length : NaN);
 const L = [];
 L.push(`# [B] 진화 탐색 시범 수집 — ${run.t.local}`, '');

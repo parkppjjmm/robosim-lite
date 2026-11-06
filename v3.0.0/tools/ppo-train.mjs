@@ -12,7 +12,7 @@
 //   <out>/policy-best.json   최고 체크포인트(앱 [정책 불러오기]로 쓰는 파일)   <out>/policy-last.json   마지막 반복
 //   <out>/checkpoints/iter-NNN.json   평가할 때마다(5회마다) 저장한 중간 정책     <out>/train-curve.json   반복별 학습 기록
 //   <out>/train-report.md   학습 보고서   <out>/cell-eval-alone.md + ppo-alone-s<시드>·rule-alone-s<시드>.rsim.json.gz   전체 셀 10분 평가
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import { Worker } from 'node:worker_threads';
 import { cpus } from 'node:os';
@@ -23,6 +23,16 @@ import { progressLine } from './lib/progress.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url)).replace(/[\\/]$/, '');
 const imp = (m) => import(pathToFileURL(`${root}/${m}`));
+// 시범(demos.json)에 적힌 실행 폴더 경로 → 이 PC의 경로 (2026-11-07: 다른 PC에서 만든 demos.json은 그 PC의 절대 경로를 담고 있어
+// 그 폴더를 못 찾았다. 없으면 'results/…' 부분을 이 프로젝트 기준으로 바꾼다. 상대 경로는 v3.0.0 기준)
+const resolveRunDir = (dir) => {
+  if (!dir) return dir;
+  const n = dir.replace(/\\/g, '/');
+  if (!/^([A-Za-z]:|\/)/.test(n)) return `${root}/${n}`;
+  if (existsSync(n)) return n;
+  const i = n.lastIndexOf('/results/');
+  return i >= 0 && existsSync(`${root}${n.slice(i)}`) ? `${root}${n.slice(i)}` : n;
+};
 const arg = (k, d) => {
   const i = process.argv.indexOf(`--${k}`);
   return i > 0 ? process.argv[i + 1] : d;
@@ -51,7 +61,7 @@ if (DEMO_FILES.length) {
   DEMOS = { files: DEMO_FILES, samples: [], episodes: 0, dropped: 0, cem: [] };
   for (const f of DEMO_FILES) {
     const d = JSON.parse(readFileSync(f, 'utf8'));
-    const eps = d.episodes ?? [{ config: d.config, seed: d.seed, cem: d.summary?.rateCount ?? null, rule: null, dir: null }];
+    const eps = (d.episodes ?? [{ config: d.config, seed: d.seed, cem: d.summary?.rateCount ?? null, rule: null, dir: null }]).map((e) => ({ ...e, dir: resolveRunDir(e.dir) }));
     const list = d.demos.map((x) => ({ ...x, config: x.config ?? d.config, seed: x.seed ?? d.seed }));
     const labFile = d.lab ?? JSON.parse(readFileSync(`${eps.find((e) => e.dir)?.dir}/demos.json`, 'utf8')).lab;
     if (!sameSearch(labFile.search, lab.search)) {
