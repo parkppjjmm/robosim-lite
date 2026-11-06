@@ -9,7 +9,7 @@ import { sampleTrajectory } from './trajectory.js';
 import { planPath } from './planner.js';
 import { PhysicsWorld } from './physics.js';
 import { homeJoints } from './kinematics.js';
-import { observe, act } from './ppo.js';
+import { observe, act, obsDimOf } from './ppo.js';
 import { POT, SNOUT, BIN, BATH_Z_MM, DROSS_DENSITY, DrossField, drossFixtures, drossFluid, chooseLane, skimLanes, mainLaneRange, planSkimCycle, rng } from './dross.js';
 
 // ---- 탐색 변수 (행동) ----
@@ -520,6 +520,49 @@ const workCountOf = (ps) => {
   return n;
 };
 
+// ---------------------------------------------------------------------------
+// 규칙 레인 기준 조정 행동 (v3.0.0 [C], 2026-11-06)
+// 9개 값을 처음부터 고르게 하면 시범(진화 탐색)이 같은 분포에서 정반대 답(로봇 쪽 2070→ vs 스나우트 쪽 1330→)을 갖는 일이 많아
+// 모방 학습이 두 답의 평균(대각선, 앞벽 충돌)을 배운다(측정: 모방 직후 평가 0~37%). 그래서 규칙 경로가 고른 레인을 기준으로
+//   u[0] = 그 레인을 스나우트 쪽으로 쓸지(> 0.5) 로봇 쪽으로 쓸지, u[1..4] = 시작 X·Y·방향·길이 조정(±RESIDUAL),
+//   u[5..9] = 열린 면 시작·끝·기울임·깊이·속도(절대값, 탐색 범위 안) 를 고른다. 조정 0이면 규칙 레인 그대로.
+// ---------------------------------------------------------------------------
+export const RESIDUAL = { x0: 300, y0: 300, headingDeg: 45, lengthMm: 300 };
+export const RESIDUAL_DIM = 10;
+/** 같은 레인을 반대(스나우트 쪽)로: 앞벽 쪽 끝에서 시작, 방향 0° */
+export const reverseOf = (b) => ({ ...b, x0: b.x0 - b.lengthMm, headingDeg: 0 });
+const wrap180 = (d) => ((((d + 180) % 360) + 360) % 360) - 180;
+const absOf = (lab, key, x) => (lab.search[key].on ? lab.search[key].min + (lab.search[key].max - lab.search[key].min) * clamp(x, 0, 1) : lab.search[key].fixed);
+const absInv = (lab, key, v) => (lab.search[key].max > lab.search[key].min ? clamp((v - lab.search[key].min) / (lab.search[key].max - lab.search[key].min), 0, 1) : 0.5);
+
+/** u(10) + 규칙 레인 base(strokeFromValues(ruleValues).values) → 스트로크 값 */
+export function decodeResidual(u, base, lab) {
+  const rev = clamp(u[0], 0, 1) > 0.5;
+  const b = rev ? reverseOf(base) : base;
+  const d = (k) => (clamp(u[k], 0, 1) - 0.5) * 2;
+  const S = lab.search;
+  return {
+    reversed: rev,
+    values: {
+      x0: clamp(b.x0 + d(1) * RESIDUAL.x0, S.x0.min, S.x0.max),
+      y0: clamp(b.y0 + d(2) * RESIDUAL.y0, S.y0.min, S.y0.max),
+      headingDeg: (((b.headingDeg + d(3) * RESIDUAL.headingDeg) % 360) + 360) % 360,
+      lengthMm: clamp(b.lengthMm + d(4) * RESIDUAL.lengthMm, S.lengthMm.min, S.lengthMm.max),
+      yaw0Deg: absOf(lab, 'yaw0Deg', u[5]), yaw1Deg: absOf(lab, 'yaw1Deg', u[6]), tiltDeg: absOf(lab, 'tiltDeg', u[7]),
+      depthMm: absOf(lab, 'depthMm', u[8]), speedMmS: absOf(lab, 'speedMmS', u[9]),
+    },
+  };
+}
+
+/** 스트로크 값 v → 규칙 레인 base 기준 u(10) (시범을 모방 학습 목표로 바꿀 때) */
+export function encodeResidual(v, base, lab) {
+  const rev = Math.cos((v.headingDeg * Math.PI) / 180) > 0; // 스나우트(+X) 쪽으로 쓰면 반대 방향 레인
+  const b = rev ? reverseOf(base) : base;
+  const e = (dv, r) => clamp(dv / r / 2 + 0.5, 0, 1);
+  return [rev ? 1 : 0, e(v.x0 - b.x0, RESIDUAL.x0), e(v.y0 - b.y0, RESIDUAL.y0), e(wrap180(v.headingDeg - b.headingDeg), RESIDUAL.headingDeg), e(v.lengthMm - b.lengthMm, RESIDUAL.lengthMm),
+    absInv(lab, 'yaw0Deg', v.yaw0Deg), absInv(lab, 'yaw1Deg', v.yaw1Deg), absInv(lab, 'tiltDeg', v.tiltDeg), absInv(lab, 'depthMm', v.depthMm), absInv(lab, 'speedMmS', v.speedMmS)];
+}
+
 /**
  * runEpisode의 mainChooser로 쓰는 정책 선택기. 결정적(평균 행동).
  * - 직전 스트로크 계획이 실패해 곧바로(시뮬레이션 4.5 s 안) 다시 불리면 표준편차만큼 흔든 행동으로 다시 시도한다.
@@ -527,7 +570,8 @@ const workCountOf = (ps) => {
  * - 계획 가능 여부를 먼저 확인해 보정(repair)하고, 그래도 안 되면 규칙 레인으로 대신한다(안전한 대체 동작).
  */
 export function makePolicyChooser(agent, lab, { rand = rng(7), onDecision = () => {} } = {}) {
-  let initial = null, lastT = -Infinity, retries = 0;
+  let initial = null, lastT = -Infinity, retries = 0, lastVals = null;
+  const dim = obsDimOf(agent);
   return async ({ q, sim, evaluator }) => {
     const ps = snapshotParticles(sim.world);
     const work = workCountOf(ps);
@@ -536,10 +580,16 @@ export function makePolicyChooser(agent, lab, { rand = rng(7), onDecision = () =
     const t = evaluator.last.t;
     retries = t - lastT < 4.5 ? retries + 1 : 0;
     lastT = t;
-    const obs = observe(ps, { initialCount: initial, tFrac: Math.min(1, t / sim.task.timeLimitS) });
+    const obs = observe(ps, { initialCount: initial, tFrac: Math.min(1, t / sim.task.timeLimitS), last: lastVals, dim });
     const { u } = act(agent, obs, rand, retries === 0);
     const box = zoneBox(sim.sides); // 측면 로봇 구역은 침범하지 않음
-    let fix = await planWithRepair({ robot: sim.robot, q0: q, values: decodeStroke(u, lab).values, sides: sim.sides, thresholds: sim.thresholds, box });
+    let values;
+    if (agent.meta?.actionMode === 'residual') {
+      const rv0 = ruleValues(sim.world.particleState(), sim.sides, sim.thresholds, sim.task);
+      if (!rv0) return null;
+      values = decodeResidual(u, strokeFromValues(rv0).values, lab).values;
+    } else values = decodeStroke(u, lab).values;
+    let fix = await planWithRepair({ robot: sim.robot, q0: q, values, sides: sim.sides, thresholds: sim.thresholds, box });
     let fallback = false;
     if (fix.repaired < 0) {
       const rv = ruleValues(sim.world.particleState(), sim.sides, sim.thresholds, sim.task);
@@ -549,6 +599,7 @@ export function makePolicyChooser(agent, lab, { rand = rng(7), onDecision = () =
       }
     }
     const st = strokeFromValues(fix.values, fallback ? STROKE_BOX : box);
+    lastVals = st.values;
     onDecision({ t, rate: evaluator.last.rateCount, values: st.values, retry: retries, repaired: fix.repaired, fallback });
     return { lane: { start: st.start, end: st.end }, stroke: { yaw0Deg: st.yaw0Deg, yaw1Deg: st.yaw1Deg, tiltDeg: st.tiltDeg }, immersionMm: st.depthMm, sweepMmS: st.speedMmS };
   };

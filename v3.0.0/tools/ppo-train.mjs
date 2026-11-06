@@ -39,6 +39,9 @@ const fileCfg = arg('lab') ? JSON.parse(readFileSync(arg('lab'), 'utf8')) : {};
 const lab = LAB.sanitizeLab(fileCfg.lab ?? fileCfg);
 const ITER = Number(arg('iterations', 40));
 const BC = Number(arg('bc', 3));
+// 행동 형식: residual(기본, 규칙 레인 기준 조정 10) | abs(1차와 같은 9개 값 직접)
+const resumeFile = arg('resume') ? JSON.parse(readFileSync(arg('resume'), 'utf8')) : null;
+const ACTION = resumeFile ? resumeFile.actionMode ?? 'abs' : arg('action', 'residual');
 // 진화 탐색 시범 ([C] 단계)
 const DEMO_FILES = arg('demos') ? arg('demos').split(',') : [];
 let DEMOS = null;
@@ -54,13 +57,30 @@ if (DEMO_FILES.length) {
       console.error(`시범의 스트로크 범위(lab.search)가 학습 설정과 다릅니다: ${f} — 같은 --lab 설정으로 수집·학습해야 합니다.`);
       process.exit(1);
     }
+    const logCache = new Map();
+    const baseOf = (e, t) => {
+      if (!e.dir) return null;
+      if (!logCache.has(e.dir)) logCache.set(e.dir, JSON.parse(readFileSync(`${e.dir}/log.json`, 'utf8')).decisions);
+      const dd = logCache.get(e.dir).find((x) => Math.abs(x.t - t) < 0.05);
+      const rt = dd?.trialsList?.find((x) => x.rule);
+      return rt && dd ? { base: rt.values, best: dd.best.values } : null;
+    };
     for (const e of eps) {
       const keep = arg('demo-filter', 'better') === 'all' || e.rule == null || e.cem > e.rule;
       const mine = list.filter((x) => x.seed === e.seed && x.config === e.config && x.obs && x.u);
       if (!keep) { DEMOS.dropped += mine.length; continue; }
       DEMOS.episodes++;
       if (e.cem != null) DEMOS.cem.push(e.cem);
-      for (const x of mine) DEMOS.samples.push({ obs: Float64Array.from(x.obs), target: x.u });
+      mine.sort((a, b) => a.t - b.t);
+      mine.forEach((x, i) => {
+        let target = x.u;
+        if (ACTION === 'residual') {
+          const bb = baseOf(e, x.t);
+          if (!bb) return;
+          target = LAB.encodeResidual(bb.best, bb.base, lab);
+        }
+        DEMOS.samples.push({ obs: Float64Array.from(x.obs), target, prev: i ? mine[i - 1].u : null });
+      });
     }
   }
   if (!DEMOS.samples.length) {
@@ -80,7 +100,8 @@ const run = makeRunDir(root, 'ppo-train', `${task.cell.main.split('-')[1]}-${arg
 const outDir = run.dir;
 mkdirSync(`${outDir}/checkpoints`, { recursive: true });
 const cfg = { robotId: task.cell.main, count: task.dross.count, timeLimitS: task.timeLimitS, maxSteps: 40, thresholds: TE.TASK_THRESHOLDS, lab, task };
-const actDim = LAB.searchKeys(lab).length;
+const actDim = ACTION === 'residual' ? LAB.RESIDUAL_DIM : LAB.searchKeys(lab).length;
+cfg.actionMode = ACTION;
 
 // ---- 작업자 풀 ----
 const pool = { idle: [], queue: [], wait: new Map(), seq: 0, all: [] };
@@ -118,7 +139,19 @@ const rollouts = (jobs) => Promise.all(jobs.map((job) => new Promise((resolve) =
 
 // ---- 학습 ----
 const rand = rng(Number(arg('seed', 1)));
-let agent = arg('resume') ? PPO.importPolicy(JSON.parse(readFileSync(arg('resume'), 'utf8'))) : PPO.createAgent({ actDim, rand });
+// 관측: --obs last(기본, 직전 스트로크 포함 102) | base(1차와 같은 98)
+let agent = resumeFile ? PPO.importPolicy(resumeFile) : PPO.createAgent({ actDim, rand, obsDim: arg('obs', 'last') === 'base' ? PPO.OBS_DIM : PPO.OBS_DIM_LAST });
+const OBS_N = PPO.obsDimOf(agent);
+// 시범의 관측(98)에 직전 스트로크(같은 에피소드의 바로 앞 시범) 특징을 붙인다
+if (DEMOS && OBS_N > PPO.OBS_DIM) {
+  for (const sm of DEMOS.samples) {
+    const prev = sm.prev ? LAB.decodeStroke(sm.prev, lab).values : null;
+    const o = new Float64Array(OBS_N);
+    o.set(sm.obs.subarray(0, PPO.OBS_DIM));
+    o.set(PPO.lastFeatures(prev), PPO.OBS_DIM);
+    sm.obs = o;
+  }
+}
 const optPi = new PPO.Adam(3e-4), optVf = new PPO.Adam(1e-3), optBc = new PPO.Adam(1e-3);
 let seedCounter = 1000;
 const curve = [];
@@ -155,7 +188,7 @@ async function evaluate(tag) {
   return s;
 }
 // 정책 파일 = 신경망 가중치 + 점수 규칙 + 과제 정보 (robosim-policy/1)
-const policyFile = (p) => JSON.stringify({ ...p, lab, task: { main: task.cell.main, count: task.dross.count, timeLimitS: task.timeLimitS } });
+const policyFile = (p) => JSON.stringify({ ...p, actionMode: ACTION, lab, task: { main: task.cell.main, count: task.dross.count, timeLimitS: task.timeLimitS } });
 const saveCheckpoint = (it, e) => writeFileSync(`${outDir}/checkpoints/iter-${String(it).padStart(3, '0')}.json`, policyFile(PPO.exportPolicy(agent, { phase: it ? 'ppo' : 'bc', iter: it, eval: e })));
 let best = await evaluate('모방 후');
 let bestPolicy = PPO.exportPolicy(agent, { phase: 'bc', eval: best });
@@ -197,15 +230,15 @@ const trainS = (Date.now() - t0) / 1000;
 
 // ④ 최고 정책 → 10분 과제 (전체 셀 시뮬레이터) vs 규칙 경로
 const RAPIER = await loadRapier();
-const bestAgent = PPO.importPolicy(bestPolicy);
+const bestAgent = PPO.importPolicy(JSON.parse(policyFile(bestPolicy)));
 const bestLabel = `\`policy-best.json\` (${bestPolicy.phase === 'bc' ? '모방 직후' : `PPO 반복 ${bestPolicy.iter}`}, 학습 평가 회수율 ${best.rate.toFixed(1)}%)`;
 const { rows } = await evalPolicyCell({ m: { TE, CS, RP, LAB }, RAPIER, robots, pol: JSON.parse(policyFile(bestPolicy)), agent: bestAgent, lab, config: 'alone', seeds: EVAL_SEEDS, outDir, policyLabel: bestLabel, ruleLaneDir: arg('rule-lane-dir', 'robot') });
 
 // 보고서
 const L = [];
 L.push(`# PPO 강화학습 결과 — ${new Date().toISOString()}`, '');
-L.push(`- 환경: ${robots.find((r) => r.id === task.cell.main).name} 단독 셀(StrokeEnv), 드로스 ${task.dross.count}개(에피소드마다 다른 시드), ${task.timeLimitS} s, 행동 = 스트로크 ${actDim}변수(${LAB.searchKeys(lab).join(', ')})`);
-L.push(`- 관측: 작업 영역 드로스 격자 ${PPO.OBS_GRID.nx}×${PPO.OBS_GRID.ny} + 남은 비율 + 시간 비율 (${PPO.OBS_DIM}차원), 정책 MLP ${PPO.OBS_DIM}→64→64→${actDim}(가우시안), 순수 JS`);
+L.push(`- 환경: ${robots.find((r) => r.id === task.cell.main).name} 단독 셀(StrokeEnv), 드로스 ${task.dross.count}개(에피소드마다 다른 시드), ${task.timeLimitS} s, 행동 = ${ACTION === 'residual' ? `규칙 레인 기준 조정 ${actDim}값(반대 방향 여부, 시작 X·Y·방향·길이 조정, 열린 면 시작·끝, 기울임, 깊이, 속도)` : `스트로크 ${actDim}변수(${LAB.searchKeys(lab).join(', ')})`}`);
+L.push(`- 관측: 작업 영역 드로스 격자 ${PPO.OBS_GRID.nx}×${PPO.OBS_GRID.ny} + 남은 비율 + 시간 비율 ${OBS_N > PPO.OBS_DIM ? ' + 직전 스트로크 4' : ''} (${OBS_N}차원), 정책 MLP ${OBS_N}→64→64→${actDim}(가우시안), 순수 JS`);
 L.push(`- 학습: 모방(${DEMOS ? `진화 탐색 시범 ${DEMOS.samples.length}개 — ${DEMO_FILES.map((f) => f.replace(/\\/g, '/').split('/').slice(-2).join('/')).join(', ')}` : '규칙 경로 교사'}) ${BC}회 → PPO ${ITER}회 × 에피소드 ${EPISODES}개, 작업자 ${WORKERS}, ${trainS.toFixed(0)} s. 최고 체크포인트 = 고정 시드(${EVAL_SEEDS.join('·')}) 평가 보상 최고 (${bestPolicy.phase === 'bc' ? '모방 직후' : `PPO 반복 ${bestPolicy.iter}`})`);
 L.push(`- 점수 규칙: ${JSON.stringify(lab.reward)}`);
 L.push('- 시뮬레이터 결과(구형 입자 근사)다. 정책은 대형 단독 셀에서 학습했다.', '');

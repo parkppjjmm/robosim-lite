@@ -5,12 +5,26 @@
 
 export const OBS_GRID = { nx: 12, ny: 8, x0: 1100, x1: 2300, y0: -900, y1: 900, perCell: 4 };
 export const OBS_DIM = OBS_GRID.nx * OBS_GRID.ny + 2;
+// v3.0.0 [C] (2026-11-06): 직전 스트로크 4개 값(방향 cos·sin, 시작 X·Y 정규화)을 덧붙인 관측(102).
+// 진화 탐색 시범은 직전과 반대 방향으로 번갈아 쓰는 경우가 많아, 직전 정보 없이 배우면 두 답의 평균(대각선 → 계획 불가)을 배운다.
+export const OBS_LAST = 4;
+export const OBS_DIM_LAST = OBS_DIM + OBS_LAST;
+
+/** 직전 스트로크 특징 [cos h, sin h, X 정규화, Y 정규화] — 없으면 [0, 0, 0.5, 0.5] */
+export function lastFeatures(v) {
+  if (!v) return [0, 0, 0.5, 0.5];
+  const h = (v.headingDeg * Math.PI) / 180;
+  return [Math.cos(h), Math.sin(h), Math.min(1, Math.max(0, (v.x0 - 1330) / 740)), Math.min(1, Math.max(0, (v.y0 + 670) / 1340))];
+}
+
+/** 에이전트(신경망)의 관측 크기 (98 = 1차, 102 = 직전 스트로크 포함) */
+export const obsDimOf = (agent) => agent.pi.sizes[0];
 export const POLICY_SCHEMA = 'robosim-policy/1';
 
-/** 관측 벡터: 욕면 드로스 [x, y, z, r, …](snapshotParticles 형식) → 격자 + 남은 비율 + 시간 비율 */
-export function observe(particles, { initialCount, tFrac }) {
+/** 관측 벡터: 욕면 드로스 [x, y, z, r, …](snapshotParticles 형식) → 격자 + 남은 비율 + 시간 비율 (+ dim = 102면 직전 스트로크) */
+export function observe(particles, { initialCount, tFrac, last = null, dim = OBS_DIM }) {
   const G = OBS_GRID;
-  const o = new Float64Array(OBS_DIM);
+  const o = new Float64Array(dim);
   let n = 0;
   for (let i = 0; i < particles.length; i += 4) {
     const x = particles[i], y = particles[i + 1];
@@ -22,6 +36,7 @@ export function observe(particles, { initialCount, tFrac }) {
   for (let k = 0; k < G.nx * G.ny; k++) o[k] = Math.min(1, o[k]);
   o[G.nx * G.ny] = initialCount ? n / initialCount : 0;
   o[G.nx * G.ny + 1] = tFrac;
+  if (dim > OBS_DIM) o.set(lastFeatures(last), OBS_DIM);
   return o;
 }
 
@@ -251,7 +266,7 @@ export function exportPolicy(agent, meta = {}) {
   return {
     schema: POLICY_SCHEMA,
     created: new Date().toISOString(),
-    obs: { ...OBS_GRID, dim: OBS_DIM },
+    obs: { ...OBS_GRID, dim: agent.pi.sizes[0], lastStroke: agent.pi.sizes[0] > OBS_DIM },
     actDim: agent.actDim,
     pi: { sizes: agent.pi.sizes, layers: agent.pi.layers.map((L) => ({ W: Array.from(L.W, (v) => +v.toPrecision(7)), b: Array.from(L.b, (v) => +v.toPrecision(7)) })) },
     vf: { sizes: agent.vf.sizes, layers: agent.vf.layers.map((L) => ({ W: Array.from(L.W, (v) => +v.toPrecision(7)), b: Array.from(L.b, (v) => +v.toPrecision(7)) })) },
@@ -262,7 +277,7 @@ export function exportPolicy(agent, meta = {}) {
 
 export function importPolicy(obj) {
   if (obj?.schema !== POLICY_SCHEMA) throw new Error(`정책 파일 형식이 아닙니다 (schema = ${obj?.schema ?? '없음'}, 기대값 ${POLICY_SCHEMA}).`);
-  if (obj.obs?.dim !== OBS_DIM) throw new Error(`관측 크기가 다릅니다 (${obj.obs?.dim} ≠ ${OBS_DIM}).`);
+  if (obj.obs?.dim !== OBS_DIM && obj.obs?.dim !== OBS_DIM_LAST) throw new Error(`관측 크기가 다릅니다 (${obj.obs?.dim} ≠ ${OBS_DIM} 또는 ${OBS_DIM_LAST}).`);
   const net = (n) => ({ sizes: n.sizes, layers: n.layers.map((L, l) => ({ nIn: n.sizes[l], nOut: n.sizes[l + 1], W: Float64Array.from(L.W), b: Float64Array.from(L.b) })) });
   return { pi: net(obj.pi), vf: net(obj.vf), logStd: Float64Array.from(obj.logStd), actDim: obj.actDim, meta: obj };
 }

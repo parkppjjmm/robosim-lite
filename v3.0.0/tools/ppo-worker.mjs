@@ -25,13 +25,23 @@ parentPort.on('message', async (m) => {
     const rand = rng(m.randSeed);
     let ps = env.reset(m.seed);
     const tr = [];
+    let last = null; // 직전 스트로크 값 (관측 102일 때)
+    const dim = PPO.obsDimOf(agent);
     let ret = 0, empties = 0, infeasible = 0, repaired = 0, done = false;
     while (!done) {
-      const obs = PPO.observe(ps, { initialCount: env.initialWork, tFrac: env.tFrac });
+      const obs = PPO.observe(ps, { initialCount: env.initialWork, tFrac: env.tFrac, last, dim });
+      // 규칙 레인 기준 조정 행동이면 이번 결정의 기준 레인 (드로스 레인이 없으면 에피소드 끝)
+      const residual = cfg.actionMode === 'residual';
+      let base = null;
+      if (residual) {
+        const b = env.teacher(cfg.task);
+        if (!b) break;
+        base = LAB.strokeFromValues(b).values;
+      }
       let u, logp, target = null;
       if (m.mode === 'teacher') {
         const tv = env.teacher(cfg.task);
-        if (tv) target = LAB.encodeValues(tv, cfg.lab);
+        if (tv) target = residual ? LAB.encodeResidual(LAB.strokeFromValues(tv).values, base, cfg.lab) : LAB.encodeValues(tv, cfg.lab);
         const a = PPO.act(agent, obs, rand, false);
         u = target ?? a.u;
         logp = PPO.logProb(u, a.mean, agent.logStd);
@@ -41,7 +51,9 @@ parentPort.on('message', async (m) => {
         logp = a.logp;
       }
       const uc = u.map((x) => Math.min(1, Math.max(0, x)));
-      const r = await env.step(LAB.decodeStroke(uc, cfg.lab).values);
+      const vals = residual ? LAB.decodeResidual(uc, base, cfg.lab).values : LAB.decodeStroke(uc, cfg.lab).values;
+      const r = await env.step(vals);
+      last = vals;
       ret += r.reward;
       if (!r.info.feasible) infeasible++;
       else if (r.info.collected === 0) empties++;
