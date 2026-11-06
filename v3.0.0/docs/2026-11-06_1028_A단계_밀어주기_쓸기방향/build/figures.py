@@ -1,4 +1,4 @@
-# [A] 단계 보고서 그림 (2026-11-06 10:40) — 측면 밀어 주기(모드 3)·대형 쓸기 방향
+# [A] 단계 보고서 그림 (2026-11-06 10:28) — 측면 밀어 주기(모드 3)·대형 쓸기 방향
 # 실행: python build/figures.py <v3.0.0 폴더> <그림 폴더>   (matplotlib)
 import json, os, sys, math
 import matplotlib

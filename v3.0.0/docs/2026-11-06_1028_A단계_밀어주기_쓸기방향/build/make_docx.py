@@ -1,4 +1,4 @@
-# RoboSim Lite v3.0.0 — [A] 단계 보고서 (Word) 생성, 2026-11-06 10:40
+# RoboSim Lite v3.0.0 — [A] 단계 보고서 (Word) 생성, 2026-11-06 10:28
 # 실행: python docs/build/make_docx.py <v3.0.0 폴더> <그림 폴더> <출력 .docx>
 # 필요: python-docx. 그림은 docs/build/figures.py로 먼저 만든다. 수치는 results/ 파일에서 읽는다.
 import json, os, re, sys
@@ -53,7 +53,7 @@ def field(par, instr):
     return r
 
 
-fp.add_run('RoboSim Lite v3.0.0 · [A] 단계 보고서 (2026-11-06 10:40) — ').font.size = Pt(8)
+fp.add_run('RoboSim Lite v3.0.0 · [A] 단계 보고서 (2026-11-06 10:28) — ').font.size = Pt(8)
 field(fp, 'PAGE')
 
 
@@ -136,7 +136,7 @@ pct = lambda v: f'{v:.1f}%'
 dp = lambda a, b: f'{a - b:+.1f}%p'
 
 
-# =============================================================== [A] 단계 보고서 본문 (2026-11-06 10:40)
+# =============================================================== [A] 단계 보고서 본문 (2026-11-06 10:28)
 SRC = {
     'alone': 'results/2026-11-06/1022_baseline_kr210_alone_lane-dir/data.json',
     'push': 'results/2026-11-06/1022_baseline_kr210_mode2-vs-push/data.json',
@@ -162,7 +162,7 @@ p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
 r = p.add_run('[A] 단계 보고서\n측면 로봇 밀어 주기 · 대형 스쿱 반대 방향 회수'); r.font.size = Pt(15); r.bold = True
 doc.add_paragraph().paragraph_format.space_after = Pt(18)
 T([['항목', '내용'],
-   ['작성', '2026-11-06 10:40 (이 문서는 덮어쓰지 않는다. 다음 결과는 새 날짜·시각 폴더)'],
+   ['작성', '2026-11-06 10:28 (이 문서는 덮어쓰지 않는다. 다음 결과는 새 날짜·시각 폴더)'],
    ['이전 문서', 'docs/2026-11-06_0845_AI학습_기술문서 (학습 구조 전체)'],
    ['사용자 요청', '① 측면 로봇은 회수하지 않고 가운데로 밀어 주기만, 대형 로봇만 회수\n② 스쿱 열린 면이 로봇이 아니라 반대(스나우트) 쪽을 보게 쓸어 스나우트 앞 드로스까지 회수, 들고 오는 동작까지 최적화\n③ 결과·문서를 날짜·시각별로 남기고 git도 시각별로 기록'],
    ['범위', '규칙 경로(학습 없음)로 셀 동작을 먼저 만들고 측정. 학습([B] CEM 시범, [C] PPO)은 다음 단계'],
