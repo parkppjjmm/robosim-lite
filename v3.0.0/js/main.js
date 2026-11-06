@@ -1959,6 +1959,7 @@ function renderDrossUI() {
   if (!drossPanel || !currentRobot) return;
   const d = getState().cell.dross;
   drossPanel.render({
+    hasSides: coord.robots.size > 0,
     enabled: d.enabled,
     cfg: d,
     robotOk: drossRobotOk(currentRobot),
@@ -2034,9 +2035,14 @@ async function skimOnce() {
   const lanes = skimLanes(spec, s.thresholds.obstacleMarginMm, mainLaneRange(spec, sideEff));
   const pick = chooseLane(lanes, physics.particleState(), spec, skim.lastLane);
   if (!pick || pick.count < 1) return 'empty';
-  const lock = [...coord.robots.values()].some((r) => r.mode === 2);
-  if (lock) coord.main.wantsPot = true; // 모드 2 측면 로봇은 이제 새 밀기를 시작하지 않는다
-  setSkim({ status: 'planning', label: `레인 ${pick.lane.index + 1}/${lanes.length} (드로스 ${pick.count}개)` });
+  const lock = [...coord.robots.values()].some((r) => r.mode >= 2);
+  if (lock) coord.main.wantsPot = true; // 모드 2·3 측면 로봇은 이제 새 밀기를 시작하지 않는다
+  coord.main.etaS = 0;
+  // 쓸기 방향 (v3.0.0 [A]): 스나우트 쪽이면 같은 레인을 반대로(앞벽 쪽에서 스나우트 쪽으로). 측면 로봇이 있으면 로봇 쪽만
+  const ld = s.cell.dross.laneDir ?? 'robot';
+  const toSnout = !coord.robots.size && (ld === 'snout' || (ld === 'alternate' && skim.dirFlip));
+  const lane = toSnout ? { ...pick.lane, start: [pick.lane.xe, pick.lane.y], end: [pick.lane.xs, pick.lane.y] } : pick.lane;
+  setSkim({ status: 'planning', label: `레인 ${pick.lane.index + 1}/${lanes.length} (드로스 ${pick.count}개)${toSnout ? ' · 스나우트 쪽으로' : ''}` });
   const obstacles = obstaclesSnapshot();
   let superseded = false;
   const res = await planSkimCycle(
@@ -2044,7 +2050,7 @@ async function skimOnce() {
       robot: currentRobot,
       q0: controller.current.q.slice(),
       spec,
-      lane: pick.lane,
+      lane,
       immersionMm: s.cell.dross.immersionMm,
       sweepMmS: s.cell.dross.sweepMmS,
       obstacles,
@@ -2069,7 +2075,9 @@ async function skimOnce() {
   }
   // 모드 2: 측면 로봇이 포트 안에 있으면 레인 접근 전에 기다리고, 스쿱을 들어 올린 뒤에는 포트를 비워 준다
   const steps = res.steps.slice();
-  let liftIdx = steps.findIndex((st) => st.label === '스쿱 상승');
+  // 포트를 비워 주는 시점: 스쿱 상승 뒤 (스나우트 쪽 쓸기는 담은 채 돌리기까지 포트 위에 있으므로 그 뒤)
+  const turnIdx = steps.findIndex((st) => st.label === '담은 채 돌리기');
+  let liftIdx = turnIdx >= 0 ? turnIdx : steps.findIndex((st) => st.label === '스쿱 상승');
   if (lock) {
     steps.unshift({ kind: 'action', type: 'until', label: '측면 로봇이 포트에서 나오길 대기', until: () => !coord.sideInPot() });
     liftIdx++;
@@ -2083,14 +2091,18 @@ async function skimOnce() {
   const result = await runSteps(steps, {
     kind: 'skim',
     onStep: (i, st) => {
-      if (i > liftIdx) coord.main.wantsPot = false;
+      if (i > liftIdx) {
+        coord.main.wantsPot = false;
+        // 모드 3 측면 로봇용: 다음 사이클까지 남은 시간 (이 단계부터 끝까지)
+        coord.main.etaS = steps.slice(i).reduce((t, x) => t + (x.kind === 'move' ? x.trajectory.duration : x.sec ?? 0), 0);
+      } else coord.main.etaS = 0;
       setSkim({ label: `레인 ${pick.lane.index + 1} · ${i + 1}/${n} ${st.label}` });
     },
   });
   coord.main.wantsPot = false;
   if (result === 'done') {
     const dt = simClock - t0;
-    setSkim({ cycles: skim.cycles + 1, lastS: dt, totalS: skim.totalS + dt, lastLane: pick.lane.index });
+    setSkim({ cycles: skim.cycles + 1, lastS: dt, totalS: skim.totalS + dt, lastLane: pick.lane.index, dirFlip: !skim.dirFlip });
   }
   viewer.setPlanPreview(null);
   return result;
@@ -2321,7 +2333,15 @@ function startLab(cfg) {
       const p = m.p;
       labRun.progress = { rate: p.rate, t: p.t };
       if (p.kind === 'decision') labRun.decisions.push(p.decision);
-      if (p.kind === 'policy') labRun.decisions.push({ n: p.decision.n, t: p.decision.t, rate: p.decision.rate, best: { score: '정책', rule: false, values: p.decision.values }, ruleScore: null });
+      if (p.kind === 'policy') {
+        // 결정 표: 2차 PPO(규칙 레인 기준 조정)면 그대로/반대 방향과 조정량, 보정·규칙 대체 표시
+        const pd = p.decision, inf = pd.info ?? {};
+        const sg = (v) => (v > 0 ? `+${v}` : `${v}`);
+        let what = inf.mode === 'residual' ? `${inf.reversed ? '반대(스나우트 쪽)' : '규칙 레인'} · 조정 X${sg(inf.dx)} Y${sg(inf.dy)} 방향${sg(inf.dh)}° 길이${sg(inf.dl)}` : '정책';
+        if (pd.fallback) what += ' · 규칙 대체';
+        else if (pd.repaired > 0) what += ' · 보정';
+        labRun.decisions.push({ n: pd.n, t: pd.t, rate: pd.rate, best: { score: what, rule: false, values: pd.values }, ruleScore: null });
+      }
       labRun.status = `학습 중 · 시뮬레이션 ${p.t.toFixed(0)} / ${task.timeLimitS} s · 회수율 ${p.rate.toFixed(1)}% · 결정 ${labRun.decisions.length} · 경과 ${p.elapsedS.toFixed(0)} s`;
     } else if (m.type === 'done') {
       labRun.result = { summary: m.summary, log: m.log, episode: m.episode, rule: m.rule };

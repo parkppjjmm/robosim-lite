@@ -171,9 +171,9 @@ export function mountLabPanel(root, h) {
         bar.classList.toggle('ok', pct >= tgt);
         $('.lab-progress .rp-prog s').style.left = `${tgt}%`;
         const ds = ui.decisions ?? [];
-        $('.lab-decisions').innerHTML = `<tr><th>#</th><th>시각</th><th>회수율</th><th>최고 / 규칙</th><th>스트로크</th></tr>` + ds.slice(-8).reverse().map((d) => {
+        $('.lab-decisions').innerHTML = `<tr><th>#</th><th>시각</th><th>회수율</th><th>최고 / 규칙 (정책: 고른 것)</th><th>스트로크</th></tr>` + ds.slice(-8).reverse().map((d) => {
           const v = d.best.values;
-          return `<tr><td>${d.n}</td><td>${d.t}s</td><td>${d.rate}%</td><td>${d.best.score}${d.best.rule ? ' (규칙)' : ` / ${d.ruleScore ?? '—'}`}</td><td>${v.headingDeg.toFixed(0)}° · 열린 면 ${v.yaw0Deg.toFixed(0)}→${v.yaw1Deg.toFixed(0)}° · 기울임 ${v.tiltDeg.toFixed(0)}°</td></tr>`;
+          return `<tr><td>${d.n}</td><td>${d.t}s</td><td>${d.rate}%</td><td>${d.best.score}${d.best.rule ? ' (규칙)' : typeof d.best.score === 'string' ? '' : ` / ${d.ruleScore ?? '—'}`}</td><td>${v.headingDeg.toFixed(0)}° · 열린 면 ${v.yaw0Deg.toFixed(0)}→${v.yaw1Deg.toFixed(0)}° · 기울임 ${v.tiltDeg.toFixed(0)}°</td></tr>`;
         }).join('');
         drawChart($('.lab-chart'), ds);
       }

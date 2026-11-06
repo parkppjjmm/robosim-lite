@@ -1,5 +1,5 @@
 // 드로스 제거 셀 패널 (PRD_v.1.1.1 FR-25~FR-30): 사용 스위치, 설정, 스키밍 실행(1사이클·자동 연속), 집계 표시
-import { DROSS_FIELDS, DROSS_LIMITS } from './dross.js';
+import { DROSS_FIELDS, DROSS_LIMITS, LANE_DIRS } from './dross.js';
 
 /**
  * @param {HTMLElement} root
@@ -32,13 +32,18 @@ export function mountDrossPanel(root, h) {
             <select data-side-mode aria-label="역할">
               <option value="1">모드 1 · 제거</option>
               <option value="2">모드 2 · 보조 밀기</option>
+              <option value="3">모드 3 · 타이밍 밀기</option>
             </select>
           </div>
           <p class="hint dr-side-status"></p>
         </div>`).join('')}
         <p class="hint">모드 1: 자기 쪽 바깥 띠의 드로스를 작은 스쿱으로 떠서 옆의 측면 드로스 박스에 버립니다(대형 로봇은 가운데 레인만 맡아 동시에 작업).
-        모드 2: 밀대로 벽 쪽 드로스를 포트 가운데(대형 로봇 레인)로 밀어 줍니다. 대형 로봇이 포트 밖(드로스 박스)에 있을 때만 들어갑니다.</p>
+        모드 2: 밀대로 벽 쪽 드로스를 포트 가운데(대형 로봇 레인)로 밀어 줍니다. 대형 로봇이 포트 밖(드로스 박스)에 있을 때만 들어갑니다.
+        모드 3 (v3.0.0): 밀어 주기만 하고 회수는 대형 로봇만. 대형이 박스에 다녀오는 동안, 돌아오기 전에 끝낼 수 있는 밀기만 시작해 대형이 덜 기다립니다(10분 57.5%, 모드 2 53.3%).</p>
       </fieldset>
+      <label class="field dr-lanedir"><span>대형 쓸기 방향 <small>(열린 면 방향)</small></span>
+        <select data-dr-lanedir>${Object.entries(LANE_DIRS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select></label>
+      <p class="hint dr-lanedir-hint">로봇 쪽: 스나우트 쪽에서 로봇 쪽으로 쓸기(열린 면이 로봇을 봄). 스나우트 쪽: 반대로 쓸어 스나우트 앞까지 담고, 들어 올린 뒤 물러나 천천히 돌려 운반. 번갈아: 사이클마다 바꿈(10분 72.9%, 기존 61.3%). 측면 로봇이 있으면 로봇 쪽으로만 쓸어요.</p>
       <details class="thresholds">
         <summary>셀 설정 (Settings)</summary>
         <div class="threshold-fields">
@@ -62,6 +67,7 @@ export function mountDrossPanel(root, h) {
     row.querySelector('[data-side-robot]').addEventListener('change', (e) => h.onSideRobot(slot, e.target.value || null));
     row.querySelector('[data-side-mode]').addEventListener('change', (e) => h.onSideMode(slot, Number(e.target.value)));
   });
+  $('[data-dr-lanedir]').addEventListener('change', (e) => h.onField('laneDir', e.target.value));
   const act = { cycle: h.onRunCycle, auto: h.onAuto, stop: h.onStop, respawn: h.onRespawn, view: h.onView, large: h.onUseLargeRobot };
   root.querySelectorAll('[data-dr]').forEach((b) => b.addEventListener('click', () => act[b.dataset.dr]()));
   root.querySelectorAll('[data-dr-field]').forEach((input) =>
@@ -91,6 +97,10 @@ export function mountDrossPanel(root, h) {
     root.querySelectorAll('[data-dr-field]').forEach((input) => {
       if (document.activeElement !== input) input.value = String(ui.cfg[input.dataset.drField]);
     });
+    const ld = $('[data-dr-lanedir]');
+    if (document.activeElement !== ld) ld.value = ui.cfg.laneDir ?? 'robot';
+    ld.disabled = ui.status !== 'idle' || !!ui.hasSides;
+    ld.title = ui.hasSides ? '측면 로봇이 있으면 로봇 쪽으로만 쓸어요 (스나우트 쪽 경로가 측면 로봇과 너무 가까움)' : '';
     const busy = ui.status !== 'idle';
     const ready = ui.robotOk && ui.physics;
     $('[data-dr=cycle]').disabled = busy || !ready;

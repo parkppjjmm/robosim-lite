@@ -15,12 +15,20 @@ const fmtT = (s) => {
  */
 export function mountReplayPanel(root, bar, info, h) {
   root.innerHTML = `
-    <p class="hint">헤드리스 실행 결과(<code>node tools/episode.mjs</code>가 만든 <code>.rsim.json.gz</code>)를 불러와 3D로 다시 봅니다. 재생 중에는 앱의 시뮬레이션이 멈추고, 저장된 설정은 바뀌지 않습니다.</p>
+    <p class="hint">헤드리스 실행 결과(<code>.rsim.json.gz</code>: 규칙 경로·진화 탐색·PPO)를 3D로 다시 봅니다. 아래 목록에서 고르거나 파일을 직접 불러옵니다. 재생 중에는 앱의 시뮬레이션이 멈추고, 저장된 설정은 바뀌지 않습니다.</p>
     <div class="data-actions">
       <button type="button" class="btn btn-small" data-rp="open">에피소드 불러오기</button>
       <button type="button" class="btn btn-small" data-rp="exit" hidden>재생 종료</button>
       <input type="file" data-rp="file" accept=".gz,.json,application/json,application/gzip" hidden />
     </div>
+    <details class="rp-list" open>
+      <summary>실행 결과 목록에서 열기 (results/)</summary>
+      <label class="field"><span>실행 (최신 먼저)</span><select data-rp="run"></select></label>
+      <label class="field"><span>3D 재생 파일</span><select data-rp="ep"></select></label>
+      <div class="data-actions"><button type="button" class="btn btn-small" data-rp="open-list">▶ 열기</button>
+        <button type="button" class="btn btn-small" data-rp="reload-list" title="새 실행이 끝났으면 목록 다시 읽기">목록 새로고침</button></div>
+      <p class="hint rp-run-summary"></p>
+    </details>
     <p class="sim-status rp-status" aria-live="polite"></p>
     <dl class="dr-stats rp-meta"></dl>
     <canvas class="rp-chart" width="300" height="120" aria-label="회수율 곡선" hidden></canvas>`;
@@ -38,6 +46,44 @@ export function mountReplayPanel(root, bar, info, h) {
     file.value = '';
   });
   $('[data-rp=exit]').addEventListener('click', () => h.onExit());
+  // ---- 실행 결과 목록 (results/index.json, 도구가 자동 갱신) ----
+  const KIND = { baseline: '규칙 경로 기준선', cem: '진화 탐색', 'cem-demos': '시범 모음', 'ppo-train': 'PPO 학습', 'ppo-eval': 'PPO 평가', episode: '단발 실행', pipeline: '학습 파이프라인' };
+  const METHOD = { rule: '규칙 경로', cem: '진화 탐색', ppo: 'PPO 정책', random: '무작위 탐색' };
+  let runs = [];
+  const runSel = $('[data-rp=run]'), epSel = $('[data-rp=ep]');
+  const epLabel = (f) => {
+    const m = f.match(/^([a-z]+)-(.+?)-s(\d+)/);
+    return m ? `${METHOD[m[1]] ?? m[1]} · ${m[2]} · 시드 ${m[3]}` : f;
+  };
+  const fillEps = () => {
+    const r = runs[Number(runSel.value)];
+    epSel.innerHTML = (r?.replays ?? []).map((f) => `<option value="${f}">${epLabel(f)}</option>`).join('');
+    $('.rp-run-summary').textContent = r ? `${r.folder}${r.summary ? ` — ${r.summary}` : ''}${r.note ? ' (참고: 폴더의 NOTE.md)' : ''}` : '';
+  };
+  async function loadList() {
+    try {
+      const res = await fetch('results/index.json', { cache: 'no-store' });
+      if (!res.ok) throw new Error(res.status);
+      runs = (await res.json()).runs.filter((r) => r.replays.length);
+      runSel.innerHTML = runs.map((r, i) => `<option value="${i}">${r.date} ${r.time} · ${KIND[r.kind] ?? r.kind} · ${r.name}</option>`).join('');
+      fillEps();
+    } catch {
+      runs = [];
+      runSel.innerHTML = '';
+      epSel.innerHTML = '';
+      $('.rp-run-summary').textContent = '목록이 없습니다 (results/index.json). 명령으로 학습·평가를 실행하면 생깁니다. 위 [에피소드 불러오기]로 파일을 직접 고를 수도 있습니다.';
+    }
+  }
+  runSel.addEventListener('change', fillEps);
+  $('[data-rp=reload-list]').addEventListener('click', loadList);
+  $('[data-rp=open-list]').addEventListener('click', async () => {
+    const r = runs[Number(runSel.value)], f = epSel.value;
+    if (!r || !f) return;
+    const res = await fetch(`${r.folder}/${f}`, { cache: 'no-store' });
+    if (!res.ok) return ($('.rp-run-summary').textContent = `파일을 읽지 못했습니다: ${r.folder}/${f}`);
+    h.onFile(new File([await res.blob()], f));
+  });
+  loadList();
   $('[data-rp=play]', bar).addEventListener('click', () => h.onPlay());
   $('[data-rp=restart]', bar).addEventListener('click', () => h.onRestart());
   $('[data-rp=speed]', bar).addEventListener('change', (e) => h.onSpeed(Number(e.target.value)));

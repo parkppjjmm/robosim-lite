@@ -55,7 +55,9 @@ export const DROSS_DIAMETER_MM = [40, 90];
 export const MAX_PARTICLES = 800;
 
 // ---- 사용자 설정 (state.cell.dross) ----
-export const DROSS_DEFAULTS = { enabled: false, count: 160, ratePerMin: 0, seed: 1, immersionMm: 60, sweepMmS: 120 };
+export const DROSS_DEFAULTS = { enabled: false, count: 160, ratePerMin: 0, seed: 1, immersionMm: 60, sweepMmS: 120, laneDir: 'robot' };
+/** 대형 로봇 쓸기 방향 (v3.0.0 [A]): 로봇 쪽(기존) | 스나우트 쪽 | 번갈아 — 측면 로봇이 없는 셀에서만 */
+export const LANE_DIRS = { robot: '로봇 쪽 (기존)', snout: '스나우트 쪽', alternate: '번갈아 (추천)' };
 // 측면 로봇 설정 (v1.1.1 FR-31): 슬롯별 { robotId(없으면 null), mode(1 제거 | 2 보조 밀기) }
 export const SIDE_DEFAULTS = { left: { robotId: null, mode: 1 }, right: { robotId: null, mode: 1 } };
 export const DROSS_LIMITS = { count: [0, 400], ratePerMin: [0, 120], seed: [1, 99999], immersionMm: [20, 75], sweepMmS: [30, 250] };
@@ -75,9 +77,10 @@ export function sanitizeDross(raw, robotOk = () => true) {
     const v = raw.sides?.[slot];
     if (!v || typeof v !== 'object') continue;
     if (typeof v.robotId === 'string' && robotOk(v.robotId)) out.sides[slot].robotId = v.robotId;
-    if (v.mode === 1 || v.mode === 2) out.sides[slot].mode = v.mode;
+    if (v.mode === 1 || v.mode === 2 || v.mode === 3) out.sides[slot].mode = v.mode;
   }
   out.enabled = raw.enabled === true;
+  out.laneDir = Object.keys(LANE_DIRS).includes(raw.laneDir) ? raw.laneDir : 'robot';
   for (const [k, [lo, hi]] of Object.entries(DROSS_LIMITS)) {
     const v = raw[k];
     if (typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi) out[k] = k === 'seed' || k === 'count' ? Math.round(v) : v;

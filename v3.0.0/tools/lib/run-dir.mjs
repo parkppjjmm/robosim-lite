@@ -3,7 +3,7 @@
 //   - run.json: 명령, 시각, git 커밋, Node 버전, 요약
 //   - results/INDEX.md: 모든 실행을 시간순으로 한 줄씩 (도구가 끝날 때 자동 추가)
 // 같은 분에 같은 이름이 있으면 -2, -3 … 을 붙인다(덮어쓰지 않음).
-import { existsSync, mkdirSync, writeFileSync, appendFileSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync, appendFileSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -60,5 +60,40 @@ export function finishRun(root, run, { summary = '', detail = {} } = {}) {
   const s = readFileSync(idx, 'utf8');
   const line = `| ${run.t.date} | ${run.t.hhmm.slice(0, 2)}:${run.t.hhmm.slice(2)} | ${run.kind} | \`${run.rel.replace(/^results\//, '')}\` | ${String(summary).replace(/\|/g, '/').replace(/\n/g, ' ')} |\n`;
   appendFileSync(idx, (s.endsWith('\n') ? '' : '\n') + line);
+  try {
+    writeResultsIndex(root);
+  } catch (e) {
+    console.log(`results/index.json 갱신 실패: ${e.message}`);
+  }
   return meta;
+}
+
+/**
+ * results/index.json: 앱 '에피소드 재생'의 실행 결과 목록 (최신 먼저).
+ * [{ date, time, kind, name, folder('results/…'), summary, note(NOTE.md 있음), replays: ['ppo-alone-s11.rsim.json.gz', …] }]
+ */
+export function writeResultsIndex(root) {
+  const base = `${root}/results`;
+  const sums = new Map();
+  if (existsSync(`${base}/INDEX.md`)) {
+    for (const l of readFileSync(`${base}/INDEX.md`, 'utf8').split('\n')) {
+      const m = l.match(/^\| [\d-]+ \| [\d:]+ \| [^|]+ \| `([^`]+)` \| (.*) \|\s*$/);
+      if (m) sums.set(m[1], m[2].trim());
+    }
+  }
+  const list = [];
+  for (const day of readdirSync(base).filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d))) {
+    for (const dir of readdirSync(`${base}/${day}`)) {
+      const full = `${base}/${day}/${dir}`;
+      if (!statSync(full).isDirectory()) continue;
+      const m = dir.match(/^(\d{2})(\d{2})_([^_]+)_(.+)$/);
+      if (!m) continue;
+      const files = readdirSync(full);
+      list.push({ date: day, time: `${m[1]}:${m[2]}`, kind: m[3], name: m[4], folder: `results/${day}/${dir}`, summary: sums.get(`${day}/${dir}`) ?? '',
+        note: files.includes('NOTE.md'), replays: files.filter((f) => f.endsWith('.rsim.json.gz')).sort() });
+    }
+  }
+  list.sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
+  writeFileSync(`${base}/index.json`, JSON.stringify({ schema: 'robosim-results-index/1', updated: new Date().toISOString(), runs: list }, null, 1));
+  return list;
 }

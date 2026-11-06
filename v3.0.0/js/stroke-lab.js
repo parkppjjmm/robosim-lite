@@ -583,11 +583,15 @@ export function makePolicyChooser(agent, lab, { rand = rng(7), onDecision = () =
     const obs = observe(ps, { initialCount: initial, tFrac: Math.min(1, t / sim.task.timeLimitS), last: lastVals, dim });
     const { u } = act(agent, obs, rand, retries === 0);
     const box = zoneBox(sim.sides); // 측면 로봇 구역은 침범하지 않음
-    let values;
+    let values, info = { mode: 'abs' };
     if (agent.meta?.actionMode === 'residual') {
       const rv0 = ruleValues(sim.world.particleState(), sim.sides, sim.thresholds, sim.task);
       if (!rv0) return null;
-      values = decodeResidual(u, strokeFromValues(rv0).values, lab).values;
+      const dec = decodeResidual(u, strokeFromValues(rv0).values, lab);
+      values = dec.values;
+      // 앱 결정 표용: 규칙 레인을 그대로/반대로 썼는지와 조정량 (v3.0.0 [C])
+      const d = (k, r) => Math.round((Math.min(1, Math.max(0, u[k])) - 0.5) * 2 * r);
+      info = { mode: 'residual', reversed: dec.reversed, dx: d(1, RESIDUAL.x0), dy: d(2, RESIDUAL.y0), dh: d(3, RESIDUAL.headingDeg), dl: d(4, RESIDUAL.lengthMm) };
     } else values = decodeStroke(u, lab).values;
     let fix = await planWithRepair({ robot: sim.robot, q0: q, values, sides: sim.sides, thresholds: sim.thresholds, box });
     let fallback = false;
@@ -600,7 +604,7 @@ export function makePolicyChooser(agent, lab, { rand = rng(7), onDecision = () =
     }
     const st = strokeFromValues(fix.values, fallback ? STROKE_BOX : box);
     lastVals = st.values;
-    onDecision({ t, rate: evaluator.last.rateCount, values: st.values, retry: retries, repaired: fix.repaired, fallback });
+    onDecision({ t, rate: evaluator.last.rateCount, values: st.values, retry: retries, repaired: fix.repaired, fallback, info });
     return { lane: { start: st.start, end: st.end }, stroke: { yaw0Deg: st.yaw0Deg, yaw1Deg: st.yaw1Deg, tiltDeg: st.tiltDeg }, immersionMm: st.depthMm, sweepMmS: st.speedMmS };
   };
 }
@@ -610,7 +614,7 @@ export async function runPolicy({ RAPIER, robots, task, lab, agent, runEpisode, 
   const decisions = [];
   const chooser = makePolicyChooser(agent, lab, {
     onDecision: (d) => {
-      decisions.push({ n: decisions.length + 1, t: +d.t.toFixed(1), rate: +d.rate.toFixed(1), values: d.values, retry: d.retry, repaired: d.repaired, fallback: d.fallback });
+      decisions.push({ n: decisions.length + 1, t: +d.t.toFixed(1), rate: +d.rate.toFixed(1), values: d.values, retry: d.retry, repaired: d.repaired, fallback: d.fallback, info: d.info });
       onProgress({ kind: 'policy', decision: decisions.at(-1), rate: d.rate, t: d.t });
     },
   });
