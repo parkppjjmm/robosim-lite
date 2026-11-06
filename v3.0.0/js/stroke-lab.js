@@ -400,7 +400,7 @@ function gaussian(rand) {
  * @param ctx { lab, rand, seedValues(규칙 경로 변수 | null), evalBatch(strokes) → Promise<results>, shouldStop() }
  * @returns { best: { stroke, result }, trials: [{ iter, values, score, collected, wallCollected, spilled, feasible, rule }] }
  */
-export async function searchStroke({ lab, rand, seedValues, evalBatch, shouldStop = () => false }) {
+export async function searchStroke({ lab, rand, seedValues, seedAltValues = null, evalBatch, shouldStop = () => false }) {
   const keys = searchKeys(lab);
   const d = keys.length;
   // 시작 분포: 규칙 경로가 있으면 그 근처(표준편차 0.15) — 첫 세대는 절반은 그 근처 변형, 절반은 전체 무작위(새 방향 발견용)
@@ -412,15 +412,19 @@ export async function searchStroke({ lab, rand, seedValues, evalBatch, shouldSto
     if (shouldStop()) break;
     const us = [];
     if (it === 0 && seedU && lab.includeRule) us.push(seedU.slice());
+    // v3.0.0 [B]: 같은 레인을 반대로(스나우트 쪽으로) 쓰는 규칙 후보도 첫 세대에 넣는다 ([A]에서 번갈아 쓰기가 가장 좋았음)
+    const altU = it === 0 && seedAltValues && lab.includeRule ? encodeValues(seedAltValues, lab) : null;
+    if (altU) us.push(altU);
     while (us.length < lab.population) {
       const global = lab.method === 'random' || (it === 0 && (!seedU || us.length % 2 === 0));
       us.push(global ? mean.map(() => rand()) : mean.map((m, j) => clamp(m + std[j] * gaussian(rand), 0, 1)));
     }
     const strokes = us.map((u) => decodeStroke(u, lab));
     if (it === 0 && seedValues && lab.includeRule) strokes[0] = { ...strokeFromValues(seedValues), rule: true };
+    if (altU) strokes[1] = { ...strokeFromValues(seedAltValues), ruleRev: true };
     const results = await evalBatch(strokes);
     results.forEach((r, k) => {
-      trials.push({ iter: it, values: strokes[k].values, rule: !!strokes[k].rule, score: +r.score.toFixed(2), collected: r.collected, wallCollected: r.wallCollected, spilled: r.spilled, feasible: r.feasible, durationS: r.durationS, stage: r.stage ?? null });
+      trials.push({ iter: it, values: strokes[k].values, rule: !!strokes[k].rule, ruleRev: !!strokes[k].ruleRev, score: +r.score.toFixed(2), collected: r.collected, wallCollected: r.wallCollected, spilled: r.spilled, feasible: r.feasible, durationS: r.durationS, stage: r.stage ?? null });
       if (!best || r.score > best.result.score) best = { stroke: strokes[k], result: r, u: us[k] };
     });
     if (lab.method === 'cem' && d) {
@@ -442,15 +446,17 @@ export async function searchStroke({ lab, rand, seedValues, evalBatch, shouldSto
  * @param opts { RAPIER, robots, task, lab, runEpisode, evalBatch(jobs) → Promise<results>, record?, onProgress?(p), shouldStop?() }
  * @returns { summary, out, episode, log }
  */
-export async function runLab({ RAPIER, robots, task, lab, runEpisode, evalBatch, record = null, onProgress = () => {}, shouldStop = () => false }) {
+export async function runLab({ RAPIER, robots, task, lab, runEpisode, evalBatch, record = null, onProgress = () => {}, shouldStop = () => false, stopOnBlock = true }) {
   const rand = rng(lab.seed);
   const robot = robots.find((r) => r.id === task.cell.main);
   const log = { schema: 'robosim-lab-log/1', lab, task, decisions: [], library: [], startedAt: new Date().toISOString() };
   let lastCollected = 0;
   let decision = 0;
+  let initialWork = null;
   const chooser = async ({ q, sim, evaluator }) => {
     if (shouldStop()) return null;
     const particles = snapshotParticles(sim.world);
+    if (initialWork === null) initialWork = workCountOf(particles);
     const sides = sim.sides;
     const th = sim.thresholds;
     // 지난 스트로크 결과 (실제 실행)
@@ -461,12 +467,18 @@ export async function runLab({ RAPIER, robots, task, lab, runEpisode, evalBatch,
     if (!particles.length || (!seedValues && particles.length < 4)) return null;
     const t0 = Date.now();
     const jobsFor = (strokes) => strokes.map((stroke) => ({ robotId: robot.id, q0: q, particles, stroke, reward: lab.reward, sides, thresholds: th }));
-    const { best, trials } = await searchStroke({ lab, rand, seedValues, evalBatch: (strokes) => evalBatch(jobsFor(strokes)), shouldStop });
+    // 반대 방향 규칙 후보: 측면 로봇이 없는 셀에서만 ([A]: 측면 로봇 셀에서는 스나우트 쪽 경로가 측면 로봇과 너무 가까움)
+    const noSides = !sides?.left?.robotId && !sides?.right?.robotId;
+    const seedAltValues = seedValues && noSides ? { ...seedValues, x0: seedValues.x0 - seedValues.lengthMm, headingDeg: 0 } : null;
+    const { best, trials } = await searchStroke({ lab, rand, seedValues, seedAltValues, evalBatch: (strokes) => evalBatch(jobsFor(strokes)), shouldStop });
     if (!best || !best.result.feasible) return null;
     decision++;
     const rec = {
       n: decision, t: +evaluator.last.t.toFixed(1), rate: +evaluator.last.rateCount.toFixed(1), evalS: +((Date.now() - t0) / 1000).toFixed(1),
-      trials: trials.length, ruleScore: trials.find((x) => x.rule)?.score ?? null, best: { values: best.stroke.values, rule: !!best.stroke.rule, ...pickRes(best.result) }, trialsList: trials,
+      trials: trials.length, ruleScore: trials.find((x) => x.rule)?.score ?? null, best: { values: best.stroke.values, rule: !!best.stroke.rule, ruleRev: !!best.stroke.ruleRev, ...pickRes(best.result) }, trialsList: trials,
+      // 시범 데이터([B] 단계, PPO 모방 학습 교사): 그때 정책이 볼 관측(98) + 최선 스트로크의 정규화 행동 u(0~1)
+      obs: Array.from(observe(particles, { initialCount: initialWork, tFrac: Math.min(1, evaluator.last.t / task.timeLimitS) }), (v) => +v.toFixed(4)),
+      u: encodeValues(best.stroke.values, lab).map((v) => +v.toFixed(4)),
     };
     log.decisions.push(rec);
     // 최선 모션 라이브러리: 점수 상위 keepTop
@@ -478,7 +490,7 @@ export async function runLab({ RAPIER, robots, task, lab, runEpisode, evalBatch,
     return { lane: { start: s.start, end: s.end }, stroke: { yaw0Deg: s.yaw0Deg, yaw1Deg: s.yaw1Deg, tiltDeg: s.tiltDeg }, immersionMm: s.depthMm, sweepMmS: s.speedMmS };
   };
   const { summary, out, episode } = await runEpisode(task, {
-    RAPIER, robots, record, mainChooser: chooser, shouldStop,
+    RAPIER, robots, record, mainChooser: chooser, shouldStop, stopOnBlock,
     onSample: (s) => onProgress({ kind: 'sample', t: s.t, rate: s.rateCount }),
   });
   if (log.decisions.length) {

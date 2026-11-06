@@ -3,7 +3,9 @@
 // 병렬로 시도해 점수(보상 규칙)가 가장 높은 것만 실행한다. 측면 로봇은 기존 경로. 같은 과제의 규칙 경로 결과와 비교한다.
 // 실행: node tools/train.mjs [--lab 설정.json] [--main kuka-kr210-r2700] [--config alone|mode1|mode2] [--seed 11] [--count 160]
 //                           [--target 80] [--time 600] [--workers N] [--population 16] [--iterations 3] [--method cem|random]
-//                           [--lane-dir robot|snout|alternate(비교 규칙 경로)] [--no-compare] [--out 폴더]
+//                           [--lane-dir robot|snout|alternate(비교 규칙 경로)] [--no-compare] [--no-stop] [--out 폴더]
+//   --no-stop: 대형이 안전 게이트에 막혀도 멈추지 않고 그 사이클만 버린다(시범 수집용). 기본은 앱과 같이 정지.
+//   결과 폴더의 demos.json = 결정마다 { obs(98), u(정규화 행동) } — PPO 모방 학습 교사 ([B] 단계)
 //   --lab: 앱 '학습' 패널의 [설정 내보내기]로 만든 파일 (robosim-lab/1). 명령행 값이 있으면 그것이 우선한다.
 // 결과(이름 규칙은 results/README.md): <out>/report.md, <out>/<방법>-<구성>-s<시드>.rsim.json.gz(학습 3D 재생),
 //   <out>/rule-<구성>-s<시드>.rsim.json.gz(같은 과제의 규칙 경로), <out>/log.json(모든 시도)
@@ -120,7 +122,7 @@ await pool.ready;
 const t0 = Date.now();
 const rec = new RP.EpisodeRecorder({ everyS: 0.1 });
 const lab1 = await LAB.runLab({
-  RAPIER, robots, task, lab, record: rec, runEpisode: CS.runEpisode, evalBatch: (jobs) => pool.run(jobs),
+  RAPIER, robots, task, lab, record: rec, runEpisode: CS.runEpisode, evalBatch: (jobs) => pool.run(jobs), stopOnBlock: !process.argv.includes('--no-stop'),
   onProgress: (p) => {
     if (p.kind !== 'decision') return;
     const d = p.decision;
@@ -131,6 +133,9 @@ pool.close();
 const trainS = (Date.now() - t0) / 1000;
 writeFileSync(`${outDir}/${epName}`, gzipSync(JSON.stringify({ ...lab1.episode, lab: { method: lab.method, reward: lab.reward } })));
 writeFileSync(`${outDir}/log.json`, JSON.stringify(lab1.log, null, 1));
+writeFileSync(`${outDir}/demos.json`, JSON.stringify({ schema: 'robosim-demos/1', config: cfgName, seed: task.dross.seed, robot: task.cell.main, lab: { search: lab.search, reward: lab.reward },
+  summary: { rateCount: lab1.log.summary.rateCount, decisions: lab1.log.summary.decisions },
+  demos: lab1.log.decisions.map((d) => ({ t: d.t, obs: d.obs, u: d.u, score: d.best.score, collected: d.best.collected, actual: d.actualCollected ?? null, rule: d.best.rule, ruleRev: !!d.best.ruleRev })) }));
 
 // ---- 같은 과제의 규칙 경로 (비교) ----
 let rule = null;
