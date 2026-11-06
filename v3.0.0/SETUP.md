@@ -86,7 +86,8 @@ git clone https://parkppjjmm@github.com/parkppjjmm/robosim-lite.git
 4. **같은 결과 다시 만들기:** 각 실행 폴더의 `run.json`에 실행한 명령이 그대로 있습니다. 같은 명령을 다시 실행하면 새 날짜·시각 폴더에 같은 결과가 생깁니다(시드 고정, 결정적 실행).
    - 예: `node tools/baseline.mjs --mains kuka-kr210-r2700 --configs alone --lane-dir robot,snout,alternate`
 5. **기술 문서:** `v3.0.0/docs/README.md`에 목록이 있습니다. 문서마다 `build/` 스크립트로 다시 만들 수 있습니다.
-6. **학습 속도:** 진화 탐색·PPO는 CPU 코어를 많이 씁니다. 개발 PC 기준 Worker 14개입니다. 코어가 적으면 `--workers`를 줄이세요. 결과는 같고 시간만 늘어납니다.
+6. **혼자 학습:** `v3.0.0\train.bat` 더블클릭 → 메뉴(전체 학습 / PPO 학습만 / 모델 평가 / 기준선 / 결과 목록). README의 "혼자 학습하기" 참고.
+7. **학습 속도:** 진화 탐색·PPO는 CPU 코어를 많이 씁니다. 개발 PC 기준 Worker 14개입니다. 코어가 적으면 `--workers`를 줄이세요. 결과는 같고 시간만 늘어납니다.
 
 ## 5. Claude Code로 이어서 작업하기
 

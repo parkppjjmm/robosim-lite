@@ -45,7 +45,7 @@ robosim-lite/
 - 원칙: 로봇 이동(스키밍 포함)은 물리엔진보다 먼저 안전 게이트를 통과해야 한다(적용 전 검사). 시뮬레이션 모드(고정/물리)는 전체 단위로만 선택한다(물체별 선택 금지). 고정 모드·셀 꺼짐은 이전 버전과 동일하게 동작해야 한다.
 
 ## 알려진 함정
-- **`start.bat`은 ASCII 전용 + CRLF로 유지한다.** UTF-8 한글이나 LF가 들어가면 cmd가 즉시 종료된다. `.gitattributes`가 체크아웃 시 CRLF를 강제한다.
+- **`start.bat`·`train.bat`(v3.0.0)은 ASCII 전용 + CRLF로 유지한다.** UTF-8 한글이나 LF가 들어가면 cmd가 즉시 종료된다. `.gitattributes`가 체크아웃 시 CRLF를 강제한다.
 - **브라우저 모듈 캐시:** 예전 JS가 캐시되면 Worker가 버전 불일치로 실패한다("Worker 오류"). `serve.py`의 `Clear-Site-Data`가 이를 막으므로 다른 정적 서버로 테스트할 때 주의한다.
 - **거리 지표:** 충돌 검사의 `minDistance`는 여유거리 밖의 먼 장애물에 대해 경계구 하한값을 쓴다. 정확한 거리가 필요하면 `checkObstacleCollision(segs, compiled, 큰값)`을 쓴다.
 - Windows 셸에서 한글과 따옴표가 섞인 heredoc은 깨지기 쉽다. 패치 스크립트는 파일로 작성해서 실행한다.
