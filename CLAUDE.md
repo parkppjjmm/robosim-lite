@@ -30,7 +30,7 @@ robosim-lite/
 - 실행: `start.bat`(Windows) 또는 `python serve.py [port] [--no-browser]` (기본 8200). **Claude가 테스트용 서버를 띄웠다면 끝나고 반드시 끈다** — 같은 포트가 열려 있으면 사용자의 start.bat이 "포트 사용 중"으로 닫힌다(2026-11-05 사례). file:// 직접 실행은 지원하지 않는다(ES 모듈·Worker).
 - 버전마다 포트가 달라 localStorage(`robosim-lite:v1`)가 분리된다(v1.0.0 8000 / v1.1.0 8011 / v1.1.1 8111 / v1.1.2 8112 / v2.0.0 8200 / v3.0.0 8300). 같은 포트로 여러 버전을 번갈아 열지 않는다(저장 형식 충돌).
 - 디버그 핸들: URL에 `?debug` → `window.__robosim` (viewer, controller, getState, setState, physics, dross, skim).
-- Node 검증: `node tests/run-all.mjs` (빠른 10종: 도달거리·안전·IK·계획·물리·그리퍼·Pick & Place·경미 이슈·드로스 셀·계측(v1.1.2)), `--full` (스트레스·수치·측면 로봇 동시 실행 `cell-robots.mjs` 포함). `cell-robots.mjs`는 `ONLY=A|B|C`, `SIM_S`, `PROFILE=1`, `DBG=1` 환경 변수로 일부만·짧게 돌릴 수 있다. 기능을 바꾸면 반드시 다시 실행한다. 다른 폴더 검증은 스크립트에 경로 인자(예: `node tests/planner.mjs ../v1.0.0`).
+- Node 검증: `node tests/run-all.mjs` (빠른 10종: 도달거리·안전·IK·계획·물리·그리퍼·Pick & Place·경미 이슈·드로스 셀·계측(v1.1.2) — v3.0.0은 `task-eval`·`stroke-lab`·`push-lane`을 더해 13종, `--full` 16종), `--full` (스트레스·수치·측면 로봇 동시 실행 `cell-robots.mjs` 포함). `cell-robots.mjs`는 `ONLY=A|B|C`, `SIM_S`, `PROFILE=1`, `DBG=1` 환경 변수로 일부만·짧게 돌릴 수 있다. 기능을 바꾸면 반드시 다시 실행한다. 다른 폴더 검증은 스크립트에 경로 인자(예: `node tests/planner.mjs ../v1.0.0`).
 - 브라우저 확인: v1.0.0 AC-1~AC-10(`v1.0.0/PRD.md` 7장), v1.1.0 AC-11~20(`v1.1.0/PRD_v.1.1.0.md` 7장), v1.1.1 AC-21~29(`PRD_v.1.1.1.md` 7장). 자동화할 때는 캐시를 피하려고 요청에 no-cache 헤더를 붙인다. Playwright가 없으면 헤드리스 Chrome + CDP 스크립트(`--use-angle=swiftshader`)로 할 수 있다(소프트웨어 렌더링이라 FPS는 참고값).
 
 ## 구조 핵심 (`v2.0.0/js/`, v1.1.1부터 같은 구조)
