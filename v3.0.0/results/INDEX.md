@@ -16,3 +16,7 @@
 | 2026-11-06 | 09:52 | baseline | `2026-11-06/0952_baseline_kr210_push-test_lane-dir` | KR alone robot 61.3% · KR alone snout 51.5% · KR alone alternate 72.5% · KR mode2 robot 53.3% · KR mode2 snout 0.0% · KR mode2 alternate 48.1% · KR push robot 33.8% · KR push snout 15.8% · KR push alternate 36.1% ※ 모드 3 첫 설계(구역 분리 동시 작업) — 교착으로 폐기, 1022에서 다시 잼 |
 | 2026-11-06 | 10:22 | baseline | `2026-11-06/1022_baseline_kr210_mode2-vs-push` | KR mode2 robot 53.3% · KR push robot 57.5% |
 | 2026-11-06 | 10:22 | baseline | `2026-11-06/1022_baseline_kr210_alone_lane-dir` | KR alone robot 61.3% · KR alone snout 51.0% · KR alone alternate 72.9% |
+| 2026-11-06 | 10:48 | cem | `2026-11-06/1048_cem_kr210-alone-s101` | cem 86.1% vs 규칙 71.5% (kr210-alone-s101) |
+| 2026-11-06 | 10:53 | cem | `2026-11-06/1053_cem_kr210-alone-s102` | cem 88.7% vs 규칙 76.7% (kr210-alone-s102) |
+| 2026-11-06 | 10:59 | cem | `2026-11-06/1059_cem_kr210-alone-s103` | cem 84.4% vs 규칙 76.9% (kr210-alone-s103) |
+| 2026-11-06 | 11:08 | cem | `2026-11-06/1108_cem_kr210-alone-s104` | cem 83% vs 규칙 58.5% (kr210-alone-s104) |

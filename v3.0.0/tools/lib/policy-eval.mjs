@@ -54,7 +54,7 @@ export async function evalPolicyCell({ m, RAPIER, robots, pol, agent, lab, confi
   L.push('| 시드 | PPO 정책 | 규칙 경로 | 차이 | 스트로크 | 보정 | 규칙 대체 | 흘림 (PPO / 규칙) |', '|---|---|---|---|---|---|---|---|');
   for (const r of rows) L.push(`| ${r.seed} | **${r.ppo.rateCount}%** | ${r.rule.rateCount}% | ${(r.ppo.rateCount - r.rule.rateCount).toFixed(1)}%p | ${r.strokes} | ${r.repaired} | ${r.fallback} | ${r.ppo.spilled} / ${r.rule.spilled} |`);
   L.push(`| 평균 | **${mp.toFixed(1)}%** | ${mr.toFixed(1)}% | ${(mp - mr).toFixed(1)}%p | | | | |`);
-  L.push('', `3D 재생(앱 '에피소드 재생'): \`ppo-${config}-s<시드>.rsim.json.gz\`(정책) · \`rule-${config}-s<시드>.rsim.json.gz\`(규칙) — 용량 때문에 git에는 없음, 위 명령으로 다시 만든다.`);
+  L.push('', `3D 재생(앱 '에피소드 재생'): \`ppo-${config}-s<시드>.rsim.json.gz\`(정책) · \`rule-${config}-s<시드>.rsim.json.gz\`(규칙)`);
   const md = L.join('\n') + '\n';
   const file = `${outDir}/cell-eval-${config}.md`;
   writeFileSync(file, md);

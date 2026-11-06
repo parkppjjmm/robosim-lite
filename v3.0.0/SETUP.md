@@ -62,12 +62,31 @@ git clone https://parkppjjmm@github.com/parkppjjmm/robosim-lite.git
 
 ## 4. 정상 동작 확인
 
-1. **자동 검증 (Node 필요):** `v3.0.0/` 폴더에서 아래 명령을 실행해 `모두 정상 실행`이 나오면 됩니다(약 1~2분, 10종).
+1. **자동 검증 (Node 필요):** `v3.0.0/` 폴더에서 아래 명령을 실행해 `모두 정상 실행`이 나오면 됩니다(약 2~3분, 13종).
    ```bash
    node tests/run-all.mjs
    ```
    `--full`을 붙이면 스트레스·수치 검증까지 포함합니다(수 분). v1.0.0 폴더를 검증하려면 개별 스크립트에 경로를 주면 됩니다. 예: `node tests/planner.mjs ../v1.0.0`
 2. **화면 확인:** README의 "시연 팁 → 벽 우회 예"를 따라 해서 A→B 경로가 생성·실행되는지 봅니다. v1.1.1은 "드로스 제거 셀" 사용법대로 대형 로봇에서 ▶ 1사이클을 실행해 드로스가 박스로 옮겨지는지 봅니다.
+
+## 4-1. v3.0.0 AI 학습 환경 (다른 PC에서 그대로 이어 하기)
+
+저장소를 받으면 지금까지의 **모든 실행 결과**가 함께 들어옵니다. 3D 재생 파일, 진화 탐색 시도 기록, PPO 정책, 보고서가 모두 포함됩니다(2026-11-06부터).
+
+| 필요 | 버전 | 용도 |
+|---|---|---|
+| Node.js | 18 이상 (개발 PC는 26.13) | 테스트, 헤드리스 시뮬레이션, 진화 탐색·PPO 학습 (`v3.0.0/tools/`) |
+| Python | 3.8 이상 | 앱 서버 `serve.py` |
+| Python 패키지 (선택) | `python -m pip install -r v3.0.0/docs/requirements.txt` | 기술 문서(Word)·그림 다시 만들기 |
+| 인터넷 | — | Three.js·Rapier(CDN). 첫 테스트 때 Rapier를 `tests/.cache/`에 자동으로 받음 |
+
+1. **확인:** `v3.0.0/`에서 `node tests/run-all.mjs`를 실행해 `모두 정상 실행 (13개 스크립트)`가 나오는지 봅니다.
+2. **결과 보기:** `v3.0.0/results/INDEX.md`에 모든 실행이 시간순으로 있습니다. 3D로 보려면 `start.bat` → **에피소드 재생 → 에피소드 불러오기**에서 `results/<날짜>/<시각>_…/*.rsim.json.gz`를 고릅니다.
+3. **학습된 정책 실행:** 앱 **학습 (Trial & Error) → 정책 불러오기 (PPO)**에서 `results/2026-11-05/1814_ppo-train_kr210-run1/policy-best.json`을 고릅니다.
+4. **같은 결과 다시 만들기:** 각 실행 폴더의 `run.json`에 실행한 명령이 그대로 있습니다. 같은 명령을 다시 실행하면 새 날짜·시각 폴더에 같은 결과가 생깁니다(시드 고정, 결정적 실행).
+   - 예: `node tools/baseline.mjs --mains kuka-kr210-r2700 --configs alone --lane-dir robot,snout,alternate`
+5. **기술 문서:** `v3.0.0/docs/README.md`에 목록이 있습니다. 문서마다 `build/` 스크립트로 다시 만들 수 있습니다.
+6. **학습 속도:** 진화 탐색·PPO는 CPU 코어를 많이 씁니다. 개발 PC 기준 Worker 14개입니다. 코어가 적으면 `--workers`를 줄이세요. 결과는 같고 시간만 늘어납니다.
 
 ## 5. Claude Code로 이어서 작업하기
 

@@ -1,0 +1,5 @@
+# 기술 문서(docs/<날짜>_<시각>_<제목>/build/) 다시 만들기용 — 앱 실행·학습에는 필요 없음
+# 설치: python -m pip install -r v3.0.0/docs/requirements.txt
+python-docx>=1.1
+matplotlib>=3.7
+numpy>=1.24
