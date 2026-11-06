@@ -27,7 +27,7 @@ robosim-lite/
 | [`v1.0.0/`](v1.0.0/) | v1.0.0 | **고정본 (수정 금지)** | http://localhost:8000 | [README](v1.0.0/README.md) · [PRD](v1.0.0/PRD.md) · [REVIEW](v1.0.0/REVIEW.md) · [PROMPTS](v1.0.0/PROMPTS.md) · [CHANGELOG](v1.0.0/CHANGELOG.md) |
 | [`v1.1.0/`](v1.1.0/) | v1.1.0 | **릴리스** (태그 `v1.1.0`) | http://localhost:8011 | [README](v1.1.0/README.md) · [PRD](v1.1.0/PRD_v.1.1.0.md) · [REVIEW](v1.1.0/REVIEW_v1.1.0.md) · [PROMPTS](v1.1.0/PROMPTS.md) · [CHANGELOG](v1.1.0/CHANGELOG.md) |
 | [`v1.1.2/`](v1.1.2/) | v1.1.2 | **릴리스 · 최신** (태그 `v1.1.2`) | http://localhost:8112 | [README](v1.1.2/README.md) · [PRD](v1.1.2/PRD_v.1.1.2.md) · [REVIEW](v1.1.2/REVIEW_v1.1.2.md) · [PROMPTS](v1.1.2/PROMPTS.md) · [CHANGELOG](v1.1.2/CHANGELOG.md) |
-| [`v3.0.0/`](v3.0.0/) | v3.0.0 | **릴리스 준비** (태그 `v3.0.0` 사용자 확인 후) | http://localhost:8300 | [README](v3.0.0/README.md) · [PRD](v3.0.0/PRD_v.3.0.0.md) · [REVIEW](v3.0.0/REVIEW_v3.0.0.md) · [STATUS](v3.0.0/STATUS.md) · [PROMPTS](v3.0.0/PROMPTS.md) · [CHANGELOG](v3.0.0/CHANGELOG.md) |
+| [`v3.0.0/`](v3.0.0/) | v3.0.0 | **릴리스 준비 완료** (태그 보류) | http://localhost:8300 | [README](v3.0.0/README.md) · [PRD](v3.0.0/PRD_v.3.0.0.md) · [REVIEW](v3.0.0/REVIEW_v3.0.0.md) · [STATUS](v3.0.0/STATUS.md) · [PROMPTS](v3.0.0/PROMPTS.md) · [CHANGELOG](v3.0.0/CHANGELOG.md) |
 | [`v2.0.0/`](v2.0.0/) | v2.0.0 | **개발 중** | http://localhost:8200 | [README](v2.0.0/README.md) · [PRD](v2.0.0/PRD_v.2.0.0.md) · [PROMPTS](v2.0.0/PROMPTS.md) · [CHANGELOG](v2.0.0/CHANGELOG.md) |
 | [`v1.1.1/`](v1.1.1/) | v1.1.1 | **릴리스** (태그 `v1.1.1`) | http://localhost:8111 | [README](v1.1.1/README.md) · [PRD](v1.1.1/PRD_v.1.1.1.md) · [REVIEW](v1.1.1/REVIEW_v1.1.1.md) · [PROMPTS](v1.1.1/PROMPTS.md) · [CHANGELOG](v1.1.1/CHANGELOG.md) · [SETUP](v1.1.1/SETUP.md) |
 
