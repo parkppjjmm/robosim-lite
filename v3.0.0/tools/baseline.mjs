@@ -6,6 +6,7 @@
 // 결과: <out>.json(전체), <out>.md(표). 각 실행은 자식 프로세스(--job)로 병렬 처리한다. 외부 패키지 없음.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { makeRunDir, finishRun } from './lib/run-dir.mjs';
+import { progressLine } from './lib/progress.mjs';
 import { spawn } from 'node:child_process';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
@@ -81,7 +82,7 @@ await Promise.all(Array.from({ length: workers }, async () => {
     const r = await runOne(job);
     results.push(r);
     const s = r.summary;
-    console.log(`  [${results.length}/${jobs.length}] ${nameOf(job.main)} · ${job.config} · 시드 ${job.seed} → ${r.error ? `오류: ${r.error}` : `${s.rateCount}% (질량 ${s.rateMass}%), 흘림 ${s.spilled}, ${s.speedup}×`}`);
+    console.log(`  ${progressLine(results.length / jobs.length, t0)} | [${results.length}/${jobs.length}] ${nameOf(job.main)} · ${job.config} · 시드 ${job.seed} → ${r.error ? `오류: ${r.error}` : `${s.rateCount}% (질량 ${s.rateMass}%), 흘림 ${s.spilled}, ${s.speedup}×`}`);
   }
 }));
 const elapsed = (Date.now() - t0) / 1000;

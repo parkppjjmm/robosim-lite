@@ -18,6 +18,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { spawn, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { makeRunDir, finishRun } from './lib/run-dir.mjs';
+import { progressLine } from './lib/progress.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url)).replace(/[\\/]$/, '');
 const arg = (k, d) => {
@@ -34,10 +35,15 @@ const t0 = Date.now();
 const min = () => ((Date.now() - t0) / 60000).toFixed(0);
 console.log(`[파이프라인] ${run.rel} — 시작 ${run.t.local}`);
 
+// 전체 진행률 막대 (2026-11-06 사용자 요청): 하위 도구 실행 수 기준 — ① 시범(있으면) + ② PPO + ③ 평가 시드마다 진화 탐색
+const TOTAL_STEPS = (arg('demos') ? 0 : 1) + 1 + (has('no-cem-eval') ? 0 : EVAL_SEEDS.length);
+let stepsDone = 0;
+
 /** 하위 도구 실행: 중요한 줄만 앞에 [단계]를 붙여 보여 주고, 전체 출력은 반환 */
 function step(tag, script, args, show = /진행|✔|모방|PPO\s+\d+\/|평가|저장:|시드 \d+:|오류|Error/) {
   return new Promise((resolve, reject) => {
-    console.log(`\n[${tag}] node ${script} ${args.join(' ')}`);
+    console.log(`\n전체 ${progressLine(stepsDone / TOTAL_STEPS, t0)} — 단계 ${stepsDone + 1}/${TOTAL_STEPS}`);
+    console.log(`[${tag}] node ${script} ${args.join(' ')}`);
     const p = spawn(process.execPath, [`${root}/${script}`, ...args], { cwd: root, stdio: ['ignore', 'pipe', 'pipe'] });
     let out = '', err = '', buf = '';
     p.stdout.on('data', (d) => {
@@ -49,7 +55,7 @@ function step(tag, script, args, show = /진행|✔|모방|PPO\s+\d+\/|평가|�
       for (const line of parts) if (line.trim() && show.test(line)) console.log(`  [${tag} · ${min()}분] ${line.trim()}`);
     });
     p.stderr.on('data', (d) => (err += d));
-    p.on('close', (code) => (code === 0 ? resolve(out) : reject(new Error(`${tag} 실패 (코드 ${code}): ${err.trim().split('\n').slice(-3).join(' ')}`))));
+    p.on('close', (code) => (code === 0 ? (stepsDone++, resolve(out)) : reject(new Error(`${tag} 실패 (코드 ${code}): ${err.trim().split('\n').slice(-3).join(' ')}`))));
   });
 }
 const savedPath = (out, re) => {
@@ -144,5 +150,6 @@ finishRun(root, run, {
   detail: { demos: rel(demosAbs), train: rel(trainDir), cem: cemRows, ppo: ppoRows },
 });
 commitStep('④ 비교 보고서', [run.dir]);
+console.log(`\n전체 ${progressLine(1, t0)} — 완료`);
 console.log('\n' + L.join('\n'));
 console.log(`\n저장: ${run.rel}/report.md`);

@@ -12,6 +12,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { configName, CONFIGS as CELLS, sideOf as cellSide } from './lib/policy-eval.mjs';
 import { makeRunDir, finishRun } from './lib/run-dir.mjs';
+import { progressLine } from './lib/progress.mjs';
 import { gzipSync } from 'node:zlib';
 import { Worker } from 'node:worker_threads';
 import { cpus } from 'node:os';
@@ -126,7 +127,8 @@ const lab1 = await LAB.runLab({
   onProgress: (p) => {
     if (p.kind !== 'decision') return;
     const d = p.decision;
-    console.log(`  결정 ${String(d.n).padStart(2)} @ ${String(d.t).padStart(5)} s · 회수율 ${p.rate.toFixed(1)}% · 시도 ${d.trials} (${d.evalS} s) · 최고 점수 ${d.best.score} (규칙 ${d.ruleScore ?? '—'})${d.best.rule ? ' = 규칙 레인' : ''} · 예상 회수 ${d.best.collected} · 방향 ${d.best.values.headingDeg.toFixed(0)}° 열린 면 ${d.best.values.yaw0Deg.toFixed(0)}→${d.best.values.yaw1Deg.toFixed(0)}° 기울임 ${d.best.values.tiltDeg.toFixed(0)}°`);
+    // 진행률 막대 = 시뮬레이션 시각 / 제한 시간 (2026-11-06 사용자 요청)
+    console.log(`  ${progressLine(d.t / task.timeLimitS, t0)} | 결정 ${String(d.n).padStart(2)} @ ${String(d.t).padStart(5)} s · 회수율 ${p.rate.toFixed(1)}% · 시도 ${d.trials} (${d.evalS} s) · 최고 점수 ${d.best.score} (규칙 ${d.ruleScore ?? '—'})${d.best.rule ? ' = 규칙 레인' : ''} · 예상 회수 ${d.best.collected} · 방향 ${d.best.values.headingDeg.toFixed(0)}° 열린 면 ${d.best.values.yaw0Deg.toFixed(0)}→${d.best.values.yaw1Deg.toFixed(0)}° 기울임 ${d.best.values.tiltDeg.toFixed(0)}°`);
   },
 });
 pool.close();

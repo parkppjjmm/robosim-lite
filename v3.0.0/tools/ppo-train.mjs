@@ -19,6 +19,7 @@ import { cpus } from 'node:os';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { evalPolicyCell } from './lib/policy-eval.mjs';
 import { makeRunDir, finishRun } from './lib/run-dir.mjs';
+import { progressLine } from './lib/progress.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url)).replace(/[\\/]$/, '');
 const imp = (m) => import(pathToFileURL(`${root}/${m}`));
@@ -208,7 +209,8 @@ for (let it = 1; it <= ITER; it++) {
   const up = PPO.ppoUpdate(agent, batch, { rand, optPi, optVf });
   const s = stat(rs);
   curve.push({ phase: 'ppo', iter: it, ...s, ...up, n: batch.length, s: (Date.now() - t0) / 1000 });
-  console.log(`  PPO ${String(it).padStart(3)}/${ITER}: ${fmt(s)} · KL ${up.approxKl.toFixed(4)} · 클립 ${(100 * up.clipFrac).toFixed(0)}% · 표준편차 ${mean(up.std).toFixed(3)} · ${((Date.now() - t0) / 1000).toFixed(0)} s`);
+  // 진행률 막대 = PPO 반복 / 전체 반복 (2026-11-06 사용자 요청). 끝난 뒤 10분 과제 평가(약 수 분)가 더 있다
+  console.log(`  ${progressLine(it / ITER, t0)} | PPO ${String(it).padStart(3)}/${ITER}: ${fmt(s)} · KL ${up.approxKl.toFixed(4)} · 클립 ${(100 * up.clipFrac).toFixed(0)}% · 표준편차 ${mean(up.std).toFixed(3)} · ${((Date.now() - t0) / 1000).toFixed(0)} s`);
   if (it % EVAL_EVERY === 0 || it === ITER) {
     const e = await evaluate(`반복 ${it}`);
     curve.push({ phase: 'eval', iter: it, ...e, s: (Date.now() - t0) / 1000 });

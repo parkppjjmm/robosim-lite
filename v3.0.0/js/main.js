@@ -2323,15 +2323,19 @@ function startLab(cfg) {
     labRun.status = "방법 '학습된 정책 실행'은 [정책 불러오기]로 policy-best.json을 먼저 불러와야 합니다.";
     return renderLabUI();
   }
-  Object.assign(labRun, { running: true, status: '준비 중…', decisions: [], progress: { rate: 0, t: 0 }, result: null, task, startedAt: performance.now() });
+  Object.assign(labRun, { running: true, status: '준비 중…', decisions: [], progress: { rate: 0, t: 0, timeLimitS: task.timeLimitS, elapsedS: 0 }, result: null, task, startedAt: performance.now() });
   const w = new Worker(new URL('./lab.worker.js', import.meta.url), { type: 'module' });
   labRun.worker = w;
   w.onmessage = (e) => {
     const m = e.data;
-    if (m.type === 'status') labRun.status = m.text;
-    else if (m.type === 'progress') {
+    if (m.type === 'status') {
+      labRun.status = m.text;
+      // 비교용 규칙 경로 실행 단계 → 학습 진행률 막대는 100%로 두고 '비교 중' 표시
+      if (m.text.startsWith('비교용') && labRun.progress) labRun.progress = { ...labRun.progress, t: task.timeLimitS, phase: 'compare' };
+    } else if (m.type === 'progress') {
       const p = m.p;
-      labRun.progress = { rate: p.rate, t: p.t };
+      if (labRun.progress?.phase === 'compare') return renderLabUI(); // 비교 실행의 진행은 학습 막대에 섞지 않음
+      labRun.progress = { rate: p.rate, t: p.t, timeLimitS: task.timeLimitS, elapsedS: p.elapsedS };
       if (p.kind === 'decision') labRun.decisions.push(p.decision);
       if (p.kind === 'policy') {
         // 결정 표: 2차 PPO(규칙 레인 기준 조정)면 그대로/반대 방향과 조정량, 보정·규칙 대체 표시

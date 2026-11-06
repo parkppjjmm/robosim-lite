@@ -1079,6 +1079,14 @@ button.sim-badge.physics:hover { background: color-mix(in srgb, var(--path) 24%,
 .lab-progress .rp-prog i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: #3d9be9; }
 .lab-progress .rp-prog i.ok { background: #2fbf71; }
 .lab-progress .rp-prog s { position: absolute; top: -3px; bottom: -3px; width: 2px; background: #f5a524; }
+/* 학습 진행률 막대 (2026-11-06) */
+.lab-progress .lab-bar-label { display: flex; justify-content: space-between; gap: 8px; margin-top: 6px; font-size: 11.5px; color: var(--muted); }
+.lab-progress .lab-bar-label span { white-space: nowrap; flex-shrink: 0; }
+.lab-progress .lab-bar-label b { font: 600 11px var(--mono); color: inherit; text-align: right; min-width: 0; }
+.lab-progress .rp-prog.lab-run { height: 12px; }
+.lab-progress .rp-prog.lab-run i { transition: width 0.3s; background: #7c6cf0; }
+.lab-progress .rp-prog.lab-run i.ok { background: #2fbf71; }
+.lab-progress .rp-prog.lab-run i.busy { background: repeating-linear-gradient(45deg, #7c6cf0 0 8px, #9b8ff5 8px 16px); }
 .lab-chart { width: 100%; height: 110px; }
 .lab-decisions { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 4px; }
 .lab-decisions th { color: var(--muted); font-weight: 500; text-align: left; }

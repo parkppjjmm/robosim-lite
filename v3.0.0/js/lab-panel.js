@@ -64,7 +64,10 @@ export function mountLabPanel(root, h) {
     </div>
     <p class="sim-status lab-status" aria-live="polite"></p>
     <div class="lab-progress" hidden>
-      <div class="rp-prog"><i></i><s></s></div>
+      <div class="lab-bar-label"><span>학습 진행률</span><b class="lab-run-text"></b></div>
+      <div class="rp-prog lab-run" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="학습 진행률"><i></i></div>
+      <div class="lab-bar-label"><span>회수율 (주황 선 = 목표)</span><b class="lab-rate-text"></b></div>
+      <div class="rp-prog lab-rate"><i></i><s></s></div>
       <canvas class="lab-chart" width="300" height="110" aria-label="결정별 최고 점수와 규칙 점수"></canvas>
       <table class="lab-decisions"></table>
     </div>
@@ -164,12 +167,29 @@ export function mountLabPanel(root, h) {
       const pr = $('.lab-progress');
       pr.hidden = !(ui.running || ui.decisions?.length);
       if (!pr.hidden) {
-        const pct = Math.max(0, Math.min(100, ui.progress?.rate ?? 0));
+        // ① 학습 진행률 (2026-11-06 사용자 요청) = 시뮬레이션 시각 / 제한 시간. 비교용 규칙 실행 중이면 그 표시
+        const p = ui.progress ?? {};
+        const lim = p.timeLimitS || 600;
+        const frac = ui.running ? Math.max(0, Math.min(1, (p.t ?? 0) / lim)) : 1;
+        const runBar = $('.lab-run i');
+        runBar.style.width = `${(frac * 100).toFixed(1)}%`;
+        runBar.classList.toggle('ok', !ui.running);
+        runBar.classList.toggle('busy', !!ui.running && p.phase === 'compare');
+        $('.lab-run').setAttribute('aria-valuenow', String(Math.round(frac * 100)));
+        const el = p.elapsedS ?? 0;
+        const left = frac > 0.005 && frac < 1 ? (el * (1 - frac)) / frac : null;
+        const dur = (s) => (s < 90 ? `${Math.round(s)}초` : `${Math.round(s / 60)}분`);
+        $('.lab-run-text').textContent = !ui.running ? '완료'
+          : p.phase === 'compare' ? '학습 끝 · 비교용 규칙 경로 실행 중'
+          : `${Math.round(frac * 100)}% · ${Math.round(p.t ?? 0)} / ${lim} s · 경과 ${dur(el)}${left !== null ? ` · 남은 약 ${dur(left)}` : ''}`;
+        // ② 회수율 (목표선)
+        const pct = Math.max(0, Math.min(100, p.rate ?? 0));
         const tgt = ui.target ?? 80;
-        const bar = $('.lab-progress .rp-prog i');
+        const bar = $('.lab-rate i');
         bar.style.width = `${pct}%`;
         bar.classList.toggle('ok', pct >= tgt);
-        $('.lab-progress .rp-prog s').style.left = `${tgt}%`;
+        $('.lab-rate s').style.left = `${tgt}%`;
+        $('.lab-rate-text').textContent = `${pct.toFixed(1)}% / 목표 ${tgt}%`;
         const ds = ui.decisions ?? [];
         $('.lab-decisions').innerHTML = `<tr><th>#</th><th>시각</th><th>회수율</th><th>최고 / 규칙 (정책: 고른 것)</th><th>스트로크</th></tr>` + ds.slice(-8).reverse().map((d) => {
           const v = d.best.values;

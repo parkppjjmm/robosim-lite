@@ -13,6 +13,7 @@ import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { makeRunDir, finishRun } from './lib/run-dir.mjs';
+import { progressLine } from './lib/progress.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url)).replace(/[\\/]$/, '');
 const arg = (k, d) => {
@@ -49,7 +50,7 @@ function runJob(job) {
         decisions += n;
         const k = done.length;
         const pct = ((k + Math.min(0.95, decisions / 15)) / jobs.length) * 100;
-        process.stdout.write(`\r  진행 ${pct.toFixed(1)}% — 에피소드 ${k + 1}/${jobs.length} (${job.config} 시드 ${job.seed}) 결정 ${decisions} · 경과 ${((Date.now() - t0) / 60000).toFixed(1)}분   `);
+        process.stdout.write(`\r  진행 ${progressLine(pct / 100, t0, 20)} — 에피소드 ${k + 1}/${jobs.length} (${job.config} 시드 ${job.seed}) 결정 ${decisions}   `);
       }
     });
     p.stderr.on('data', (d) => (err += d));
