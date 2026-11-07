@@ -5,6 +5,7 @@
 ```
 results/
 ├─ INDEX.md                         모든 실행을 시간순으로 한 줄씩 (도구가 자동 추가)
+├─ adopted.json                     현재 채택 모델 경로(사용자 결정, 2026-11-07) — train.bat 메뉴 3이 ★ 표시·기본값. 채택을 바꾸면 이 파일도 고친다
 ├─ 2026-11-05/
 │   ├─ 1541_baseline_alone+mode1+mode2/
 │   ├─ 1552_cem_kr210-alone-s11/

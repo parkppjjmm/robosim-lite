@@ -40,12 +40,20 @@ function runDirs() {
   }
   return out.sort((a, b) => b.key.localeCompare(a.key));
 }
-const pick = async (title, items, label) => {
+const pick = async (title, items, label, def = 1) => {
   if (!items.length) return null;
   console.log(title);
   items.forEach((it, i) => console.log(`  ${i + 1}) ${label(it)}`));
-  const n = Number(await ask('번호', 1));
+  const n = Number(await ask('번호', def));
   return items[Math.min(items.length, Math.max(1, n)) - 1];
+};
+/** 현재 채택 모델 경로 (results/adopted.json의 ppo2, v3.0.0 기준 상대 경로). 없으면 null */
+const readAdopted = () => {
+  try { return JSON.parse(readFileSync(`${root}/results/adopted.json`, 'utf8')).ppo2?.policy ?? null; } catch { return null; }
+};
+/** policy-last.json처럼 평가 기록이 없는 파일은 같은 반복의 체크포인트(checkpoints/iter-NNN.json) 평가를 쓴다 */
+const checkpointRate = (dir, iter) => {
+  try { return JSON.parse(readFileSync(`${dir}/checkpoints/iter-${String(iter).padStart(3, '0')}.json`, 'utf8')).eval?.rate ?? null; } catch { return null; }
 };
 const nextRunName = () => {
   let n = 2;
@@ -76,7 +84,7 @@ function finish(kind) {
   console.log('결과 보기');
   console.log(' - 보고서: 위 폴더의 report.md / train-report.md / cell-eval-*.md (메모장·VS Code로 열기)');
   console.log(' - 3D 재생: start.bat → 브라우저 → 오른쪽 "에피소드 재생" → "실행 결과 목록에서 열기" → 실행·파일 선택 → ▶ 열기');
-  if (kind === 'ppo') console.log(' - 정책 실행: 앱 "학습 (Trial & Error)" → 정책 불러오기 (PPO) → 새 ppo-train 폴더의 policy-best.json → ▶ 학습 시작');
+  if (kind === 'ppo') console.log(' - 정책 실행: 앱 "학습 (Trial & Error)" → 정책 불러오기 (PPO) → 새 ppo-train 폴더의 policy-best.json(또는 policy-last.json — 실제 셀 평가로 고르기, 메뉴 3) → ▶ 학습 시작');
   console.log(' - 모든 실행 기록: results/INDEX.md');
 }
 
@@ -117,7 +125,7 @@ async function pipelineArgs(withSeeds) {
     args.est = 0;
   }
   console.log('\n[2] PPO 학습 — 반복 1회 = 연습 경기 여러 개 → 신경망 수정. 5회마다 시험해 가장 좋은 모델을 남깁니다.');
-  const it = Number(await ask('    PPO 반복 횟수 (2차 모델은 10회)', 10));
+  const it = Number(await ask('    PPO 반복 횟수 (채택 2차 모델은 40회 학습의 40회째)', 10));
   const workers = Number(await ask('    CPU 작업자 수', WORKERS));
   const name = await ask('    학습 이름 (결과 폴더 이름에 들어감)', nextRunName());
   const cemEval = await yes('\n[3] 평가 시드에서 진화 탐색도 돌려 3가지(규칙·진화 탐색·PPO)를 비교할까요? (약 20분 추가)', true);
@@ -145,16 +153,22 @@ async function main() {
       if (code !== 0) console.log(`\n도구가 오류로 끝났습니다 (코드 ${code}). 위 메시지를 확인하세요. 예상 ${minutes(est)}`);
       finish('ppo');
     } else if (c === '3') {
-      const pols = runDirs().filter((d) => existsSync(`${d.full}/policy-best.json`));
-      const p = await pick('\n학습된 모델 고르기', pols, (x) => {
-        const j = JSON.parse(readFileSync(`${x.full}/policy-best.json`, 'utf8'));
-        return `${x.rel} — ${j.phase === 'bc' ? '모방 직후' : `PPO ${j.iter}회째`}, 학습 평가 ${j.eval?.rate?.toFixed(1) ?? '—'}%${existsSync(`${x.full}/NOTE.md`) ? ' (NOTE.md 참고)' : ''}`;
-      });
+      // 모델 = ppo-train 폴더의 policy-best.json(학습 도구가 연습장 시험으로 고른 것)과 policy-last.json(마지막 반복) 둘 다
+      // (2026-11-07 사용자 요청: 채택 2차 모델이 run3의 policy-last.json = 40회째라 메뉴에서도 고를 수 있게)
+      const adopted = readAdopted();
+      const pols = runDirs().flatMap((d) => ['policy-best.json', 'policy-last.json'].filter((f) => existsSync(`${d.full}/${f}`)).map((f) => ({ ...d, file: f, path: `${d.rel}/${f}` })));
+      const def = Math.max(0, pols.findIndex((x) => x.path === adopted)) + 1;
+      const p = await pick('\n학습된 모델 고르기 (★ = 현재 채택 모델, results/adopted.json)', pols, (x) => {
+        const j = JSON.parse(readFileSync(`${x.full}/${x.file}`, 'utf8'));
+        const rate = j.eval?.rate ?? checkpointRate(x.full, j.iter);
+        const kind = x.file === 'policy-best.json' ? '연습장 최고' : '마지막 반복';
+        return `${x.path === adopted ? '★ ' : ''}${x.path} — ${kind}, ${j.phase === 'bc' ? '모방 직후' : `PPO ${j.iter}회째`}, 학습 평가 ${rate != null ? rate.toFixed(1) : '—'}%${existsSync(`${x.full}/NOTE.md`) ? ' (NOTE.md 참고)' : ''}`;
+      }, def);
       if (!p) { console.log('모델이 없습니다.'); continue; }
       const seeds = seedRange(await ask('평가 시드 (쉼표로)', '11,12,13'));
       const ld = await ask('비교할 규칙 경로 쓸기 방향 (robot = 기존 / alternate = 번갈아)', 'alternate');
       console.log(`\n예상 시간: ${minutes(seeds.split(',').length * 2 * scale)}`);
-      await run('tools/ppo-eval.mjs', ['--policy', `${p.rel}/policy-best.json`, '--config', 'alone', '--seeds', seeds, '--rule-lane-dir', ld]);
+      await run('tools/ppo-eval.mjs', ['--policy', p.path, '--config', 'alone', '--seeds', seeds, '--rule-lane-dir', ld]);
       finish('eval');
     } else if (c === '4') {
       const dirs = await ask('쓸기 방향 (쉼표로: robot,snout,alternate)', 'robot,alternate');
