@@ -1,0 +1,27 @@
+{
+ "kind": "ppo-eval",
+ "name": "kr210-run3-alone-norepeat",
+ "folder": "results/2026-11-07/2241_ppo-eval_kr210-run3-alone-norepeat",
+ "startedLocal": "2026-11-07 22:41",
+ "started": "2026-11-07T13:41:24.211Z",
+ "finished": "2026-11-07T14:02:31.914Z",
+ "command": "node tools/ppo-eval.mjs --policy results/2026-11-07/0947_ppo-train_kr210-run3/policy-last.json --seeds 11,12,13,14,15,16,17,18,19,20 --config alone --rule-lane-dir alternate --snout-rule no-repeat",
+ "git": "d90bab5 (+수정)",
+ "node": "v26.13.0",
+ "summary": "alone(스나우트 쪽 연속 금지): PPO 75.9% vs 규칙 74.6% (시드 11·12·13·14·15·16·17·18·19·20)",
+ "policy": "results/2026-11-07/0947_ppo-train_kr210-run3/policy-last.json",
+ "config": "alone",
+ "seeds": [
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  19,
+  20
+ ],
+ "snoutRule": "no-repeat"
+}

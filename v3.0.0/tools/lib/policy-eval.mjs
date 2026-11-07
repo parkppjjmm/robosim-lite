@@ -28,18 +28,18 @@ const mean = (a) => a.reduce((s, v) => s + v, 0) / Math.max(1, a.length);
  * @param m { TE, CS, RP, LAB } 모듈 (호출하는 도구가 불러온 것)
  * @returns { rows, md, file } — rows: 시드별 { seed, ppo, rule, strokes, repaired, fallback, retries }
  */
-export async function evalPolicyCell({ m, RAPIER, robots, pol, agent, lab, config = 'alone', seeds = [11, 12, 13], outDir, policyLabel, ruleLaneDir = 'robot', log = console.log }) {
+export async function evalPolicyCell({ m, RAPIER, robots, pol, agent, lab, config = 'alone', seeds = [11, 12, 13], outDir, policyLabel, ruleLaneDir = 'robot', snoutRule = 'free', log = console.log }) {
   const { TE, CS, RP, LAB } = m;
   const rows = [];
   for (const seed of seeds) {
     const [left, right] = CONFIGS[config].map(sideOf);
     const { task } = TE.sanitizeTask({ timeLimitS: pol.task?.timeLimitS ?? 600, cell: { main: pol.task?.main ?? 'kuka-kr210-r2700', left, right }, dross: { seed, count: pol.task?.count ?? 160 }, mainRule: { laneDir: ruleLaneDir } }, robots);
-    const pr = await LAB.runPolicy({ RAPIER, robots, task, lab, agent, runEpisode: CS.runEpisode, record: new RP.EpisodeRecorder({ everyS: 0.1 }) });
+    const pr = await LAB.runPolicy({ RAPIER, robots, task, lab, agent, snoutRule, runEpisode: CS.runEpisode, record: new RP.EpisodeRecorder({ everyS: 0.1 }) });
     writeFileSync(`${outDir}/ppo-${config}-s${seed}.rsim.json.gz`, gzipSync(JSON.stringify({ ...pr.episode, lab: { method: 'ppo-policy', reward: lab.reward } })));
     const rr = await CS.runEpisode(task, { RAPIER, robots, record: new RP.EpisodeRecorder({ everyS: 0.1 }) });
     writeFileSync(`${outDir}/rule-${config}-s${seed}.rsim.json.gz`, gzipSync(JSON.stringify(rr.episode)));
     const d = pr.log.decisions;
-    const row = { seed, ppo: pr.summary, rule: rr.summary, strokes: d.length, repaired: d.filter((x) => x.repaired > 0).length, fallback: d.filter((x) => x.fallback).length, retries: d.filter((x) => x.retry).length };
+    const row = { seed, ppo: pr.summary, rule: rr.summary, strokes: d.length, repaired: d.filter((x) => x.repaired > 0).length, fallback: d.filter((x) => x.fallback).length, retries: d.filter((x) => x.retry).length, forced: d.filter((x) => x.info?.forcedRobotSide).length, snout: d.filter((x) => Math.cos((x.values.headingDeg * Math.PI) / 180) > 0).length };
     rows.push(row);
     log(`  ${config} 시드 ${seed}: PPO ${row.ppo.rateCount}% / 규칙 ${row.rule.rateCount}% (스트로크 ${row.strokes}, 보정 ${row.repaired}, 규칙 대체 ${row.fallback}, 재시도 ${row.retries})`);
   }
@@ -50,10 +50,11 @@ export async function evalPolicyCell({ m, RAPIER, robots, pol, agent, lab, confi
   L.push(`- 측정: ${new Date().toISOString()} · \`node tools/ppo-eval.mjs\``);
   L.push(`- 정책: ${policyLabel}`);
   L.push(`- 비교: 같은 드로스 배치(시드)에서 대형 로봇만 **PPO 정책** ↔ **규칙 경로(쓸기 방향 ${ruleLaneDir})** 로 바꿔 실행. 측면 로봇은 둘 다 기존 경로.`);
-  L.push('- 정책 실행: 결정적(평균) 행동 → 계획 불가면 보정(repair) → 그래도 안 되면 규칙 레인으로 대체. 측면 로봇 구역은 침범하지 않음.', '');
-  L.push('| 시드 | PPO 정책 | 규칙 경로 | 차이 | 스트로크 | 보정 | 규칙 대체 | 흘림 (PPO / 규칙) |', '|---|---|---|---|---|---|---|---|');
-  for (const r of rows) L.push(`| ${r.seed} | **${r.ppo.rateCount}%** | ${r.rule.rateCount}% | ${(r.ppo.rateCount - r.rule.rateCount).toFixed(1)}%p | ${r.strokes} | ${r.repaired} | ${r.fallback} | ${r.ppo.spilled} / ${r.rule.spilled} |`);
-  L.push(`| 평균 | **${mp.toFixed(1)}%** | ${mr.toFixed(1)}% | ${(mp - mr).toFixed(1)}%p | | | | |`);
+  L.push('- 정책 실행: 결정적(평균) 행동 → 계획 불가면 보정(repair) → 그래도 안 되면 규칙 레인으로 대체. 측면 로봇 구역은 침범하지 않음.');
+  L.push(snoutRule === 'no-repeat' ? '- **스나우트 쪽 연속 금지(`--snout-rule no-repeat`)**: 직전이 스나우트 쪽이면 이번에는 같은 레인을 로봇 쪽으로 쓴다. 표의 "스나우트 쪽" = 실제로 쓴 스나우트 쪽 스트로크 수, "막음" = 정책이 골랐지만 막은 수.' : '- 쓸기 방향: 정책이 고른 대로(`--snout-rule free`).', '');
+  L.push('| 시드 | PPO 정책 | 규칙 경로 | 차이 | 스트로크 | 보정 | 규칙 대체 | 흘림 (PPO / 규칙) | 스나우트 쪽 | 막음 |', '|---|---|---|---|---|---|---|---|---|---|');
+  for (const r of rows) L.push(`| ${r.seed} | **${r.ppo.rateCount}%** | ${r.rule.rateCount}% | ${(r.ppo.rateCount - r.rule.rateCount).toFixed(1)}%p | ${r.strokes} | ${r.repaired} | ${r.fallback} | ${r.ppo.spilled} / ${r.rule.spilled} | ${r.snout} | ${r.forced} |`);
+  L.push(`| 평균 | **${mp.toFixed(1)}%** | ${mr.toFixed(1)}% | ${(mp - mr).toFixed(1)}%p | | | | | | |`);
   L.push('', `3D 재생(앱 '에피소드 재생'): \`ppo-${config}-s<시드>.rsim.json.gz\`(정책) · \`rule-${config}-s<시드>.rsim.json.gz\`(규칙)`);
   const md = L.join('\n') + '\n';
   const file = `${outDir}/cell-eval-${config}.md`;

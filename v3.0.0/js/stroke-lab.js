@@ -568,9 +568,12 @@ export function encodeResidual(v, base, lab) {
  * - 직전 스트로크 계획이 실패해 곧바로(시뮬레이션 4.5 s 안) 다시 불리면 표준편차만큼 흔든 행동으로 다시 시도한다.
  *   (덤프 뒤 복귀 자세는 매번 같으므로 관절값 비교로는 실패를 알 수 없다 — 시간으로 판단)
  * - 계획 가능 여부를 먼저 확인해 보정(repair)하고, 그래도 안 되면 규칙 레인으로 대신한다(안전한 대체 동작).
+ * - snoutRule 'no-repeat': 직전 스트로크가 스나우트 쪽(열린 면이 스나우트를 봄, +X 방향)이었으면 이번에는 스나우트 쪽을 못 고른다
+ *   (정책이 스나우트 쪽을 골라도 같은 레인을 로봇 쪽으로 쓴다). 2026-11-07 사용자 요청 — 크게 지는 시드는 PPO가 느린 스나우트 쪽
+ *   사이클(53 s vs 40 s)을 75~91% 골랐다(results/2026-11-07/2235_replay-analysis_…). 기본 'free' = 이전과 같음.
  */
-export function makePolicyChooser(agent, lab, { rand = rng(7), onDecision = () => {} } = {}) {
-  let initial = null, lastT = -Infinity, retries = 0, lastVals = null;
+export function makePolicyChooser(agent, lab, { rand = rng(7), onDecision = () => {}, snoutRule = 'free' } = {}) {
+  let initial = null, lastT = -Infinity, retries = 0, lastVals = null, lastSnout = false;
   const dim = obsDimOf(agent);
   return async ({ q, sim, evaluator }) => {
     const ps = snapshotParticles(sim.world);
@@ -587,11 +590,13 @@ export function makePolicyChooser(agent, lab, { rand = rng(7), onDecision = () =
     if (agent.meta?.actionMode === 'residual') {
       const rv0 = ruleValues(sim.world.particleState(), sim.sides, sim.thresholds, sim.task);
       if (!rv0) return null;
-      const dec = decodeResidual(u, strokeFromValues(rv0).values, lab);
+      let dec = decodeResidual(u, strokeFromValues(rv0).values, lab);
+      const forced = snoutRule === 'no-repeat' && lastSnout && dec.reversed;
+      if (forced) dec = decodeResidual([0, ...u.slice(1)], strokeFromValues(rv0).values, lab); // 같은 레인·조정, 방향만 로봇 쪽
       values = dec.values;
       // 앱 결정 표용: 규칙 레인을 그대로/반대로 썼는지와 조정량 (v3.0.0 [C])
       const d = (k, r) => Math.round((Math.min(1, Math.max(0, u[k])) - 0.5) * 2 * r);
-      info = { mode: 'residual', reversed: dec.reversed, dx: d(1, RESIDUAL.x0), dy: d(2, RESIDUAL.y0), dh: d(3, RESIDUAL.headingDeg), dl: d(4, RESIDUAL.lengthMm) };
+      info = { mode: 'residual', reversed: dec.reversed, forcedRobotSide: forced, dx: d(1, RESIDUAL.x0), dy: d(2, RESIDUAL.y0), dh: d(3, RESIDUAL.headingDeg), dl: d(4, RESIDUAL.lengthMm) };
     } else values = decodeStroke(u, lab).values;
     let fix = await planWithRepair({ robot: sim.robot, q0: q, values, sides: sim.sides, thresholds: sim.thresholds, box });
     let fallback = false;
@@ -604,15 +609,17 @@ export function makePolicyChooser(agent, lab, { rand = rng(7), onDecision = () =
     }
     const st = strokeFromValues(fix.values, fallback ? STROKE_BOX : box);
     lastVals = st.values;
+    lastSnout = Math.cos((st.values.headingDeg * Math.PI) / 180) > 0; // 실제로 쓴 방향(보정·규칙 대체 뒤)
     onDecision({ t, rate: evaluator.last.rateCount, values: st.values, retry: retries, repaired: fix.repaired, fallback, info });
     return { lane: { start: st.start, end: st.end }, stroke: { yaw0Deg: st.yaw0Deg, yaw1Deg: st.yaw1Deg, tiltDeg: st.tiltDeg }, immersionMm: st.depthMm, sweepMmS: st.speedMmS };
   };
 }
 
 /** 학습된 정책으로 과제 1회 실행 (앱 Worker·헤드리스 공통). @returns { summary, episode, log } */
-export async function runPolicy({ RAPIER, robots, task, lab, agent, runEpisode, record = null, onProgress = () => {}, shouldStop = () => false }) {
+export async function runPolicy({ RAPIER, robots, task, lab, agent, runEpisode, record = null, onProgress = () => {}, shouldStop = () => false, snoutRule = 'free' }) {
   const decisions = [];
   const chooser = makePolicyChooser(agent, lab, {
+    snoutRule,
     onDecision: (d) => {
       decisions.push({ n: decisions.length + 1, t: +d.t.toFixed(1), rate: +d.rate.toFixed(1), values: d.values, retry: d.retry, repaired: d.repaired, fallback: d.fallback, info: d.info });
       onProgress({ kind: 'policy', decision: decisions.at(-1), rate: d.rate, t: d.t });

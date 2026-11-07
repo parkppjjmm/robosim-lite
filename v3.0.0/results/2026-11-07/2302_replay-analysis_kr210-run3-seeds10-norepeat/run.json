@@ -1,0 +1,25 @@
+{
+ "kind": "replay-analysis",
+ "name": "kr210-run3-seeds10-norepeat",
+ "folder": "results/2026-11-07/2302_replay-analysis_kr210-run3-seeds10-norepeat",
+ "startedLocal": "2026-11-07 23:02",
+ "started": "2026-11-07T14:02:47.965Z",
+ "finished": "2026-11-07T14:02:48.534Z",
+ "command": "node tools/replay-analyze.mjs --dir results/2026-11-07/2241_ppo-eval_kr210-run3-alone-norepeat --name kr210-run3-seeds10-norepeat",
+ "git": "d90bab5 (+수정)",
+ "node": "v26.13.0",
+ "summary": "시드 10개 · PPO 스나우트 쪽 사이클 비율 29% (규칙 50%) · PPO가 진 시드 13·15·20",
+ "source": "results/2026-11-07/2241_ppo-eval_kr210-run3-alone-norepeat",
+ "seeds": [
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  19,
+  20
+ ]
+}
