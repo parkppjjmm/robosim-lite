@@ -1,0 +1,110 @@
+{
+ "kind": "ppo-train",
+ "name": "kr210-run4",
+ "folder": "results/2026-11-07/1800_ppo-train_kr210-run4",
+ "startedLocal": "2026-11-07 18:00",
+ "started": "2026-11-07T09:00:14.855Z",
+ "finished": "2026-11-07T13:02:33.856Z",
+ "command": "node tools/ppo-train.mjs --demos results/2026-11-06/1251_cem-demos_kr210-alone10/demos.json --name run4 --iterations 40 --bc 3 --workers 6 --eval-seeds 11,12,13,14,15,16,17,18,19,20 --rule-lane-dir alternate --demo-filter better --episodes 14 --pi-lr 1e-4 --clip 0.1",
+ "git": "c885466 (+수정)",
+ "node": "v26.13.0",
+ "summary": "최고 = 반복 40 학습 평가 64.2% · 셀 단독 PPO 67.9% vs 규칙 74.6%",
+ "iterations": 40,
+ "bc": 3,
+ "episodes": 14,
+ "piLr": 0.0001,
+ "clip": 0.1,
+ "epochs": 8,
+ "evalSeeds": [
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  19,
+  20
+ ],
+ "workers": 6,
+ "lab": {
+  "schema": "robosim-lab/1",
+  "method": "cem",
+  "population": 16,
+  "iterations": 3,
+  "eliteFrac": 0.25,
+  "includeRule": true,
+  "seed": 1,
+  "search": {
+   "x0": {
+    "on": true,
+    "min": 1330,
+    "max": 2070,
+    "fixed": 2070
+   },
+   "y0": {
+    "on": true,
+    "min": -670,
+    "max": 670,
+    "fixed": 0
+   },
+   "headingDeg": {
+    "on": true,
+    "min": 0,
+    "max": 360,
+    "fixed": 180
+   },
+   "lengthMm": {
+    "on": true,
+    "min": 250,
+    "max": 1100,
+    "fixed": 740
+   },
+   "yaw0Deg": {
+    "on": true,
+    "min": -180,
+    "max": 180,
+    "fixed": 0
+   },
+   "yaw1Deg": {
+    "on": true,
+    "min": -180,
+    "max": 180,
+    "fixed": 0
+   },
+   "tiltDeg": {
+    "on": true,
+    "min": -15,
+    "max": 15,
+    "fixed": 0
+   },
+   "depthMm": {
+    "on": true,
+    "min": 20,
+    "max": 75,
+    "fixed": 60
+   },
+   "speedMmS": {
+    "on": true,
+    "min": 30,
+    "max": 250,
+    "fixed": 120
+   }
+  },
+  "reward": {
+   "perDross": 10,
+   "wallBonus": 5,
+   "emptyStroke": -20,
+   "spill": -5,
+   "perSecond": -0.2,
+   "infeasible": -10,
+   "goalBonus": 200
+  },
+  "keepTop": 10
+ },
+ "demos": [
+  "C:\\Users\\parkp\\Desktop\\로봇 시뮬레이션\\v3.0.0/results/2026-11-06/1251_cem-demos_kr210-alone10/demos.json"
+ ],
+ "demoSamples": 135
+}
