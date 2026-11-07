@@ -18,6 +18,7 @@
   - 연습장 시험 최고 30회째 76.0%, 실제 셀 10분 68.6%(규칙 72.9%, 10회 모델 71.5%) → 채택 안 함, 현재 모델은 run2 그대로 (`NOTE.md`)
   - 40회째 모델(`policy-last.json`) 실제 셀 평가(사용자 요청): **74.2%**(80.6%·65.6%·76.3%, 규칙 72.9%) — `results/2026-11-07/1352_ppo-eval_kr210-run3-alone/`
   - **채택 모델 변경 (사용자 결정 2026-11-07):** 2차 PPO 현장용 모델 = run3 40회째 `results/2026-11-07/0947_ppo-train_kr210-run3/policy-last.json` (이전 run2 5회째 71.5%). README·PRD·STATUS·REVIEW·HANDOFF의 "현재 모델" 경로 갱신
+  - 채택 모델 시드 10개(11~20) 재평가(사용자 요청): PPO 72.5% vs 규칙 74.6%(−2.0%p, 이긴 시드 5/10) — `results/2026-11-07/1534_ppo-eval_kr210-run3-alone/`
   - Claude Code 백그라운드 실행이 메모리 부족으로 두 번 중단돼, 사용자가 터미널에서 직접 실행
 - `train.bat` 메뉴 3 "모델 평가만"(사용자 요청 2026-11-07): ppo-train 폴더마다 `policy-best.json`(연습장 최고)과 `policy-last.json`(마지막 반복)을 모두 보여 줌. `policy-last.json`의 학습 평가는 같은 반복 체크포인트에서 읽음. 새 파일 `results/adopted.json`(현재 채택 모델)을 ★로 표시하고 기본값으로 고름
 - `train.bat` 메뉴 1·2(사용자 요청 2026-11-07): 작업자 수 다음에 **반복당 에피소드 수**를 묻는다(기본 14 = 채택 2차 모델 조건) → `pipeline.mjs --episodes`. 예상 시간도 에피소드 ÷ 작업자로 계산

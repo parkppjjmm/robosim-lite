@@ -1,7 +1,38 @@
 {
  "schema": "robosim-results-index/1",
- "updated": "2026-11-07T05:15:02.088Z",
+ "updated": "2026-11-07T06:56:17.652Z",
  "runs": [
+  {
+   "date": "2026-11-07",
+   "time": "15:34",
+   "kind": "ppo-eval",
+   "name": "kr210-run3-alone",
+   "folder": "results/2026-11-07/1534_ppo-eval_kr210-run3-alone",
+   "summary": "alone: PPO 72.5% vs 규칙 74.6% (시드 11·12·13·14·15·16·17·18·19·20) ※ 채택 2차 모델(run3 40회째) 시드 10개 재평가 — 규칙보다 −2.0%p, 이긴 시드 5/10 (NOTE.md)",
+   "note": true,
+   "replays": [
+    "ppo-alone-s11.rsim.json.gz",
+    "ppo-alone-s12.rsim.json.gz",
+    "ppo-alone-s13.rsim.json.gz",
+    "ppo-alone-s14.rsim.json.gz",
+    "ppo-alone-s15.rsim.json.gz",
+    "ppo-alone-s16.rsim.json.gz",
+    "ppo-alone-s17.rsim.json.gz",
+    "ppo-alone-s18.rsim.json.gz",
+    "ppo-alone-s19.rsim.json.gz",
+    "ppo-alone-s20.rsim.json.gz",
+    "rule-alone-s11.rsim.json.gz",
+    "rule-alone-s12.rsim.json.gz",
+    "rule-alone-s13.rsim.json.gz",
+    "rule-alone-s14.rsim.json.gz",
+    "rule-alone-s15.rsim.json.gz",
+    "rule-alone-s16.rsim.json.gz",
+    "rule-alone-s17.rsim.json.gz",
+    "rule-alone-s18.rsim.json.gz",
+    "rule-alone-s19.rsim.json.gz",
+    "rule-alone-s20.rsim.json.gz"
+   ]
+  },
   {
    "date": "2026-11-07",
    "time": "13:52",

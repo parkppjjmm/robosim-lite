@@ -1,0 +1,26 @@
+{
+ "kind": "ppo-eval",
+ "name": "kr210-run3-alone",
+ "folder": "results/2026-11-07/1534_ppo-eval_kr210-run3-alone",
+ "startedLocal": "2026-11-07 15:34",
+ "started": "2026-11-07T06:34:45.912Z",
+ "finished": "2026-11-07T06:55:27.774Z",
+ "command": "node tools/ppo-eval.mjs --policy results/2026-11-07/0947_ppo-train_kr210-run3/policy-last.json --seeds 11,12,13,14,15,16,17,18,19,20 --config alone --rule-lane-dir alternate",
+ "git": "2fe318e (+수정)",
+ "node": "v26.13.0",
+ "summary": "alone: PPO 72.5% vs 규칙 74.6% (시드 11·12·13·14·15·16·17·18·19·20)",
+ "policy": "results/2026-11-07/0947_ppo-train_kr210-run3/policy-last.json",
+ "config": "alone",
+ "seeds": [
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  19,
+  20
+ ]
+}
