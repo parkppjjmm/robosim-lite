@@ -7,6 +7,8 @@
 //                               [--time 600] [--eval-seeds 11,12,13] [--eval-every 5] [--lab 설정.json] [--resume policy-last.json] [--name run2] [--out 폴더(기본 results/<날짜>/<시각>_ppo-train_<로봇>-<이름>)]
 //   --demos <demos.json>[,<demos.json>…]: 모방 학습 교사 = 진화 탐색 시범 (tools/cem-demos.mjs 결과, [C] 단계). 없으면 규칙 경로 교사(1차 방식)
 //   --demo-filter better|all: better(기본) = 진화 탐색이 같은 시드 규칙 경로보다 높았던 에피소드의 시범만 쓴다
+//   --pi-lr 3e-4 --clip 0.2 --epochs 8: PPO 학습 폭(정책 학습률·클립 범위·업데이트 반복). 기본값 = run1~run3과 같음.
+//     줄이면 한 번에 덜 바뀐다 (2026-11-07 사용자 요청 run4: 학습 폭 줄이기 — 연습장 시험이 49~76%로 출렁였음)
 //   --rule-lane-dir robot|alternate: 학습 직후 평가에서 비교할 규칙 경로의 쓸기 방향 (기본 robot)
 // 결과(이름 규칙은 results/README.md):
 //   <out>/policy-best.json   최고 체크포인트(앱 [정책 불러오기]로 쓰는 파일)   <out>/policy-last.json   마지막 반복
@@ -163,14 +165,15 @@ if (DEMOS && OBS_N > PPO.OBS_DIM) {
     sm.obs = o;
   }
 }
-const optPi = new PPO.Adam(3e-4), optVf = new PPO.Adam(1e-3), optBc = new PPO.Adam(1e-3);
+const PI_LR = Number(arg('pi-lr', 3e-4)), CLIP = Number(arg('clip', 0.2)), EPOCHS = Number(arg('epochs', 8));
+const optPi = new PPO.Adam(PI_LR), optVf = new PPO.Adam(1e-3), optBc = new PPO.Adam(1e-3);
 let seedCounter = 1000;
 const curve = [];
 const mean = (a) => a.reduce((s, v) => s + v, 0) / Math.max(1, a.length);
 const t0 = Date.now();
 const stat = (rs) => ({ ret: mean(rs.map((r) => r.stats.ret)), rate: mean(rs.map((r) => r.stats.rate)), empties: mean(rs.map((r) => r.stats.empties)), infeasible: mean(rs.map((r) => r.stats.infeasible)), repaired: mean(rs.map((r) => r.stats.repaired)), steps: mean(rs.map((r) => r.stats.steps)) });
 const fmt = (s) => `회수율 ${s.rate.toFixed(1)}% · 보상 ${s.ret.toFixed(0)} · 스트로크 ${s.steps.toFixed(1)} · 헛질 ${s.empties.toFixed(1)} · 보정 ${s.repaired.toFixed(1)} · 불가 ${s.infeasible.toFixed(1)}`;
-console.log(`PPO: ${task.cell.main} · 드로스 ${task.dross.count}개 · ${task.timeLimitS} s · 행동 ${actDim}차원 · 작업자 ${WORKERS} · 반복 ${ITER}(+모방 ${BC}) · 에피소드/반복 ${EPISODES}`);
+console.log(`PPO: ${task.cell.main} · 드로스 ${task.dross.count}개 · ${task.timeLimitS} s · 행동 ${actDim}차원 · 작업자 ${WORKERS} · 반복 ${ITER}(+모방 ${BC}) · 에피소드/반복 ${EPISODES} · 학습률 ${PI_LR} · 클립 ${CLIP} · 업데이트 ${EPOCHS}회 · 평가 시드 ${EVAL_SEEDS.length}개`);
 console.log(`점수 규칙: ${JSON.stringify(lab.reward)}`);
 
 // ① 모방 — 교사: 진화 탐색 시범(--demos) 또는 규칙 경로(1차 방식)
@@ -216,7 +219,7 @@ for (let it = 1; it <= ITER; it++) {
     const { adv, ret } = PPO.gae(r.transitions.map((x) => x.reward / 100), vals);
     r.transitions.forEach((x, i) => batch.push({ obs: obs[i], u: x.u, logp: x.logp, adv: adv[i], ret: ret[i] }));
   }
-  const up = PPO.ppoUpdate(agent, batch, { rand, optPi, optVf });
+  const up = PPO.ppoUpdate(agent, batch, { rand, optPi, optVf, clip: CLIP, epochs: EPOCHS });
   const s = stat(rs);
   curve.push({ phase: 'ppo', iter: it, ...s, ...up, n: batch.length, s: (Date.now() - t0) / 1000 });
   // 진행률 막대 = PPO 반복 / 전체 반복 (2026-11-06 사용자 요청). 끝난 뒤 10분 과제 평가(약 수 분)가 더 있다
@@ -251,7 +254,7 @@ const L = [];
 L.push(`# PPO 강화학습 결과 — ${new Date().toISOString()}`, '');
 L.push(`- 환경: ${robots.find((r) => r.id === task.cell.main).name} 단독 셀(StrokeEnv), 드로스 ${task.dross.count}개(에피소드마다 다른 시드), ${task.timeLimitS} s, 행동 = ${ACTION === 'residual' ? `규칙 레인 기준 조정 ${actDim}값(반대 방향 여부, 시작 X·Y·방향·길이 조정, 열린 면 시작·끝, 기울임, 깊이, 속도)` : `스트로크 ${actDim}변수(${LAB.searchKeys(lab).join(', ')})`}`);
 L.push(`- 관측: 작업 영역 드로스 격자 ${PPO.OBS_GRID.nx}×${PPO.OBS_GRID.ny} + 남은 비율 + 시간 비율 ${OBS_N > PPO.OBS_DIM ? ' + 직전 스트로크 4' : ''} (${OBS_N}차원), 정책 MLP ${OBS_N}→64→64→${actDim}(가우시안), 순수 JS`);
-L.push(`- 학습: 모방(${DEMOS ? `진화 탐색 시범 ${DEMOS.samples.length}개 — ${DEMO_FILES.map((f) => f.replace(/\\/g, '/').split('/').slice(-2).join('/')).join(', ')}` : '규칙 경로 교사'}) ${BC}회 → PPO ${ITER}회 × 에피소드 ${EPISODES}개, 작업자 ${WORKERS}, ${trainS.toFixed(0)} s. 최고 체크포인트 = 고정 시드(${EVAL_SEEDS.join('·')}) 평가 보상 최고 (${bestPolicy.phase === 'bc' ? '모방 직후' : `PPO 반복 ${bestPolicy.iter}`})`);
+L.push(`- 학습: 모방(${DEMOS ? `진화 탐색 시범 ${DEMOS.samples.length}개 — ${DEMO_FILES.map((f) => f.replace(/\\/g, '/').split('/').slice(-2).join('/')).join(', ')}` : '규칙 경로 교사'}) ${BC}회 → PPO ${ITER}회 × 에피소드 ${EPISODES}개, 작업자 ${WORKERS}, 학습률 ${PI_LR} · 클립 ${CLIP} · 업데이트 ${EPOCHS}회, ${trainS.toFixed(0)} s. 최고 체크포인트 = 고정 시드(${EVAL_SEEDS.join('·')}) 평가 보상 최고 (${bestPolicy.phase === 'bc' ? '모방 직후' : `PPO 반복 ${bestPolicy.iter}`})`);
 L.push(`- 점수 규칙: ${JSON.stringify(lab.reward)}`);
 L.push('- 시뮬레이터 결과(구형 입자 근사)다. 정책은 대형 단독 셀에서 학습했다.', '');
 L.push('## 학습 곡선 (평가: 결정적 행동, 고정 시드)', '', '| 시점 | 회수율 | 보상 | 스트로크 | 헛질 | 보정 | 계획 불가 |', '|---|---|---|---|---|---|---|');
@@ -264,5 +267,5 @@ L.push(`| 평균 | **${mean(rows.map((r) => r.ppo.rateCount)).toFixed(1)}%** | $
 L.push('', `- 정책 파일: \`policy-best.json\` (robosim-policy/1) — 앱 '학습' 패널의 [정책 불러오기]로 실행·3D 재생. 중간 정책: \`checkpoints/iter-NNN.json\`. 3D 재생: \`ppo-alone-s<시드>.rsim.json.gz\`(정책) · \`rule-alone-s<시드>.rsim.json.gz\`(규칙).`);
 writeFileSync(`${outDir}/train-report.md`, L.join('\n') + '\n');
 console.log('\n' + L.join('\n'));
-finishRun(root, run, { summary: `최고 = ${bestPolicy.phase === 'bc' ? '모방 직후' : `반복 ${bestPolicy.iter}`} 학습 평가 ${best.rate.toFixed(1)}% · 셀 단독 PPO ${mean(rows.map((r) => r.ppo.rateCount)).toFixed(1)}% vs 규칙 ${mean(rows.map((r) => r.rule.rateCount)).toFixed(1)}%`, detail: { iterations: ITER, bc: BC, episodes: EPISODES, workers: WORKERS, lab, demos: DEMO_FILES, demoSamples: DEMOS?.samples.length ?? 0 } });
+finishRun(root, run, { summary: `최고 = ${bestPolicy.phase === 'bc' ? '모방 직후' : `반복 ${bestPolicy.iter}`} 학습 평가 ${best.rate.toFixed(1)}% · 셀 단독 PPO ${mean(rows.map((r) => r.ppo.rateCount)).toFixed(1)}% vs 규칙 ${mean(rows.map((r) => r.rule.rateCount)).toFixed(1)}%`, detail: { iterations: ITER, bc: BC, episodes: EPISODES, piLr: PI_LR, clip: CLIP, epochs: EPOCHS, evalSeeds: EVAL_SEEDS, workers: WORKERS, lab, demos: DEMO_FILES, demoSamples: DEMOS?.samples.length ?? 0 } });
 console.log(`\n저장: ${outDir}/ — 전체 ${((Date.now() - t0) / 1000).toFixed(0)} s`);

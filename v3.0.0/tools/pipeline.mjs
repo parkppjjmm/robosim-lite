@@ -10,7 +10,7 @@
 //   node tools/pipeline.mjs --demos results/2026-11-06/<시각>_cem-demos_kr210-alone10/demos.json --name run2
 //   node tools/pipeline.mjs --alone 101-120 --name run3                    (시범 수집부터)
 // 옵션: --iterations 40(PPO 반복) --bc 3(모방 반복) --workers 14 --rule-lane-dir alternate(비교 규칙 경로, 기본 번갈아)
-//       --episodes 14(반복당 에피소드, 기본 = 작업자 수 — 작업자를 줄여도 학습 조건 유지) --eval-seeds 11,12,13 --population 32 --cem-iterations 4 (진화 탐색 예산) --demo-filter better|all --no-cem-eval
+//       --pi-lr 3e-4 --clip 0.2 --epochs 8 (PPO 학습 폭, 기본 = run1~3) --episodes 14(반복당 에피소드, 기본 = 작업자 수 — 작업자를 줄여도 학습 조건 유지) --eval-seeds 11,12,13 --population 32 --cem-iterations 4 (진화 탐색 예산) --demo-filter better|all --no-cem-eval
 //       --no-git: 단계마다 하는 git 커밋·push를 끈다 (기본: 켬 — 2026-11-06 사용자 요청 "각 단계별로 중간마다 커밋 및 push")
 //         커밋 = 그 단계의 결과 폴더 + results/INDEX.md만, 메시지 앞에 [날짜 시각 KST]. push 전에 fetch, 충돌 시 rebase(강제 push 없음).
 // 측면 로봇 셀은 아직 다루지 않는다(2026-11-06 사용자 결정: 대형 단독 먼저).
@@ -107,7 +107,9 @@ console.log(`\n시범: ${demos} — ${dm.count ?? dm.demos.length}개`);
 const trainArgs = ['--demos', demosAbs, '--name', NAME, '--iterations', arg('iterations', '40'), '--bc', arg('bc', '3'), '--workers', WORKERS,
   '--eval-seeds', EVAL_SEEDS.join(','), '--rule-lane-dir', RULE_DIR, '--demo-filter', arg('demo-filter', 'better'),
   // 반복당 에피소드 수 (기본 = 작업자 수). 작업자를 줄여도 --episodes 14로 학습 조건을 그대로 둔다 (2026-11-07, 8코어 PC)
-  ...(arg('episodes') ? ['--episodes', arg('episodes')] : [])];
+  ...(arg('episodes') ? ['--episodes', arg('episodes')] : []),
+  // PPO 학습 폭 (기본은 ppo-train.mjs 기본값 = run1~run3과 같음, 2026-11-07 run4)
+  ...['pi-lr', 'clip', 'epochs'].flatMap((k) => (arg(k) ? [`--${k}`, arg(k)] : []))];
 const trainOut = await step('② PPO 학습', 'tools/ppo-train.mjs', trainArgs);
 const trainDir = savedPath(trainOut, /저장: (.+?)\/ — 전체/);
 const evalMd = readFileSync(`${trainDir}/cell-eval-alone.md`, 'utf8');

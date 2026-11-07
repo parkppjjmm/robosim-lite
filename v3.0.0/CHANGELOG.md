@@ -22,6 +22,7 @@
   - Claude Code 백그라운드 실행이 메모리 부족으로 두 번 중단돼, 사용자가 터미널에서 직접 실행
 - `train.bat` 메뉴 3 "모델 평가만"(사용자 요청 2026-11-07): ppo-train 폴더마다 `policy-best.json`(연습장 최고)과 `policy-last.json`(마지막 반복)을 모두 보여 줌. `policy-last.json`의 학습 평가는 같은 반복 체크포인트에서 읽음. 새 파일 `results/adopted.json`(현재 채택 모델)을 ★로 표시하고 기본값으로 고름
 - `train.bat` 메뉴 1·2(사용자 요청 2026-11-07): 작업자 수 다음에 **반복당 에피소드 수**를 묻는다(기본 14 = 채택 2차 모델 조건) → `pipeline.mjs --episodes`. 예상 시간도 에피소드 ÷ 작업자로 계산
+- `ppo-train.mjs`·`pipeline.mjs` `--pi-lr`·`--clip`·`--epochs` (사용자 요청 2026-11-07 "학습 폭 줄이기"): PPO 정책 학습률·클립 범위·업데이트 반복을 명령에서 정함. 기본값(3e-4·0.2·8)은 run1~run3과 같음. 보고서·run.json에 기록
 - `tools/pipeline.mjs --episodes N`: 반복당 에피소드 수를 `ppo-train.mjs`로 전달(기본 = 작업자 수). 작업자를 줄여도 학습 조건을 그대로 둘 수 있음
 - 기록 정정: 커밋 `aea36d6`의 메시지 시각 `[2026-11-06 23:44 KST]`는 UTC로 잘못 찍힌 것이고, 실제는 2026-11-07 08:44 KST다(이미 push돼 강제 push로 고치지 않음)
 
