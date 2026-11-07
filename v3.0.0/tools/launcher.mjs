@@ -126,15 +126,18 @@ async function pipelineArgs(withSeeds) {
   }
   console.log('\n[2] PPO 학습 — 반복 1회 = 연습 경기 여러 개 → 신경망 수정. 5회마다 시험해 가장 좋은 모델을 남깁니다.');
   const it = Number(await ask('    PPO 반복 횟수 (채택 2차 모델은 40회 학습의 40회째)', 10));
-  const workers = Number(await ask('    CPU 작업자 수', WORKERS));
+  const workers = Math.max(1, Number(await ask('    CPU 작업자 수', WORKERS)) || WORKERS);
+  // 반복당 에피소드(연습 경기) 수는 작업자 수와 따로 정한다 (2026-11-07 사용자 요청). 채택 2차 모델은 14개로 학습했다
+  console.log('    반복 1회에 돌리는 연습 경기(에피소드) 수 — 작업자를 줄여도 이 값이 같으면 학습 조건이 같습니다(시간만 늘어남).');
+  const episodes = Math.max(1, Number(await ask('    반복당 에피소드 수 (채택 2차 모델은 14)', 14)) || 14);
   const name = await ask('    학습 이름 (결과 폴더 이름에 들어감)', nextRunName());
   const cemEval = await yes('\n[3] 평가 시드에서 진화 탐색도 돌려 3가지(규칙·진화 탐색·PPO)를 비교할까요? (약 20분 추가)', true);
   const git = await yes('[4] 단계마다 git 커밋·push 할까요? (GitHub 로그인 필요, 실패해도 학습은 계속)', true);
-  args.push('--iterations', String(it), '--workers', String(workers), '--name', name, '--rule-lane-dir', 'alternate');
+  args.push('--iterations', String(it), '--workers', String(workers), '--episodes', String(episodes), '--name', name, '--rule-lane-dir', 'alternate');
   if (!cemEval) args.push('--no-cem-eval');
   if (!git) args.push('--no-git');
-  // PPO 반복 1회는 연습 경기 수 = 작업자 수라 작업자 수와 거의 무관(약 2~3분). 진화 탐색은 작업자 수에 반비례
-  args.est += 2 + it * 2.7 + 5 + (cemEval ? 20 * (14 / workers) : 0);
+  // PPO 반복 1회: 작업자 1개가 경기 1개 ≈ 2.7분 → 경기 수 ÷ 작업자 수 차례 (8코어 PC 실측: 작업자 6 · 경기 14 ≈ 5분). 진화 탐색은 작업자 수에 반비례
+  args.est += 2 + it * 2.7 * Math.max(1, episodes / workers) + 5 + (cemEval ? 20 * (14 / workers) : 0);
   return args;
 }
 
