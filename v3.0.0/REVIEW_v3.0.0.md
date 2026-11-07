@@ -26,6 +26,8 @@
 
 목표 80%는 진화 탐색만 넘었고, 현장용 정책(PPO 2차)은 아직 못 넘었다.
 
+> 추가 (2026-11-07): 2차 PPO를 40회까지 학습(run3)했고, 40회째 모델이 실제 셀 **74.2%**(80.6%·65.6%·76.3%)로 규칙 번갈아(72.9%)를 넘었다. 사용자 결정으로 현장용 채택 모델을 이것으로 바꿨다 — `results/2026-11-07/0947_ppo-train_kr210-run3/policy-last.json` (`results/2026-11-07/1352_ppo-eval_kr210-run3-alone/NOTE.md`). 위 표와 AC-64·65는 릴리스 준비 시점 기록이라 그대로 둔다.
+
 ## 2. 수용 기준 (AC-56 ~ AC-72)
 
 | AC | 내용 | 결과 |
@@ -74,5 +76,5 @@
 - 개발 현황: `STATUS.md` · 진행표: `PROMPTS.md` · 요구사항·결과: `PRD_v.3.0.0.md` 1장
 - 기술 문서(최신): `docs/2026-11-06_1529_AI학습_기술문서/` (개정 4판, 11장 = 앱·train.bat 사용법 스크린샷, 목록 `docs/README.md`)
 - 실행 기록: `results/INDEX.md`, 앱용 목록 `results/index.json`
-- 학습된 모델: `results/2026-11-06/1311_ppo-train_kr210-run2/policy-best.json` (2차), `results/2026-11-05/1814_ppo-train_kr210-run1/` (1차)
+- 학습된 모델: `results/2026-11-07/0947_ppo-train_kr210-run3/policy-last.json` (2차 채택, 2026-11-07 변경 — 이전 `results/2026-11-06/1311_ppo-train_kr210-run2/policy-best.json`), `results/2026-11-05/1814_ppo-train_kr210-run1/` (1차)
 - 혼자 학습: `train.bat` (README "혼자 학습하기")

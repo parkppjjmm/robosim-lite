@@ -1,6 +1,6 @@
 {
  "schema": "robosim-results-index/1",
- "updated": "2026-11-07T04:59:33.507Z",
+ "updated": "2026-11-07T05:15:02.088Z",
  "runs": [
   {
    "date": "2026-11-07",
@@ -8,7 +8,7 @@
    "kind": "ppo-eval",
    "name": "kr210-run3-alone",
    "folder": "results/2026-11-07/1352_ppo-eval_kr210-run3-alone",
-   "summary": "alone: PPO 74.2% vs 규칙 72.9% (시드 11·12·13) ※ run3의 40회째(policy-last.json) 평가. 채택 여부는 사용자 결정 (NOTE.md)",
+   "summary": "alone: PPO 74.2% vs 규칙 72.9% (시드 11·12·13) ※ run3의 40회째(policy-last.json) 평가 → 2차 채택 모델(사용자 결정 2026-11-07, NOTE.md)",
    "note": true,
    "replays": [
     "ppo-alone-s11.rsim.json.gz",
@@ -35,7 +35,7 @@
    "kind": "ppo-train",
    "name": "kr210-run3",
    "folder": "results/2026-11-07/0947_ppo-train_kr210-run3",
-   "summary": "최고 = 반복 30 학습 평가 76.0% · 셀 단독 PPO 68.6% vs 규칙 72.9% ※ 2차 PPO 40회(사용자 요청, 작업자 6). 실제 셀은 run2(71.5%)보다 낮아 채택 안 함 (NOTE.md)",
+   "summary": "최고 = 반복 30 학습 평가 76.0% · 셀 단독 PPO 68.6% vs 규칙 72.9% ※ 2차 PPO 40회(사용자 요청, 작업자 6). best(30회째) 실제 셀 68.6% → 채택 안 함. 40회째(policy-last.json) 74.2% → **채택**(사용자 결정, NOTE.md)",
    "note": true,
    "replays": [
     "ppo-alone-s11.rsim.json.gz",

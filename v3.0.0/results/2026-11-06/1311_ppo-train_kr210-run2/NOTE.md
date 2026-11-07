@@ -18,4 +18,5 @@
   node tools/ppo-train.mjs --resume results/2026-11-06/1311_ppo-train_kr210-run2/policy-last.json --name run2b
   ```
   또는 시범을 늘린 뒤 `tools/pipeline.mjs`로 학습한다.
+- **채택 변경 (2026-11-07, 사용자 결정):** 같은 조건으로 40회까지 학습한 run3의 40회째 모델(실제 셀 74.2%)로 바꿨다 — `../../2026-11-07/0947_ppo-train_kr210-run3/policy-last.json`. 이 모델은 이전 채택 모델로 남는다.
 - **설명:** `docs/2026-11-06_1359_AI학습_기술문서/` 6.4절, 7장
