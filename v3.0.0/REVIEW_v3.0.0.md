@@ -74,7 +74,7 @@
 ## 5. 산출물 위치
 
 - 개발 현황: `STATUS.md` · 진행표: `PROMPTS.md` · 요구사항·결과: `PRD_v.3.0.0.md` 1장
-- 기술 문서(최신): `docs/2026-11-06_1529_AI학습_기술문서/` (개정 4판, 11장 = 앱·train.bat 사용법 스크린샷, 목록 `docs/README.md`)
+- 기술 문서(최신): `docs/2026-11-07_2225_AI학습_기술문서/` (개정 6판, 2026-11-07 — 6.6절 2차 PPO 추가 학습·채택 변경). 릴리스 준비 시점 최신은 `docs/2026-11-06_1529_AI학습_기술문서/` (개정 4판, 11장 = 앱·train.bat 사용법 스크린샷, 목록 `docs/README.md`)
 - 실행 기록: `results/INDEX.md`, 앱용 목록 `results/index.json`
 - 학습된 모델: `results/2026-11-07/0947_ppo-train_kr210-run3/policy-last.json` (2차 채택, 2026-11-07 변경 — 이전 `results/2026-11-06/1311_ppo-train_kr210-run2/policy-best.json`), `results/2026-11-05/1814_ppo-train_kr210-run1/` (1차)
 - 혼자 학습: `train.bat` (README "혼자 학습하기")

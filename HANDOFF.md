@@ -1,6 +1,6 @@
 # HANDOFF — 작업 인수인계 로그 (새 세션·다른 PC의 Claude Code는 이 문서부터 읽을 것)
 
-- 최종 갱신: 2026-11-07 22:25 (v3.0.0 run4 — 시드 10개·학습 폭 줄임, 67.9%로 채택 안 함. 채택 모델은 run3 40회째 그대로)
+- 최종 갱신: 2026-11-07 22:35 (v3.0.0 기술 문서 개정 6판. run4 67.9% 채택 안 함, 채택 모델은 run3 40회째 그대로)
 - 저장소: https://github.com/parkppjjmm/robosim-lite (public — 2026-11-05 사용자가 private에서 변경, 계정 parkppjjmm), 브랜치 `main`
 - 이 문서의 목적: 사용자가 같은 지시를 다시 하지 않아도, 어디까지 했고 앞으로 무엇을 할지 바로 파악하도록 한다. **작업을 마칠 때마다 이 문서의 "현재 상태"와 "다음 할 일"을 갱신하고 커밋한다.**
 
@@ -70,6 +70,7 @@
     - 14:20 추가: 40회째(`policy-last.json`) 실제 셀 평가 **74.2%**(규칙 72.9%, run2 71.5%) — `v3.0.0/results/2026-11-07/1352_ppo-eval_kr210-run3-alone/NOTE.md`. **사용자 결정: 채택 모델을 run3 40회째로 바꿈** → 현장용 2차 모델 = `v3.0.0/results/2026-11-07/0947_ppo-train_kr210-run3/policy-last.json` (파일 이름이 policy-best가 아님. best = 30회째 68.6%). README·PRD·STATUS·REVIEW 경로 갱신. 채택 모델 경로는 `v3.0.0/results/adopted.json`에도 적었다(train.bat 메뉴 3이 ★·기본값으로 씀) — **채택을 바꾸면 이 파일도 고친다**
     - 15:55 추가: 채택 모델을 시드 10개(11~20)로 재평가 → **72.5% vs 규칙 74.6%(−2.0%p, 이긴 시드 5/10)** — `results/2026-11-07/1534_ppo-eval_kr210-run3-alone/NOTE.md`. 시드 3개(+1.2%p)는 좋은 쪽으로 치우친 값이었다. run2·진화 탐색은 시드 14~20 평가 없음
     - 22:25 추가: **run4**(사용자 요청: 평가 시드 10개 + 학습 폭 줄이기, 학습률 1e-4·클립 0.1) → 실제 셀 67.9%, 채택 안 함 — `results/2026-11-07/1800_ppo-train_kr210-run4/NOTE.md`. 긴 학습은 Claude가 `Start-Process powershell`로 **별도 창**에 띄우면 메모리 부족 중단 없이 돌고(출력은 Tee-Object로 scratchpad 로그), 사용자가 "끝났어"라고 알려 준다
+    - 22:35: **기술 문서 개정 6판** `v3.0.0/docs/2026-11-07_2225_AI학습_기술문서/` (6.6절, 그림 f26·f27 — 빌드: `build/figures6.py`·`ppo2_more.py`, scratchpad venv의 python-docx·matplotlib)
     - 다음 후보(R-1, 사용자 결정): run4 이어서 학습(`--resume`), 학습 폭 중간값, 같은 10개 시드로 run2 5회째·다른 체크포인트 평가 후 채택 재검토, 평가를 시드 10개로 바꾸기(학습 중 연습장 시험 포함), 학습 폭 줄이기
     - 커밋 `aea36d6` 메시지 시각은 UTC로 잘못 찍힘(실제 2026-11-07 08:44 KST, CHANGELOG에 정정 기록). Git Bash의 `TZ=Asia/Seoul`은 적용되지 않으니 그냥 `date`(로컬 = KST)를 쓴다
   - 2026-11-07 00:25: 전체 문서 검토에서 찾은 오래된 내용 정리(v3 README·results/README·PRD 상태·결과 보고서 정정 줄·CLAUDE.md·이 문서) + 기술 문서 개정 5판 `v3.0.0/docs/2026-11-07_0010_AI학습_기술문서/`(학습 진행률 막대). 이어서 사용자 요청: 2차 PPO 40회 학습(run3)
