@@ -1,7 +1,34 @@
 {
  "schema": "robosim-results-index/1",
- "updated": "2026-11-06T06:02:12.599Z",
+ "updated": "2026-11-07T04:50:25.645Z",
  "runs": [
+  {
+   "date": "2026-11-07",
+   "time": "09:47",
+   "kind": "pipeline",
+   "name": "kr210-run3",
+   "folder": "results/2026-11-07/0947_pipeline_kr210-run3",
+   "summary": "PPO 68.6% · 진화 탐색 — · 규칙(alternate) 72.9% (시드 11·12·13, 교사 시범 138개) ※ 2차 PPO 40회(사용자 요청, 작업자 6). 실제 셀은 run2(71.5%)보다 낮아 채택 안 함 (NOTE.md)",
+   "note": false,
+   "replays": []
+  },
+  {
+   "date": "2026-11-07",
+   "time": "09:47",
+   "kind": "ppo-train",
+   "name": "kr210-run3",
+   "folder": "results/2026-11-07/0947_ppo-train_kr210-run3",
+   "summary": "최고 = 반복 30 학습 평가 76.0% · 셀 단독 PPO 68.6% vs 규칙 72.9% ※ 2차 PPO 40회(사용자 요청, 작업자 6). 실제 셀은 run2(71.5%)보다 낮아 채택 안 함 (NOTE.md)",
+   "note": true,
+   "replays": [
+    "ppo-alone-s11.rsim.json.gz",
+    "ppo-alone-s12.rsim.json.gz",
+    "ppo-alone-s13.rsim.json.gz",
+    "rule-alone-s11.rsim.json.gz",
+    "rule-alone-s12.rsim.json.gz",
+    "rule-alone-s13.rsim.json.gz"
+   ]
+  },
   {
    "date": "2026-11-06",
    "time": "13:54",
