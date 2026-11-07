@@ -26,6 +26,7 @@ results/
 | `ppo-eval` | 학습된 정책을 전체 셀 10분 과제로 평가 | `node tools/ppo-eval.mjs` |
 | `episode` | 단발 헤드리스 실행 | `node tools/episode.mjs` |
 | `cem-demos` | 진화 탐색 시범 수집(PPO 모방 교사) | `node tools/cem-demos.mjs` |
+| `replay-analysis` | 3D 재생 파일 분석(정책 vs 규칙: 사이클·쓸기 방향·남은 드로스 위치) | `node tools/replay-analyze.mjs --dir <결과 폴더>` |
 | `pipeline` | 시범 → PPO → 평가 → 비교 보고서 한 번에 | `node tools/pipeline.mjs` (또는 `train.bat`) |
 
 - **이름**: `<로봇>-<구성>-s<시드>` 등 조건 요약이다.

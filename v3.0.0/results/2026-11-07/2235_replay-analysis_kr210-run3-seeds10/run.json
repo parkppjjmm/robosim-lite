@@ -1,0 +1,25 @@
+{
+ "kind": "replay-analysis",
+ "name": "kr210-run3-seeds10",
+ "folder": "results/2026-11-07/2235_replay-analysis_kr210-run3-seeds10",
+ "startedLocal": "2026-11-07 22:35",
+ "started": "2026-11-07T13:35:21.416Z",
+ "finished": "2026-11-07T13:35:22.014Z",
+ "command": "node tools/replay-analyze.mjs --dir results/2026-11-07/1534_ppo-eval_kr210-run3-alone --name kr210-run3-seeds10",
+ "git": "e723d21 (+수정)",
+ "node": "v26.13.0",
+ "summary": "시드 10개 · PPO 스나우트 쪽 사이클 비율 47% (규칙 50%) · PPO가 진 시드 12·15·16·17·20",
+ "source": "results/2026-11-07/1534_ppo-eval_kr210-run3-alone",
+ "seeds": [
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  19,
+  20
+ ]
+}

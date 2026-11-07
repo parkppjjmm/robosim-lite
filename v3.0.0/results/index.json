@@ -1,7 +1,17 @@
 {
  "schema": "robosim-results-index/1",
- "updated": "2026-11-07T13:21:36.906Z",
+ "updated": "2026-11-07T13:36:38.596Z",
  "runs": [
+  {
+   "date": "2026-11-07",
+   "time": "22:35",
+   "kind": "replay-analysis",
+   "name": "kr210-run3-seeds10",
+   "folder": "results/2026-11-07/2235_replay-analysis_kr210-run3-seeds10",
+   "summary": "시드 10개 · PPO 스나우트 쪽 사이클 비율 47% (규칙 50%) · PPO가 진 시드 12·15·16·17·20 ※ 원인: 진 시드에서 PPO가 스나우트 쪽(느린 사이클)을 75~91% 고름, 상관 −0.88 (NOTE.md)",
+   "note": true,
+   "replays": []
+  },
   {
    "date": "2026-11-07",
    "time": "18:00",
