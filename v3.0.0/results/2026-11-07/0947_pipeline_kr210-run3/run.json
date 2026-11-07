@@ -1,0 +1,32 @@
+{
+ "kind": "pipeline",
+ "name": "kr210-run3",
+ "folder": "results/2026-11-07/0947_pipeline_kr210-run3",
+ "startedLocal": "2026-11-07 09:47",
+ "started": "2026-11-07T00:47:15.687Z",
+ "finished": "2026-11-07T04:07:49.496Z",
+ "command": "node tools/pipeline.mjs --demos results/2026-11-06/1251_cem-demos_kr210-alone10/demos.json --name run3 --iterations 40 --bc 3 --workers 6 --episodes 14 --rule-lane-dir alternate --no-cem-eval",
+ "git": "dc6e97c (+수정)",
+ "node": "v26.13.0",
+ "summary": "PPO 68.6% · 진화 탐색 — · 규칙(alternate) 72.9% (시드 11·12·13, 교사 시범 138개)",
+ "demos": "results/2026-11-06/1251_cem-demos_kr210-alone10/demos.json",
+ "train": "results/2026-11-07/0947_ppo-train_kr210-run3",
+ "cem": [],
+ "ppo": [
+  {
+   "seed": 11,
+   "ppo": 79.4,
+   "rule": 78.1
+  },
+  {
+   "seed": 12,
+   "ppo": 69.4,
+   "rule": 66.3
+  },
+  {
+   "seed": 13,
+   "ppo": 56.9,
+   "rule": 74.4
+  }
+ ]
+}
